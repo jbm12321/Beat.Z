@@ -1,48 +1,35 @@
 # Project Model and Commands
 
-## Portable document
+## ProjectV2
 
-`ProjectV1` is a JSON-safe document with:
+`ProjectV2` is the only current JSON document. It contains `schemaVersion: 2`, project metadata, a monotonic concurrency revision, exact engine provenance, connected node order, node records, up to eight macros, and recent human/agent/system activity.
 
-- `schemaVersion`: currently `1`.
-- `id`, `name`, and monotonically increasing `revision`.
-- `chain`: connected node IDs in signal order.
-- `nodes`: all DSP nodes by stable ID. A disconnected node remains here but is omitted from `chain`.
-- `macros`: up to eight normalized plugin controls and their mappings.
-- `activity`: the most recent human/agent change summaries.
+Only `gain`, `filter`, and `saturation` are supported module types. The unified Filter stores `mode` numerically (`0` High Pass, `1` Low Pass) so browser and future native automation can share one representation. Catalog metadata is the source for UI controls, validation, macro ranges, WebMCP inspection, and Faust parameter paths.
 
-A `DspNode` contains its module type, base parameter values, and bypass state. The module catalog defines every valid parameter ID, default, native-unit bounds, step, unit, and linear/logarithmic scale.
+## Commands and concurrency
 
-## Command system
+Every durable edit is a `ProjectCommand`. `applyProjectCommands(source, commands, actor, expectedRevision?)` clones the source, validates every command, applies the batch atomically, validates the complete result, increments once, and records one activity item. An invalid range, duplicate mapping owner, unsupported choice, missing target, or stale revision rejects the whole batch without mutating the source.
 
-All durable changes use the `ProjectCommand` union. Supported operations cover:
+Undo and redo restore content snapshots but allocate new revisions. A concurrency revision therefore never moves backward.
 
-- project rename;
-- module add, parameter update, move, bypass, disconnect, reconnect, and delete;
-- macro create, rename, value update, mapping add/update/remove, and delete.
+## Macros
 
-`applyProjectCommands(source, commands, actor)` clones the source, applies an ordered batch, validates the entire result, increments the revision once, and records activity. An exception leaves the original project untouched.
+Macros store a unique name, normalized `0–1` value, and mappings. Continuous parameters interpolate in linear or logarithmic space. Inversion uses `1 - value`. One DSP parameter may have only one owner. Mapping bounds outside the target range are rejected rather than clamped. Removing a mapping or macro freezes the currently heard value as the node's new base value.
 
-Deleting a module also removes its macro mappings. Disconnecting preserves the node, parameters, bypass state, and mappings. Reconnecting only changes its position in `chain`.
+Filter Mode is discrete and intentionally not macro-mappable in v0.1.
 
-## Macro behavior
+## Legacy migration
 
-Each macro has a normalized value from `0` to `1`. A mapping converts that value to a parameter's native units. Linear parameters use direct interpolation; logarithmic parameters interpolate in log space when both mapping bounds are positive. Inversion uses `1 - macro.value`.
+The previous schema remains an immutable import/recovery contract. Migration maps Gain and Saturation directly and maps old High Pass/Low Pass nodes to unified Filter modes while preserving stable IDs, order, bypass, valid mappings, and activity. Unsupported legacy modules are retained inside `migration.legacyBackup`; their types are listed and block freezing until the effect is rebuilt with v0.1 primitives. The old local-storage value is never deleted.
 
-A DSP parameter may be owned by only one macro. Its direct slider is disabled while mapped. Removing a mapping or deleting a macro first stores the current effective value as the node's new base value, preventing an audible or visible jump.
+## Persistence
 
-## History and persistence
-
-`state/history.ts` retains up to 50 past and 50 future project snapshots. New commits clear redo history. Importing or restoring a project has explicit history behavior in the feature coordinator.
-
-After initial hydration, the current project is serialized to local storage under:
+Current and last-valid snapshots use separate keys:
 
 ```text
-audio-effect-builder.project.v1
+audio-effect-builder.project.v2
+audio-effect-builder.project.v2.last-valid
+audio-effect-builder.project.v1     legacy recovery source
 ```
 
-The project is validated before restoration. Invalid local data opens a clean project and shows a notice.
-
-## Import and export
-
-Project export downloads formatted JSON. Import parses and validates the document before committing it, then increments the revision and records an import activity item. Local audition audio is never included or persisted.
+Restore order is valid current V2, valid legacy migration, last-valid V2, then a clean project. Invalid data is not overwritten. Local audition audio is never serialized.

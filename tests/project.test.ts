@@ -6,61 +6,65 @@ import {
   applyProjectCommands,
   createInitialProject,
   getEffectiveParameter,
+  migrateLegacyProject,
   validateProject,
+  type LegacyProjectV1,
   type ProjectCommand,
 } from '../src/features/audio-builder/domain/project.ts';
 
 test('a new project begins with a clean input-to-output chain', () => {
   const project = createInitialProject();
-  assert.equal(project.schemaVersion, 1);
+  assert.equal(project.schemaVersion, 2);
   assert.equal(project.name, 'Untitled');
   assert.deepEqual(project.chain, []);
   assert.deepEqual(project.nodes, {});
+  assert.equal(project.engine.effectDefinition, 'audio-effect-builder-faust');
+  assert.equal(project.engine.definitionVersion, '0.1.0');
 });
 
 test('module lifecycle distinguishes reordering, disconnecting, reconnecting, bypassing, and deleting', () => {
   let project = createInitialProject();
   project = applyProjectCommands(project, [
     { type: 'add_module', moduleType: 'gain', nodeId: 'gain-1' },
-    { type: 'add_module', moduleType: 'delay', nodeId: 'delay-1' },
-    { type: 'add_module', moduleType: 'reverb', nodeId: 'verb-1' },
+    { type: 'add_module', moduleType: 'filter', nodeId: 'filter-1' },
+    { type: 'add_module', moduleType: 'saturation', nodeId: 'sat-1' },
   ], 'human');
-  assert.deepEqual(project.chain, ['gain-1', 'delay-1', 'verb-1']);
+  assert.deepEqual(project.chain, ['gain-1', 'filter-1', 'sat-1']);
 
-  project = applyProjectCommands(project, [{ type: 'move_module', nodeId: 'verb-1', index: 0 }], 'human');
-  assert.deepEqual(project.chain, ['verb-1', 'gain-1', 'delay-1']);
+  project = applyProjectCommands(project, [{ type: 'move_module', nodeId: 'sat-1', index: 0 }], 'human');
+  assert.deepEqual(project.chain, ['sat-1', 'gain-1', 'filter-1']);
 
   project = applyProjectCommands(project, [{ type: 'set_bypass', nodeId: 'gain-1', bypassed: true }], 'human');
   assert.equal(project.nodes['gain-1'].bypassed, true);
   assert.ok(project.chain.includes('gain-1'));
 
-  project = applyProjectCommands(project, [{ type: 'disconnect_module', nodeId: 'delay-1' }], 'human');
-  assert.ok(project.nodes['delay-1']);
-  assert.ok(!project.chain.includes('delay-1'));
+  project = applyProjectCommands(project, [{ type: 'disconnect_module', nodeId: 'filter-1' }], 'human');
+  assert.ok(project.nodes['filter-1']);
+  assert.ok(!project.chain.includes('filter-1'));
 
-  project = applyProjectCommands(project, [{ type: 'connect_module', nodeId: 'delay-1', index: 1 }], 'human');
-  assert.deepEqual(project.chain, ['verb-1', 'delay-1', 'gain-1']);
+  project = applyProjectCommands(project, [{ type: 'connect_module', nodeId: 'filter-1', index: 1 }], 'human');
+  assert.deepEqual(project.chain, ['sat-1', 'filter-1', 'gain-1']);
 
-  project = applyProjectCommands(project, [{ type: 'delete_module', nodeId: 'delay-1' }], 'human');
-  assert.equal(project.nodes['delay-1'], undefined);
-  assert.ok(!project.chain.includes('delay-1'));
+  project = applyProjectCommands(project, [{ type: 'delete_module', nodeId: 'filter-1' }], 'human');
+  assert.equal(project.nodes['filter-1'], undefined);
+  assert.ok(!project.chain.includes('filter-1'));
 });
 
 test('one macro maps across parameters with native ranges and inversion', () => {
   let project = createInitialProject();
   project = applyProjectCommands(project, [
     { type: 'add_module', moduleType: 'saturation', nodeId: 'sat-1' },
-    { type: 'add_module', moduleType: 'compressor', nodeId: 'comp-1' },
+    { type: 'add_module', moduleType: 'gain', nodeId: 'gain-1' },
     { type: 'create_macro', name: 'Warmth', macroId: 'macro-1' },
     { type: 'add_mapping', macroId: 'macro-1', mappingId: 'map-drive', nodeId: 'sat-1', paramId: 'drive', min: 2, max: 18 },
-    { type: 'add_mapping', macroId: 'macro-1', mappingId: 'map-threshold', nodeId: 'comp-1', paramId: 'threshold', min: -36, max: -8, inverted: true },
+    { type: 'add_mapping', macroId: 'macro-1', mappingId: 'map-level', nodeId: 'gain-1', paramId: 'level', min: -6, max: 0, inverted: true },
   ], 'agent');
   assert.equal(getEffectiveParameter(project, 'sat-1', 'drive'), 10);
-  assert.equal(getEffectiveParameter(project, 'comp-1', 'threshold'), -22);
+  assert.equal(getEffectiveParameter(project, 'gain-1', 'level'), -3);
 
   project = applyProjectCommands(project, [{ type: 'set_macro_value', macroId: 'macro-1', value: 1 }], 'human');
   assert.equal(getEffectiveParameter(project, 'sat-1', 'drive'), 18);
-  assert.equal(getEffectiveParameter(project, 'comp-1', 'threshold'), -36);
+  assert.equal(getEffectiveParameter(project, 'gain-1', 'level'), -6);
 
   project = applyProjectCommands(project, [{ type: 'remove_mapping', macroId: 'macro-1', mappingId: 'map-drive' }], 'human');
   assert.equal(project.nodes['sat-1'].params.drive, 18);
@@ -89,13 +93,16 @@ test('a failed batch is atomic and leaves the source untouched', () => {
 
 test('exported project JSON validates as a portable round trip', () => {
   let project = createInitialProject();
-  project = applyProjectCommands(project, [{ type: 'add_module', moduleType: 'high_pass', nodeId: 'hpf-1' }], 'human');
+  project = applyProjectCommands(project, [{ type: 'add_module', moduleType: 'filter', nodeId: 'filter-1' }], 'human');
   const restored = validateProject(JSON.parse(JSON.stringify(project)));
   assert.deepEqual(restored, project);
 });
 
-test('the catalog defines complete bounded parameters for every requested module', () => {
-  assert.equal(MODULE_TYPES.length, 10);
+test('the Faust vertical slice exposes exactly Gain, Filter, and Saturation', () => {
+  assert.deepEqual(MODULE_TYPES, ['gain', 'filter', 'saturation']);
+  assert.deepEqual(MODULE_CATALOG.filter.parameters.map((parameter) => parameter.id), ['mode', 'cutoff', 'resonance']);
+  assert.equal(MODULE_CATALOG.filter.parameters[0].kind, 'choice');
+  assert.deepEqual(MODULE_CATALOG.filter.parameters[0].choices?.map((choice) => choice.label), ['High Pass', 'Low Pass']);
   MODULE_TYPES.forEach((type) => {
     const definition = MODULE_CATALOG[type];
     assert.ok(definition.parameters.length > 0);
@@ -106,4 +113,53 @@ test('the catalog defines complete bounded parameters for every requested module
       assert.ok(parameter.default >= parameter.min && parameter.default <= parameter.max);
     });
   });
+});
+
+test('a stale agent revision cannot overwrite newer human work', () => {
+  const source = createInitialProject();
+  const current = applyProjectCommands(source, [{ type: 'rename_project', name: 'Current' }], 'human');
+  assert.throws(
+    () => applyProjectCommands(current, [{ type: 'add_module', moduleType: 'gain' }], 'agent', source.revision),
+    /stale.*revision|revision.*current/i,
+  );
+  assert.equal(current.name, 'Current');
+  assert.deepEqual(current.chain, []);
+});
+
+test('invalid parameter and macro ranges are rejected without clamping or source mutation', () => {
+  let project = createInitialProject();
+  project = applyProjectCommands(project, [
+    { type: 'add_module', moduleType: 'gain', nodeId: 'gain-1' },
+    { type: 'create_macro', name: 'Level', macroId: 'macro-1' },
+  ], 'human');
+  const snapshot = JSON.stringify(project);
+  assert.throws(() => applyProjectCommands(project, [{ type: 'set_parameter', nodeId: 'gain-1', paramId: 'level', value: 25 }], 'human'), /between -24 and 24/i);
+  assert.throws(() => applyProjectCommands(project, [{ type: 'add_mapping', macroId: 'macro-1', nodeId: 'gain-1', paramId: 'level', min: -30, max: 12 }], 'human'), /between -24 and 24/i);
+  assert.equal(JSON.stringify(project), snapshot);
+});
+
+test('legacy high-pass and low-pass nodes migrate to the unified Filter while unsupported modules remain recoverable', () => {
+  const legacy: LegacyProjectV1 = {
+    schemaVersion: 1,
+    id: 'legacy-project',
+    name: 'Legacy warmth',
+    revision: 7,
+    chain: ['hpf-1', 'delay-1', 'lpf-1'],
+    nodes: {
+      'hpf-1': { id: 'hpf-1', type: 'high_pass', params: { cutoff: 90, resonance: 1.2 }, bypassed: false },
+      'delay-1': { id: 'delay-1', type: 'delay', params: { time: 250, feedback: 20, tone: 5000, mix: 25 }, bypassed: false },
+      'lpf-1': { id: 'lpf-1', type: 'low_pass', params: { cutoff: 8000, resonance: 0.8 }, bypassed: true },
+    },
+    macros: [],
+    activity: [],
+  };
+  const migrated = migrateLegacyProject(legacy);
+  assert.equal(migrated.schemaVersion, 2);
+  assert.deepEqual(migrated.chain, ['hpf-1', 'lpf-1']);
+  assert.equal(migrated.nodes['hpf-1'].type, 'filter');
+  assert.equal(migrated.nodes['hpf-1'].params.mode, 0);
+  assert.equal(migrated.nodes['lpf-1'].params.mode, 1);
+  assert.equal(migrated.nodes['lpf-1'].bypassed, true);
+  assert.deepEqual(migrated.migration?.unsupportedModuleTypes, ['delay']);
+  assert.deepEqual(migrated.migration?.legacyBackup, legacy);
 });

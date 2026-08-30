@@ -1,40 +1,31 @@
 # Audio Effect Builder
 
-A browser-based visual audio-effect builder. The application uses Web Audio for auditioning, a reducer-style project command system for every edit, local browser persistence, portable JSON projects, and optional WebMCP tool registration.
-
-## Start here
-
-- [Architecture](docs/architecture.md)
-- [Project model and commands](docs/project-model.md)
-- [Audio engine](docs/audio-engine.md)
-- [WebMCP integration](docs/webmcp.md)
-- [Development and reproduction](docs/development.md)
+A private, browser-first visual audio-effect builder. The v0.1 vertical slice uses three canonical Faust primitives—Gain, unified Filter, and Saturation—for live Web Audio auditioning and deterministic offline analysis. Human and WebMCP actions share one revisioned project model.
 
 ## Quick start
 
-Requires Node.js 22.13 or newer and npm.
+Requirements: Node.js 22.13 or newer and npm.
 
 ```bash
-npm ci
+npm install
 npm run dev
 ```
 
-Open the local URL printed by the development server.
+`npm run build` recompiles the committed Faust sources into browser WebAssembly before creating the production application.
 
-## Available commands
+## Verification
 
 ```bash
 npm test
-npm run lint
 npx tsc --noEmit
+npm run lint
 npm run build
-npm start
 ```
 
-`npm start` serves a completed production build.
+No API key, database, upload service, or `.env` file is required. Local audio is decoded in memory and is never persisted or included in exported project JSON.
 
-## Local data and credentials
+Start with [the architecture guide](docs/architecture.md), then see the [project contract](docs/project-model.md), [Faust audio engine](docs/audio-engine.md), [WebMCP contract](docs/webmcp.md), and [development guide](docs/development.md).
 
-This repository does not require API keys or environment variables. Project autosaves and selected audition audio remain in the browser; local audio is not part of the source repository. `.openai/hosting.json` contains the existing Sites project identifier and no authentication token.
+## Native boundary
 
-Use `npm test`, `npm run lint`, `npx tsc --noEmit`, and `npm run build` before sharing a change.
+This repository does not claim to produce a validated VST3. It can validate and freeze an exact browser project revision. Native compilation, signing, VST3 validation, state/automation checks, DAW loading, and browser/native parity require a separate controlled service and remain explicitly gated.

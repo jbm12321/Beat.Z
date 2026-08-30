@@ -4,13 +4,13 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { BrowserAudioEngine } from '../audio/BrowserAudioEngine';
+import { renderAndAnalyzeProject, type OfflineComparison } from '../audio/compare';
 import {
-  STORAGE_KEY,
   applyProjectCommands,
   createInitialProject,
   findAvailableMappingTarget,
   makeId,
-  validateProject,
+  parseProject,
 } from '../domain/project';
 import { MODULE_CATALOG, MODULE_TYPES } from '../domain/catalog';
 import {
@@ -19,11 +19,16 @@ import {
   getMappingForParameter,
   getParameterDefinition,
 } from '../domain/parameters';
-import type { MacroControl, MacroMapping, ModuleType, ProjectCommand } from '../domain/types';
+import type { MacroControl, MacroMapping, ModuleType, ProjectCommand, ProjectV2 } from '../domain/types';
 import { registerWebMcpTools } from '../agent/registerWebMcpTools';
-import { historyReducer } from '../state/history';
+import { applyApprovedAgentProposal, authorizeAgentProposal, createAgentProposal, type AgentProposal, type AgentProposalInput } from '../agent/proposals';
+import { freezeProjectRevision, requestPluginBuild, type FrozenProjectRevision, type NativeBuildGate } from '../domain/build';
+import { validateProjectForBuild, type ProjectValidationResult } from '../domain/validation';
+import { historyReducer, redoHistory, undoHistory } from '../state/history';
+import { restorePersistedProject, savePersistedProject } from '../state/persistence';
 import { DropZone } from './DropZone';
 import { AgentDrawer, type AgentStatus } from './AgentDrawer';
+import { AnalysisModal } from './AnalysisModal';
 import { AuditionBar } from './AuditionBar';
 import { MacroSidebar } from './MacroSidebar';
 import { ModuleSidebar } from './ModuleSidebar';
@@ -49,21 +54,36 @@ export function AudioEffectBuilder() {
   const [notice, setNotice] = useState<Notice>(null);
   const [agentStatus, setAgentStatus] = useState<AgentStatus>('checking');
   const [agentHighlights, setAgentHighlights] = useState<string[]>([]);
+  const [proposal, setProposal] = useState<AgentProposal | null>(null);
+  const [comparison, setComparison] = useState<OfflineComparison | null>(null);
+  const [validation, setValidation] = useState<ProjectValidationResult>(() => validateProjectForBuild(project));
+  const [frozenRevision, setFrozenRevision] = useState<FrozenProjectRevision | null>(null);
+  const [buildGate, setBuildGate] = useState<NativeBuildGate | null>(null);
+  const [showAnalysis, setShowAnalysis] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [loudnessMatched, setLoudnessMatched] = useState(false);
   const [titleDraft, setTitleDraft] = useState(project.name);
   const [playing, setPlaying] = useState(false);
   const [sourceName, setSourceName] = useState('Built-in loop');
   const [chainBypass, setChainBypass] = useState(false);
-  const [meters, setMeters] = useState({ input: 0, output: 0 });
+  const [meters, setMeters] = useState({ input: 0, output: 0, inputPeak: 0, outputPeak: 0 });
   const audioRef = useRef<BrowserAudioEngine | null>(null);
+  const proposalRef = useRef<AgentProposal | null>(null);
+  const validationRef = useRef(validation);
+  const frozenRef = useRef<FrozenProjectRevision | null>(null);
+  const buildApprovedRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
 
   projectRef.current = project;
   historyRef.current = history;
+  proposalRef.current = proposal;
+  validationRef.current = validation;
+  frozenRef.current = frozenRevision;
 
-  const commitCommands = useCallback((commands: ProjectCommand[], actor: 'human' | 'agent' = 'human') => {
+  const commitCommands = useCallback((commands: ProjectCommand[], actor: 'human' | 'agent' = 'human', expectedRevision?: number) => {
     try {
-      const next = applyProjectCommands(projectRef.current, commands, actor);
+      const next = applyProjectCommands(projectRef.current, commands, actor, expectedRevision);
       projectRef.current = next;
       dispatchHistory({ type: 'commit', project: next });
       if (actor === 'agent') {
@@ -80,37 +100,36 @@ export function AudioEffectBuilder() {
   }, []);
 
   const undo = useCallback(() => {
-    const previous = historyRef.current.past.at(-1);
-    if (!previous) return;
-    projectRef.current = previous;
-    dispatchHistory({ type: 'undo' });
+    const next = undoHistory(historyRef.current);
+    if (next === historyRef.current) return;
+    historyRef.current = next;
+    projectRef.current = next.present;
+    dispatchHistory({ type: 'sync', state: next });
   }, []);
 
   const redo = useCallback(() => {
-    const next = historyRef.current.future[0];
-    if (!next) return;
-    projectRef.current = next;
-    dispatchHistory({ type: 'redo' });
+    const next = redoHistory(historyRef.current);
+    if (next === historyRef.current) return;
+    historyRef.current = next;
+    projectRef.current = next.present;
+    dispatchHistory({ type: 'sync', state: next });
   }, []);
 
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const restored = validateProject(JSON.parse(stored));
-        projectRef.current = restored;
-        dispatchHistory({ type: 'load', project: restored });
-      }
-    } catch {
-      setNotice({ kind: 'error', text: 'The saved project was invalid, so a clean project was opened.' });
-    } finally {
-      setHydrated(true);
-    }
+    const restored = restorePersistedProject(window.localStorage);
+    projectRef.current = restored.project;
+    dispatchHistory({ type: 'load', project: restored.project });
+    if (restored.warning) setNotice({ kind: restored.source === 'new' ? 'error' : 'success', text: restored.warning });
+    setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
+    try {
+      savePersistedProject(window.localStorage, project);
+    } catch {
+      setNotice({ kind: 'error', text: 'This browser could not save the latest valid project locally.' });
+    }
   }, [hydrated, project]);
 
   useEffect(() => setTitleDraft(project.name), [project.name]);
@@ -119,6 +138,17 @@ export function AudioEffectBuilder() {
     if (selectedNodeId && !project.nodes[selectedNodeId]) setSelectedNodeId(null);
     if (selectedMacroId && !project.macros.some((macro) => macro.id === selectedMacroId)) setSelectedMacroId(null);
   }, [project, selectedMacroId, selectedNodeId]);
+
+  useEffect(() => {
+    const nextValidation = validateProjectForBuild(project);
+    validationRef.current = nextValidation;
+    setValidation(nextValidation);
+    setComparison(null);
+    setLoudnessMatched(false);
+    setBuildGate(null);
+    buildApprovedRef.current = false;
+    audioRef.current?.setLoudnessMatchGain(1);
+  }, [project]);
 
   useEffect(() => {
     if (!notice) return;
@@ -140,17 +170,79 @@ export function AudioEffectBuilder() {
 
   useEffect(() => audioRef.current?.setProject(project), [project]);
 
+  const performAnalysis = useCallback(async () => {
+    const engine = audioRef.current;
+    if (!engine) throw new Error('The browser audio engine is not ready yet.');
+    setAnalyzing(true);
+    try {
+      await engine.ensureContext();
+      const audition = engine.getAuditionSamples();
+      if (!audition) throw new Error('Choose or initialize an audition source before analyzing.');
+      const revision = projectRef.current.revision;
+      const result = await renderAndAnalyzeProject(projectRef.current, audition.samples, audition.sampleRate);
+      if (projectRef.current.revision !== revision) throw new Error('The project changed during analysis. Run the comparison again for the current revision.');
+      const nextValidation = validateProjectForBuild(projectRef.current, result.processed);
+      setComparison(result);
+      setValidation(nextValidation);
+      validationRef.current = nextValidation;
+      return result;
+    } catch (error) {
+      setNotice({ kind: 'error', text: error instanceof Error ? error.message : 'Offline analysis could not be completed.' });
+      throw error;
+    } finally {
+      setAnalyzing(false);
+    }
+  }, []);
+
+  const stageProposal = useCallback((input: AgentProposalInput) => {
+    const next = createAgentProposal(projectRef.current, input);
+    proposalRef.current = next;
+    setProposal(next);
+    setShowAgent(true);
+    return next;
+  }, []);
+
+  const applyProposal = useCallback((proposalId: string, expectedRevision: number) => {
+    const staged = proposalRef.current;
+    if (!staged || staged.id !== proposalId) throw new Error('That agent proposal is no longer available.');
+    if (expectedRevision !== projectRef.current.revision) throw new Error(`Stale revision ${expectedRevision}; current revision is ${projectRef.current.revision}.`);
+    const result = applyApprovedAgentProposal(projectRef.current, staged);
+    projectRef.current = result.project;
+    proposalRef.current = result.proposal;
+    setProposal(result.proposal);
+    dispatchHistory({ type: 'commit', project: result.project });
+    const changedIds = staged.commands.flatMap((command) => ('nodeId' in command && typeof command.nodeId === 'string' ? [command.nodeId] : []));
+    setAgentHighlights(changedIds);
+    window.setTimeout(() => setAgentHighlights([]), 1800);
+    return result.project;
+  }, []);
+
+  const requestBuildForAgent = useCallback((): NativeBuildGate => {
+    const frozen = frozenRef.current;
+    if (!frozen || !buildApprovedRef.current) {
+      return {
+        status: 'unavailable', code: 'approval_required', projectId: projectRef.current.id, revision: frozen?.revision ?? projectRef.current.revision,
+        contentHash: frozen?.contentHash ?? '', message: 'Freeze a validated revision and approve the native build request in the page first.',
+      };
+    }
+    return requestPluginBuild(frozen, true);
+  }, []);
+
   useEffect(() => {
     let unregister: () => void = () => undefined;
     registerWebMcpTools({
       getProject: () => projectRef.current,
-      applyCommands: (commands) => commitCommands(commands, 'agent'),
+      getValidation: () => validationRef.current,
+      stageProposal,
+      applyProposal,
+      analyze: performAnalysis,
+      requestBuild: requestBuildForAgent,
     }).then((registration) => {
       unregister = registration.unregister;
       setAgentStatus(registration.supported ? 'connected' : 'unavailable');
     }).catch(() => setAgentStatus('unavailable'));
     return () => unregister();
-  }, [commitCommands]);
+  }, [applyProposal, performAnalysis, requestBuildForAgent, stageProposal]);
 
   const selectedNode = selectedNodeId ? project.nodes[selectedNodeId] : null;
   const selectedMacro = selectedMacroId ? project.macros.find((macro) => macro.id === selectedMacroId) ?? null : null;
@@ -218,10 +310,75 @@ export function AudioEffectBuilder() {
     }
   };
 
+  const switchToDemoAudio = async () => {
+    const engine = audioRef.current;
+    if (!engine) return;
+    engine.useDemo();
+    setSourceName('Built-in loop');
+    if (engine.isPlaying) await engine.restart();
+    setNotice({ kind: 'success', text: 'Switched back to the built-in audition loop.' });
+  };
+
   const toggleChainBypass = () => {
     const next = !chainBypass;
     setChainBypass(next);
     audioRef.current?.setBypass(next);
+  };
+
+  const toggleLoudnessMatch = () => {
+    if (!comparison) return;
+    const next = !loudnessMatched;
+    setLoudnessMatched(next);
+    audioRef.current?.setLoudnessMatchGain(next ? comparison.loudnessMatch.gain : 1);
+  };
+
+  const validateAndShow = async () => {
+    try {
+      await performAnalysis();
+      setShowAnalysis(true);
+      setNotice({ kind: 'success', text: 'Offline comparison and browser validation are complete.' });
+    } catch {
+      // performAnalysis reports the specific failure.
+    }
+  };
+
+  const freezeCurrentRevision = async () => {
+    try {
+      setAnalyzing(true);
+      const frozen = await freezeProjectRevision(projectRef.current, validationRef.current);
+      if (projectRef.current.revision !== frozen.revision) throw new Error('The project changed while it was being frozen. Validate the current revision again.');
+      frozenRef.current = frozen;
+      setFrozenRevision(frozen);
+      setBuildGate(null);
+      buildApprovedRef.current = false;
+      setNotice({ kind: 'success', text: `Revision ${frozen.revision} is frozen with an exact content fingerprint.` });
+    } catch (error) {
+      setNotice({ kind: 'error', text: error instanceof Error ? error.message : 'The current revision could not be frozen.' });
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const requestNativeBuild = () => {
+    const frozen = frozenRef.current;
+    if (!frozen) return;
+    buildApprovedRef.current = true;
+    const gate = requestPluginBuild(frozen, true);
+    setBuildGate(gate);
+  };
+
+  const approveCurrentProposal = () => {
+    const staged = proposalRef.current;
+    if (!staged) return;
+    try {
+      const approved = authorizeAgentProposal(staged);
+      proposalRef.current = approved;
+      setProposal(approved);
+      applyProposal(approved.id, projectRef.current.revision);
+      setNotice({ kind: 'success', text: 'The approved agent patch was applied as one revision.' });
+    } catch (error) {
+      setNotice({ kind: 'error', text: error instanceof Error ? error.message : 'The proposal could not be applied.' });
+    }
   };
 
   const handleDrop = (event: React.DragEvent, index: number) => {
@@ -257,9 +414,9 @@ export function AudioEffectBuilder() {
   const importProject = async (file: File | undefined) => {
     if (!file) return;
     try {
-      const imported = validateProject(JSON.parse(await file.text()));
-      const next = structuredClone(imported);
-      next.revision += 1;
+      const imported = parseProject(JSON.parse(await file.text()));
+      const next: ProjectV2 = structuredClone(imported);
+      next.revision = projectRef.current.revision + 1;
       next.activity = [{ id: makeId('activity'), actor: 'human' as const, summary: 'Imported project recipe', timestamp: new Date().toISOString() }, ...next.activity].slice(0, 24);
       projectRef.current = next;
       dispatchHistory({ type: 'commit', project: next });
@@ -330,8 +487,13 @@ export function AudioEffectBuilder() {
           <div className="workspace-actions">
             <button type="button" className="icon-button" aria-label="Undo" title="Undo" disabled={!history.past.length} onClick={undo}>↶</button>
             <button type="button" className="icon-button" aria-label="Redo" title="Redo" disabled={!history.future.length} onClick={redo}>↷</button>
+            <button type="button" className={`top-action ${chainBypass ? 'is-active' : ''}`} disabled={project.chain.length === 0} title={project.chain.length === 0 ? 'Add a Faust primitive before comparing.' : 'Switch between dry and processed playback.'} aria-pressed={chainBypass} onClick={toggleChainBypass}>Compare</button>
+            <button type="button" className={`top-action validation-action ${validation.status}`} disabled={analyzing} onClick={() => void validateAndShow()}>
+              <span className="validation-dot" /> {analyzing ? 'Checking…' : 'Validate'}
+            </button>
+            <button type="button" className="top-action" onClick={() => setShowNative(true)}>Build</button>
             <button type="button" className={`agent-button ${showAgent ? 'is-active' : ''}`} onClick={() => setShowAgent((open) => !open)}>
-              <span className={`agent-dot ${agentStatus}`} /> {agentStatus === 'connected' ? 'Agent connected' : 'Agent actions'}
+              <span className={`agent-dot ${agentStatus}`} /> {proposal && proposal.status !== 'applied' ? 'Proposal ready' : agentStatus === 'connected' ? 'Agent connected' : 'Agent actions'}
             </button>
             <button type="button" className="mobile-rail-button controls-toggle" onClick={() => setMobilePanel('macros')}>Controls</button>
             <div className="export-wrap">
@@ -435,7 +597,10 @@ export function AudioEffectBuilder() {
                   </>}
                   <button type="button" className={selectedNode.bypassed ? 'is-active' : ''} onClick={() => commitCommands([{ type: 'set_bypass', nodeId: selectedNode.id, bypassed: !selectedNode.bypassed }])}>{selectedNode.bypassed ? 'Enable' : 'Bypass'}</button>
                   <button type="button" onClick={() => commitCommands([{ type: project.chain.includes(selectedNode.id) ? 'disconnect_module' : 'connect_module', nodeId: selectedNode.id }])}>{project.chain.includes(selectedNode.id) ? 'Disconnect' : 'Reconnect'}</button>
-                  <button type="button" className="danger-action" onClick={() => commitCommands([{ type: 'delete_module', nodeId: selectedNode.id }])}>Delete</button>
+                  <button type="button" className="danger-action" onClick={() => {
+                    const confirmed = window.confirm(`Delete ${MODULE_CATALOG[selectedNode.type].name}? Its macro mappings will also be removed.`);
+                    if (confirmed) commitCommands([{ type: 'delete_module', nodeId: selectedNode.id }]);
+                  }}>Delete</button>
                   <button type="button" aria-label="Close inspector" onClick={() => setSelectedNodeId(null)}>×</button>
                 </div>
               </header>
@@ -446,16 +611,27 @@ export function AudioEffectBuilder() {
                   return (
                     <label className={`parameter-control ${mappingOwner ? 'is-mapped' : ''}`} key={parameter.id}>
                       <span>{parameter.name}<output>{formatParameter(parameter, effective)}</output></span>
-                      <input
-                        type="range"
-                        min={parameter.min}
-                        max={parameter.max}
-                        step={parameter.step}
-                        value={effective}
-                        disabled={Boolean(mappingOwner)}
-                        onChange={(event) => commitCommands([{ type: 'set_parameter', nodeId: selectedNode.id, paramId: parameter.id, value: Number(event.target.value) }])}
-                      />
-                      {mappingOwner && <small>Controlled by {mappingOwner.macro.name}</small>}
+                      {parameter.kind === 'choice' ? (
+                        <select
+                          className="parameter-select"
+                          value={effective}
+                          disabled={Boolean(mappingOwner)}
+                          onChange={(event) => commitCommands([{ type: 'set_parameter', nodeId: selectedNode.id, paramId: parameter.id, value: Number(event.target.value) }])}
+                        >
+                          {parameter.choices?.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}
+                        </select>
+                      ) : (
+                        <input
+                          type="range"
+                          min={parameter.min}
+                          max={parameter.max}
+                          step={parameter.step}
+                          value={effective}
+                          disabled={Boolean(mappingOwner)}
+                          onChange={(event) => commitCommands([{ type: 'set_parameter', nodeId: selectedNode.id, paramId: parameter.id, value: Number(event.target.value) }])}
+                        />
+                      )}
+                      {mappingOwner ? <small>Controlled by {mappingOwner.macro.name}</small> : <small>Faust · smoothed</small>}
                     </label>
                   );
                 })}
@@ -467,21 +643,32 @@ export function AudioEffectBuilder() {
             open={showAgent}
             status={agentStatus}
             activity={project.activity}
+            proposal={proposal}
+            currentRevision={project.revision}
             canUndo={history.past.length > 0}
             onClose={() => setShowAgent(false)}
             onUndo={undo}
+            onApproveProposal={approveCurrentProposal}
+            onDismissProposal={() => { proposalRef.current = null; setProposal(null); }}
           />
         </div>
 
         <AuditionBar
           playing={playing}
           sourceName={sourceName}
+          isDemo={sourceName === 'Built-in loop'}
           meters={meters}
           chainBypass={chainBypass}
+          loudnessMatched={loudnessMatched}
+          canLoudnessMatch={Boolean(comparison)}
+          analyzing={analyzing}
           onTogglePlayback={() => void togglePlayback()}
           onChooseFile={() => fileInputRef.current?.click()}
+          onUseDemo={() => void switchToDemoAudio()}
           onRestart={() => void restartPlayback()}
           onToggleBypass={toggleChainBypass}
+          onToggleLoudnessMatch={toggleLoudnessMatch}
+          onAnalyze={() => void validateAndShow()}
         />
       </section>
 
@@ -499,7 +686,20 @@ export function AudioEffectBuilder() {
         onCommit={(commands) => { commitCommands(commands); }}
       />
 
-      {showNative && <NativeExportModal onClose={() => setShowNative(false)} onExport={exportProject} />}
+      {showAnalysis && comparison ? <AnalysisModal comparison={comparison} validation={validation} onClose={() => setShowAnalysis(false)} /> : null}
+      {showNative ? (
+        <NativeExportModal
+          validation={validation}
+          frozen={frozenRevision}
+          buildGate={buildGate}
+          busy={analyzing}
+          onClose={() => setShowNative(false)}
+          onExport={exportProject}
+          onValidate={() => void validateAndShow()}
+          onFreeze={() => void freezeCurrentRevision()}
+          onRequestBuild={requestNativeBuild}
+        />
+      ) : null}
 
       <input ref={fileInputRef} className="visually-hidden" type="file" accept="audio/*" onChange={(event) => void chooseAudio(event.target.files?.[0])} />
       <input ref={importInputRef} className="visually-hidden" type="file" accept="application/json,.json" onChange={(event) => void importProject(event.target.files?.[0])} />
