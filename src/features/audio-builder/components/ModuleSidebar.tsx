@@ -10,8 +10,8 @@ export function ModuleSidebar({ mobileOpen, onAddModule, onOpenInsert }: {
   return (
     <aside className={`module-sidebar ${mobileOpen ? 'is-mobile-open' : ''}`} aria-label="Module pool">
       <header className="rail-header">
-        <span>Modules</span>
-        <button type="button" className="text-button" onClick={onOpenInsert}>+ Add module</button>
+        <span>Primitives</span>
+        <button type="button" className="text-button" onClick={onOpenInsert}>+ Add</button>
       </header>
       <div className="module-list">
         {MODULE_TYPES.map((moduleType, index) => {
@@ -38,7 +38,7 @@ export function ModuleSidebar({ mobileOpen, onAddModule, onOpenInsert }: {
           );
         })}
       </div>
-      <p className="rail-note">Drag a module onto the signal path, or click to append it.</p>
+      <p className="rail-note">Three canonical Faust building blocks. Drag onto the path or click to append.</p>
     </aside>
   );
 }

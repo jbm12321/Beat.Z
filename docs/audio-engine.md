@@ -1,49 +1,30 @@
-# Browser Audio Engine
+# Faust Browser Audio Engine
 
-## Responsibilities
+## Canonical definitions
 
-`BrowserAudioEngine` owns one browser `AudioContext`, the current audition source, input/output analyzers, whole-chain bypass gains, and the connected DSP module graphs. React owns the project; the engine receives project snapshots through `setProject`.
+`faust/gain.dsp`, `faust/filter.dsp`, and `faust/saturation.dsp` are the canonical v0.1 DSP definitions. The build script pins `@grame/faustwasm` 0.16.6, compiles with Faust 2.86.2, writes static stereo factories to `public/faust`, and records source SHA-256 fingerprints and library versions. The same sources—not Web Audio approximations—are the intended input to a future native build system.
 
-Audio starts only after a user gesture. The built-in source is a deterministic generated stereo loop. A selected local file is decoded inside the browser and replaces that source; its bytes are not uploaded or persisted.
-
-## Signal flow
+## Live signal flow
 
 ```text
-Looping source
-   ↓
-Input analyser
-   ├──────────── dry bypass path ────────────┐
-   └── connected active module graphs ──────┤
-                                             ↓
-                                      Output analyser
-                                             ↓
-                                     Audio destination
+loop/local buffer -> source bus -> input analyser
+                               ├─> dry gain -------------------┐
+                               └─> Faust AudioWorklet modules  ├─> output analyser -> destination
+                                      -> processed gain -------┘
 ```
 
-Whole-chain bypass crossfades between processed and dry paths. Module bypass is part of the project topology and leaves the module visible while removing its processing.
+The looping source node is not recreated for slider changes. Each module is a persistent Faust AudioWorklet instance, and parameter/macro movement calls `setParamValue` on that instance. Smoothing is inside the canonical Faust code. Order, connection, deletion, and module bypass are topology changes; a replacement path is built silently and crossfaded with the previous path before old processors are destroyed.
 
-## Graph lifecycle and slider continuity
+Whole-chain dry/processed switching and loudness matching use short ramps. Local-file switching intentionally creates a new looping source because the source itself changed.
 
-`projectTopologyKey` includes connected node order, module type, and module bypass state. If that key changes, the engine rewires the chain with short gain ramps. Parameter and macro value changes do not change the key: each persistent module graph receives an in-place `update` call.
+## Modules
 
-Native `AudioParam` values are smoothed rather than assigned discontinuously. Reverb impulse regeneration is delayed and crossfaded because rebuilding a convolution buffer on every slider input event would interrupt playback. Wet/dry effects use normalized mix gains so their combined gain does not exceed unity.
+- Gain: `−24…+24 dB`; level smoothing occurs in dB before conversion, so 0 dB initializes at unity rather than fading from silence.
+- Filter: one stable node runs resonant HP and LP branches with smoothed cutoff/Q and a smoothed mode crossfade.
+- Saturation: soft clipping, tone low-pass, and continuous dry/wet interpolation live inside Faust.
 
-These rules are important when extending the engine: slider motion must not recreate the full source or chain graph.
+## Offline rendering and analysis
 
-## Module implementations
+Offline comparison uses `FaustMonoDspGenerator.createOfflineProcessor` with the same committed factories. It reports peak and RMS/average dBFS, stereo activity, clipping at absolute sample `>= 1`, invalid non-finite samples, and silence below `−80 dBFS`. Loudness matching calculates a bounded comparison-only gain and never mutates the project.
 
-- Gain: `GainNode`, converting dB to linear gain.
-- High Pass / Low Pass: `BiquadFilterNode` with cutoff and Q.
-- Parametric EQ: peaking `BiquadFilterNode` with frequency, gain, and Q.
-- Compressor: `DynamicsCompressorNode` plus makeup gain.
-- Saturation: pre-gain, `WaveShaperNode`, tone filter, and dry/wet mix.
-- Delay: `DelayNode`, feedback gain/filter loop, and dry/wet mix.
-- Reverb: generated stereo impulse, `ConvolverNode`, tone filter, and dry/wet mix.
-- Chorus: oscillator-modulated delay with depth and dry/wet mix.
-- Limiter: fast, high-ratio `DynamicsCompressorNode` using ceiling and release.
-
-Mapped parameters are resolved through `getEffectiveParameter`, so the audio engine hears the same values the inspector and macro interface display.
-
-## Meters and cleanup
-
-Input and output meters sample analyser data and expose normalized values to the audition bar. Disposing the engine stops the source, module oscillators, animation-related resources, and closes the audio context.
+Tests render the actual processors at 44.1, 48, and 96 kHz. They verify source/metadata fingerprints, stereo I/O, Gain unity/linking, Filter mode behavior, Saturation dry equivalence, finite extremes, and non-silent output.

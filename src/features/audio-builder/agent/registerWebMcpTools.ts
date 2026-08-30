@@ -1,17 +1,18 @@
-import { MODULE_CATALOG } from '../domain/catalog';
-import type { ModuleType, ProjectCommand, ProjectV1 } from '../domain/types';
+import { MODULE_CATALOG, type ProjectCommand, type ProjectV2 } from '../domain/project.ts';
+import type { ProjectValidationResult } from '../domain/validation.ts';
+import type { NativeBuildGate } from '../domain/build.ts';
+import type { OfflineComparison } from '../audio/compare.ts';
+import type { AgentProposal, AgentProposalInput } from './proposals.ts';
 
 type JsonSchema = Record<string, unknown>;
-type ToolResult = { content: Array<{ type: 'text'; text: string }>; structuredContent?: unknown; isError?: boolean };
-type WebMcpTool = {
+export type ToolResult = { content: Array<{ type: 'text'; text: string }>; structuredContent?: unknown; isError?: boolean };
+export type WebMcpTool = {
   name: string;
   description: string;
   inputSchema?: JsonSchema;
   execute: (input: Record<string, unknown>) => ToolResult | Promise<ToolResult>;
 };
-type ModelContext = {
-  registerTool: (tool: WebMcpTool, options?: { signal?: AbortSignal }) => Promise<void>;
-};
+type ModelContext = { registerTool: (tool: WebMcpTool, options?: { signal?: AbortSignal }) => Promise<void> };
 
 declare global {
   interface Document {
@@ -20,194 +21,127 @@ declare global {
 }
 
 export interface WebMcpAdapter {
-  getProject: () => ProjectV1;
-  applyCommands: (commands: ProjectCommand[]) => ProjectV1;
+  getProject: () => ProjectV2;
+  getValidation: () => ProjectValidationResult;
+  stageProposal: (input: AgentProposalInput) => AgentProposal;
+  applyProposal: (proposalId: string, expectedRevision: number) => ProjectV2;
+  analyze: () => Promise<OfflineComparison>;
+  requestBuild: () => Promise<NativeBuildGate> | NativeBuildGate;
 }
 
 const objectSchema = (properties: Record<string, unknown>, required: string[] = []): JsonSchema => ({
-  type: 'object',
-  properties,
-  required,
-  additionalProperties: false,
+  type: 'object', properties, required, additionalProperties: false,
 });
 
-const textResult = (text: string, structuredContent?: unknown): ToolResult => ({
-  content: [{ type: 'text', text }],
-  structuredContent,
-});
-
-const mutationResult = (project: ProjectV1) => {
-  const activity = project.activity[0];
-  return textResult(activity?.summary ?? 'Project updated.', {
-    revision: project.revision,
-    summary: activity?.summary ?? 'Project updated.',
-    projectName: project.name,
-  });
-};
+const textResult = (text: string, structuredContent?: unknown): ToolResult => ({ content: [{ type: 'text', text }], structuredContent });
 
 function asString(value: unknown, field: string) {
-  if (typeof value !== 'string') throw new Error(`${field} must be a string.`);
+  if (typeof value !== 'string' || !value.trim()) throw new Error(`${field} must be a non-empty string.`);
   return value;
 }
 
-function asNumber(value: unknown, field: string) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error(`${field} must be a finite number.`);
-  return value;
+function asRevision(value: unknown) {
+  if (!Number.isInteger(value) || Number(value) < 0) throw new Error('expectedRevision must be a non-negative integer.');
+  return Number(value);
 }
 
-function optionalNumber(value: unknown, field: string) {
-  return value === undefined ? undefined : asNumber(value, field);
-}
-
-function toolFailure(error: unknown): ToolResult {
-  const message = error instanceof Error ? error.message : 'The requested project change could not be applied.';
-  return { content: [{ type: 'text', text: message }], structuredContent: { error: message }, isError: true };
+function failure(error: unknown, currentRevision: number): ToolResult {
+  const message = error instanceof Error ? error.message : 'The requested audio-project action could not be completed.';
+  return { content: [{ type: 'text', text: message }], structuredContent: { error: message, currentRevision }, isError: true };
 }
 
 export async function registerWebMcpTools(adapter: WebMcpAdapter) {
+  if (typeof document === 'undefined') return { supported: false, unregister: () => undefined, toolNames: [] as string[] };
   const modelContext = document.modelContext;
-  if (!modelContext?.registerTool) return { supported: false, unregister: () => undefined };
+  if (!modelContext?.registerTool) return { supported: false, unregister: () => undefined, toolNames: [] as string[] };
   const controller = new AbortController();
-  const moduleTypes = Object.keys(MODULE_CATALOG);
 
   const safely = (execute: WebMcpTool['execute']): WebMcpTool['execute'] => async (input) => {
     try {
       return await execute(input);
     } catch (error) {
-      return toolFailure(error);
+      return failure(error, adapter.getProject().revision);
     }
+  };
+
+  const commandSchema = {
+    type: 'array', minItems: 1, maxItems: 50,
+    items: { type: 'object', required: ['type'], properties: { type: { type: 'string' } }, additionalProperties: true },
   };
 
   const tools: WebMcpTool[] = [
     {
       name: 'inspect-audio-project',
-      description: 'Returns the current visual audio-effect project, including connected and disconnected modules, parameter values, macros, and revision.',
+      description: 'Inspect the current Faust audio-effect project, revision, macros, recent activity, and latest validation state without changing anything.',
       inputSchema: objectSchema({}),
-      execute: () => textResult('Current audio-effect project.', adapter.getProject()),
+      execute: () => textResult('Current Faust audio-effect project.', { project: adapter.getProject(), validation: adapter.getValidation() }),
     },
     {
-      name: 'list-audio-modules',
-      description: 'Lists every DSP module and its valid parameter IDs, ranges, units, defaults, and scaling.',
+      name: 'list-audio-primitives',
+      description: 'List the supported Faust primitives, parameter ranges, scaling, choices, canonical source fingerprints, and macro limits.',
       inputSchema: objectSchema({}),
-      execute: () => textResult('Available DSP module catalog.', MODULE_CATALOG),
+      execute: () => textResult('Supported Faust v0.1 primitives.', { primitives: MODULE_CATALOG, limits: { macros: 8, parameterOwnership: 'one-macro-per-parameter' } }),
     },
     {
-      name: 'add-audio-module',
-      description: 'Adds one DSP module to the signal chain at an optional zero-based position.',
+      name: 'propose-audio-project-patch',
+      description: 'Stage an atomic project patch with a musical explanation. This does not mutate the project; a human must explicitly approve it in the page.',
       inputSchema: objectSchema({
-        moduleType: { type: 'string', enum: moduleTypes },
-        index: { type: 'integer', minimum: 0 },
-      }, ['moduleType']),
-      execute: safely((input) => mutationResult(adapter.applyCommands([{
-        type: 'add_module',
-        moduleType: asString(input.moduleType, 'moduleType') as ModuleType,
-        index: optionalNumber(input.index, 'index'),
-      }]))),
-    },
-    {
-      name: 'update-audio-module',
-      description: 'Updates one module’s DSP parameters and/or bypass state using catalog parameter IDs.',
-      inputSchema: objectSchema({
-        nodeId: { type: 'string' },
-        parameters: { type: 'object', additionalProperties: { type: 'number' } },
-        bypassed: { type: 'boolean' },
-      }, ['nodeId']),
+        expectedRevision: { type: 'integer', minimum: 0 },
+        summary: { type: 'string', minLength: 1, maxLength: 120 },
+        musicalPurpose: { type: 'string', minLength: 1, maxLength: 360 },
+        commands: commandSchema,
+      }, ['expectedRevision', 'summary', 'musicalPurpose', 'commands']),
       execute: safely((input) => {
-        const nodeId = asString(input.nodeId, 'nodeId');
-        const commands: ProjectCommand[] = [];
-        if (input.parameters && typeof input.parameters === 'object' && !Array.isArray(input.parameters)) {
-          Object.entries(input.parameters as Record<string, unknown>).forEach(([paramId, value]) => commands.push({ type: 'set_parameter', nodeId, paramId, value: asNumber(value, paramId) }));
-        }
-        if (typeof input.bypassed === 'boolean') commands.push({ type: 'set_bypass', nodeId, bypassed: input.bypassed });
-        if (!commands.length) throw new Error('Provide at least one parameter or bypass state.');
-        return mutationResult(adapter.applyCommands(commands));
-      }),
-    },
-    {
-      name: 'arrange-audio-module',
-      description: 'Moves, disconnects, reconnects, or permanently deletes one DSP module.',
-      inputSchema: objectSchema({
-        nodeId: { type: 'string' },
-        action: { type: 'string', enum: ['move', 'disconnect', 'connect', 'delete'] },
-        index: { type: 'integer', minimum: 0 },
-      }, ['nodeId', 'action']),
-      execute: safely((input) => {
-        const nodeId = asString(input.nodeId, 'nodeId');
-        const action = asString(input.action, 'action');
-        const index = optionalNumber(input.index, 'index');
-        let command: ProjectCommand;
-        if (action === 'move') {
-          if (index === undefined) throw new Error('Moving a module requires an index.');
-          command = { type: 'move_module', nodeId, index };
-        } else if (action === 'disconnect') command = { type: 'disconnect_module', nodeId };
-        else if (action === 'connect') command = { type: 'connect_module', nodeId, index };
-        else if (action === 'delete') command = { type: 'delete_module', nodeId };
-        else throw new Error(`Unknown arrangement action: ${action}`);
-        return mutationResult(adapter.applyCommands([command]));
-      }),
-    },
-    {
-      name: 'create-plugin-control',
-      description: 'Creates one user-facing normalized macro control. A plugin can expose at most eight controls.',
-      inputSchema: objectSchema({ name: { type: 'string', minLength: 1, maxLength: 24 } }),
-      execute: safely((input) => mutationResult(adapter.applyCommands([{ type: 'create_macro', name: input.name === undefined ? undefined : asString(input.name, 'name') }]))),
-    },
-    {
-      name: 'update-plugin-control',
-      description: 'Renames a macro control and/or sets its normalized value from 0 to 1.',
-      inputSchema: objectSchema({
-        macroId: { type: 'string' },
-        name: { type: 'string', minLength: 1, maxLength: 24 },
-        value: { type: 'number', minimum: 0, maximum: 1 },
-      }, ['macroId']),
-      execute: safely((input) => {
-        const macroId = asString(input.macroId, 'macroId');
-        const commands: ProjectCommand[] = [];
-        if (input.name !== undefined) commands.push({ type: 'rename_macro', macroId, name: asString(input.name, 'name') });
-        if (input.value !== undefined) commands.push({ type: 'set_macro_value', macroId, value: asNumber(input.value, 'value') });
-        if (!commands.length) throw new Error('Provide a macro name or value.');
-        return mutationResult(adapter.applyCommands(commands));
-      }),
-    },
-    {
-      name: 'map-plugin-control',
-      description: 'Maps a macro to one DSP parameter with native-unit minimum and maximum values and optional inversion.',
-      inputSchema: objectSchema({
-        macroId: { type: 'string' }, nodeId: { type: 'string' }, paramId: { type: 'string' },
-        min: { type: 'number' }, max: { type: 'number' }, inverted: { type: 'boolean' },
-      }, ['macroId', 'nodeId', 'paramId', 'min', 'max']),
-      execute: safely((input) => mutationResult(adapter.applyCommands([{
-        type: 'add_mapping',
-        macroId: asString(input.macroId, 'macroId'),
-        nodeId: asString(input.nodeId, 'nodeId'),
-        paramId: asString(input.paramId, 'paramId'),
-        min: asNumber(input.min, 'min'),
-        max: asNumber(input.max, 'max'),
-        inverted: Boolean(input.inverted),
-      }]))),
-    },
-    {
-      name: 'delete-plugin-control',
-      description: 'Deletes one macro control and freezes every mapped DSP parameter at its current effective value.',
-      inputSchema: objectSchema({ macroId: { type: 'string' } }, ['macroId']),
-      execute: safely((input) => mutationResult(adapter.applyCommands([{ type: 'delete_macro', macroId: asString(input.macroId, 'macroId') }]))),
-    },
-    {
-      name: 'apply-audio-project-batch',
-      description: 'Atomically applies an ordered batch of Audio Effect Builder project commands. The entire batch is rejected when any command is invalid.',
-      inputSchema: objectSchema({
-        commands: {
-          type: 'array', minItems: 1, maxItems: 50,
-          items: { type: 'object', required: ['type'], properties: { type: { type: 'string' } }, additionalProperties: true },
-        },
-      }, ['commands']),
-      execute: safely((input) => {
+        const expectedRevision = asRevision(input.expectedRevision);
+        const project = adapter.getProject();
+        if (expectedRevision !== project.revision) throw new Error(`Stale revision ${expectedRevision}; current revision is ${project.revision}.`);
         if (!Array.isArray(input.commands)) throw new Error('commands must be an array.');
-        return mutationResult(adapter.applyCommands(input.commands as ProjectCommand[]));
+        const proposal = adapter.stageProposal({
+          summary: asString(input.summary, 'summary'),
+          musicalPurpose: asString(input.musicalPurpose, 'musicalPurpose'),
+          commands: input.commands as ProjectCommand[],
+        });
+        return textResult('Proposal staged for human review. The project was not changed.', { proposal, revision: project.revision, requiresHumanApproval: true });
+      }),
+    },
+    {
+      name: 'apply-approved-audio-project-patch',
+      description: 'Apply a previously staged patch only after the page records explicit human approval. The expected revision prevents stale writes.',
+      inputSchema: objectSchema({ proposalId: { type: 'string' }, expectedRevision: { type: 'integer', minimum: 0 } }, ['proposalId', 'expectedRevision']),
+      execute: safely((input) => {
+        const project = adapter.applyProposal(asString(input.proposalId, 'proposalId'), asRevision(input.expectedRevision));
+        return textResult(project.activity[0]?.summary ?? 'Approved agent patch applied.', { revision: project.revision, activity: project.activity[0] });
+      }),
+    },
+    {
+      name: 'render-and-analyze-audio-project',
+      description: 'Render the current project offline with its selected in-memory audition source and report dry, processed, loudness-matched, clipping, silence, and stereo results.',
+      inputSchema: objectSchema({}),
+      execute: safely(async () => {
+        const comparison = await adapter.analyze();
+        return textResult(comparison.plainLanguageSummary.join(' '), comparison);
+      }),
+    },
+    {
+      name: 'inspect-audio-project-validation',
+      description: 'Inspect the current project validation result and exact Faust definition, compiler, library, and source versions.',
+      inputSchema: objectSchema({}),
+      execute: () => {
+        const validation = adapter.getValidation();
+        return textResult(`Validation is ${validation.status} for revision ${validation.revision}.`, validation);
+      },
+    },
+    {
+      name: 'request-audio-plugin-build',
+      description: 'Request native VST3 preparation for the exact approved frozen revision. The browser never fabricates an artifact when no native service is configured.',
+      inputSchema: objectSchema({}),
+      execute: safely(async () => {
+        const result = await adapter.requestBuild();
+        return textResult(result.message, result);
       }),
     },
   ];
 
   await Promise.all(tools.map((tool) => modelContext.registerTool(tool, { signal: controller.signal })));
-  return { supported: true, unregister: () => controller.abort() };
+  return { supported: true, unregister: () => controller.abort(), toolNames: tools.map((tool) => tool.name) };
 }

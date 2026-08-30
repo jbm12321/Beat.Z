@@ -1,0 +1,43 @@
+{
+  "effectDefinition": "audio-effect-builder-faust",
+  "definitionVersion": "0.1.0",
+  "faustWasmVersion": "0.16.6",
+  "faustCompilerVersion": "2.86.2",
+  "libraries": {
+    "basics": "1.23.0",
+    "filters": "1.7.1",
+    "maths": "2.9.0",
+    "platform": "1.3.0",
+    "signals": "1.6.0"
+  },
+  "generatedAt": "deterministic-build",
+  "modules": {
+    "gain": {
+      "definitionVersion": "0.1.0",
+      "source": "faust/gain.dsp",
+      "sourceSha256": "caca77ad2ac86cf0ef26f62a22d1d0c62a7d4b7f86c6c4e3fef77e9d19fbd35d",
+      "wasm": "/faust/gain/dsp-module.wasm",
+      "metadata": "/faust/gain/dsp-meta.json",
+      "inputs": 2,
+      "outputs": 2
+    },
+    "filter": {
+      "definitionVersion": "0.1.0",
+      "source": "faust/filter.dsp",
+      "sourceSha256": "873e26b2ca7ac309783f154f4becd1fc479d046cd295d0ae732aa81cfbc931eb",
+      "wasm": "/faust/filter/dsp-module.wasm",
+      "metadata": "/faust/filter/dsp-meta.json",
+      "inputs": 2,
+      "outputs": 2
+    },
+    "saturation": {
+      "definitionVersion": "0.1.0",
+      "source": "faust/saturation.dsp",
+      "sourceSha256": "238cd373e164ba480c6367ae7ef1c071205346361c7f597d6c1dc3878af0a75b",
+      "wasm": "/faust/saturation/dsp-module.wasm",
+      "metadata": "/faust/saturation/dsp-meta.json",
+      "inputs": 2,
+      "outputs": 2
+    }
+  }
+}

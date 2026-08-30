@@ -7,12 +7,14 @@
   },
   "scripts": {
     "dev": "vinext dev",
-    "build": "vinext build",
+    "build": "npm run faust:compile && vinext build",
+    "faust:compile": "node scripts/compile-faust.mjs",
     "start": "vinext start",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "test": "node --test tests/*.test.ts"
   },
   "dependencies": {
+    "@grame/faustwasm": "0.16.6",
     "next": "16.2.6",
     "react": "19.2.6",
     "react-dom": "19.2.6"

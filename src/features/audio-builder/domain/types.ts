@@ -1,12 +1,17 @@
 export type {
   ActivityItem,
   DspNode,
+  EngineProvenance,
+  LegacyProjectV1,
   MacroControl,
   MacroMapping,
   ModuleDefinition,
   ModuleType,
+  ParameterChoice,
   ParameterDefinition,
+  ParameterKind,
   ParameterScale,
   ProjectCommand,
   ProjectV1,
+  ProjectV2,
 } from './project.ts';

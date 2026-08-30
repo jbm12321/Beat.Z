@@ -1,11 +1,7 @@
 # Documentation
 
-This folder describes the structure and contracts of Audio Effect Builder.
-
-- [architecture.md](architecture.md) explains the feature folders, dependency direction, and runtime data flow.
-- [project-model.md](project-model.md) documents `ProjectV1`, commands, history, persistence, macros, and import/export.
-- [audio-engine.md](audio-engine.md) explains browser playback, DSP graphs, live parameter updates, and metering.
-- [webmcp.md](webmcp.md) documents structured agent actions and browser fallback behavior.
-- [development.md](development.md) contains setup, validation, and safe extension guidance.
-
-The documentation follows the implementation in `src/features/audio-builder`. The `app` folder is intentionally small and contains only the framework entry point, document metadata, and global styles.
+- [Architecture](architecture.md): folders, dependency direction, and runtime data flow.
+- [Project model](project-model.md): ProjectV2, migration, commands, macros, history, and persistence.
+- [Audio engine](audio-engine.md): canonical Faust definitions, browser processing, comparison, and safety analysis.
+- [WebMCP](webmcp.md): proposal/approval tools, revision safety, and fallback behavior.
+- [Development](development.md): setup, generation, verification, and extension rules.
