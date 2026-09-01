@@ -11,6 +11,7 @@ find_package(iPlug2 REQUIRED)
 
 iplug_add_plugin(BeatZGeneratedPlugin
   SOURCES BeatZGeneratedPlugin.cpp BeatZGeneratedPlugin.h BeatZStaticChain.hpp
+  RESOURCES ${IPLUG2_DIR}/Examples/IPlugEffect/resources/fonts/Roboto-Regular.ttf
   FORMATS VST3
   DEFINES SAMPLE_TYPE_FLOAT
 )

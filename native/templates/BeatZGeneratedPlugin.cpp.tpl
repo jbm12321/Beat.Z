@@ -2,6 +2,13 @@
 
 #define VST3_PROCESSOR_UID {{VST3_PROCESSOR_UID}}
 #define VST3_CONTROLLER_UID {{VST3_CONTROLLER_UID}}
+#if defined OS_MAC
+// iPlug's default BUNDLE_ID is derived from the product name. Beat.Z assigns a
+// stable per-project bundle identifier instead, so graphics resources must use
+// that same identifier when locating the bundled UI font.
+#undef BUNDLE_ID
+#define BUNDLE_ID BUNDLE_IDENTIFIER
+#endif
 #include "IPlug_include_in_plug_src.h"
 #include "IControls.h"
 
@@ -18,21 +25,74 @@ BeatZGeneratedPlugin::BeatZGeneratedPlugin(const iplug::InstanceInfo& info)
   mLayoutFunc = [&](IGraphics* pGraphics) {
     const IColor shell(255, 216, 214, 210);
     const IColor display(255, 16, 18, 18);
+    const IColor ink(255, 30, 31, 30);
+    const IColor mutedInk(255, 142, 145, 141);
+    const IColor controlFace(255, 45, 47, 46);
+    const IColor controlPointer(255, 238, 236, 230);
     const IColor accent(255, 255, 59, 24);
     const IVStyle knobStyle = DEFAULT_STYLE
-      .WithColor(kFG, IColor(255, 45, 47, 46))
+      .WithColor(kBG, shell)
+      .WithColor(kFG, controlFace)
       .WithColor(kPR, accent)
-      .WithColor(kX1, IColor(255, 235, 233, 228))
-      .WithLabelText(DEFAULT_LABEL_TEXT.WithFGColor(IColor(255, 30, 31, 30)).WithSize(12.f))
-      .WithValueText(DEFAULT_VALUE_TEXT.WithFGColor(display).WithSize(16.f));
+      .WithColor(kFR, controlPointer)
+      .WithColor(kHL, IColor(80, 255, 59, 24))
+      .WithColor(kSH, IColor(80, 0, 0, 0))
+      .WithColor(kX1, accent)
+      .WithDrawFrame(true)
+      .WithDrawShadows(true)
+      .WithEmboss(false)
+      .WithRoundness(1.f)
+      .WithFrameThickness(1.5f)
+      .WithShadowOffset(2.f)
+      .WithWidgetFrac(0.72f)
+      .WithShowLabel(true)
+      .WithShowValue(true)
+      .WithLabelText(DEFAULT_LABEL_TEXT.WithFGColor(ink).WithSize(13.f))
+      .WithValueText(DEFAULT_VALUE_TEXT.WithFGColor(ink).WithSize(14.f));
+    const IVStyle switchStyle = DEFAULT_STYLE
+      .WithColor(kBG, shell)
+      .WithColor(kFG, controlFace)
+      .WithColor(kPR, accent)
+      .WithColor(kFR, ink)
+      .WithColor(kHL, IColor(80, 255, 59, 24))
+      .WithDrawFrame(true)
+      .WithDrawShadows(false)
+      .WithEmboss(false)
+      .WithRoundness(0.15f)
+      .WithFrameThickness(1.5f)
+      .WithWidgetFrac(0.62f)
+      .WithShowLabel(true)
+      .WithShowValue(true)
+      .WithLabelText(DEFAULT_LABEL_TEXT.WithFGColor(ink).WithSize(12.f))
+      .WithValueText(DEFAULT_VALUE_TEXT.WithFGColor(controlPointer).WithSize(12.f));
+    const IVStyle moduleStyle = DEFAULT_STYLE
+      .WithColor(kBG, shell)
+      .WithColor(kFR, ink)
+      .WithDrawFrame(true)
+      .WithDrawShadows(false)
+      .WithEmboss(false)
+      .WithRoundness(0.08f)
+      .WithFrameThickness(2.f)
+      .WithShowLabel(true)
+      .WithLabelText(DEFAULT_LABEL_TEXT.WithFGColor(ink).WithSize(15.f));
+    if (!pGraphics->LoadFont("Roboto-Regular", ROBOTO_FN)) {
+#if defined OS_MAC
+      // Keep every label readable even if a host cannot resolve bundle resources.
+      pGraphics->LoadFont("Roboto-Regular", "Helvetica", ETextStyle::Normal);
+#endif
+    }
+    pGraphics->EnableMouseOver(true);
     pGraphics->AttachPanelBackground(shell);
-    const IRECT bounds = pGraphics->GetBounds().GetPadded(-20.f);
-    const IRECT displayPanel = bounds.GetFromTop(112.f);
-    pGraphics->AttachControl(new IVPanelControl(displayPanel, "", DEFAULT_STYLE.WithColor(kFG, display).WithDrawFrame(false).WithEmboss(false)));
-    pGraphics->AttachControl(new ITextControl(displayPanel.GetFromTLHC(displayPanel.W() - 28.f, 38.f).GetTranslated(14.f, 14.f), PLUG_NAME, IText(25.f, EAlign::Near, COLOR_WHITE)));
-    pGraphics->AttachControl(new ITextControl(displayPanel.GetFromBLHC(displayPanel.W() - 28.f, 22.f).GetTranslated(14.f, -14.f), "BEAT.Z  •  EFFECT CHAIN", IText(12.f, EAlign::Near, accent)));
-    const IRECT controlGrid = bounds.GetFromBottom(bounds.H() - 132.f).GetPadded(-8.f);
-    constexpr int controlRows = {{CONTROL_ROWS}};
+    const IRECT bounds = pGraphics->GetBounds().GetPadded(-18.f);
+    const IRECT displayPanel = bounds.GetFromTop(108.f);
+    pGraphics->AttachControl(new IVPanelControl(displayPanel, "", DEFAULT_STYLE.WithColor(kFG, display).WithDrawFrame(false).WithDrawShadows(false).WithEmboss(false).WithRoundness(0.04f)));
+    pGraphics->AttachControl(new IVPanelControl(displayPanel.GetFromLeft(6.f), "", DEFAULT_STYLE.WithColor(kFG, accent).WithDrawFrame(false).WithDrawShadows(false).WithEmboss(false)));
+    const IRECT titleArea = displayPanel.GetPadded(-18.f).GetReducedFromRight(238.f);
+    pGraphics->AttachControl(new ITextControl(titleArea.GetFromTop(48.f), PLUG_NAME, IText(27.f, EAlign::Near, COLOR_WHITE)));
+    pGraphics->AttachControl(new ITextControl(titleArea.GetFromBottom(28.f), "BEAT.Z  /  FROZEN EFFECT CHAIN", IText(12.f, EAlign::Near, accent)));
+    const IRECT editorSummary = displayPanel.GetFromRight(220.f).GetPadded(-14.f);
+    pGraphics->AttachControl(new ITextControl(editorSummary, "{{EDITOR_SUMMARY}}", IText(12.f, EAlign::Center, mutedInk)));
+    const IRECT controlDeck = bounds.GetReducedFromTop(126.f).GetPadded(-2.f);
 {{EDITOR_CONTROLS}}
   };
 #endif

@@ -54,7 +54,9 @@ export function createParityScenarios(parameters) {
     { id: 'defaults', values: defaults },
     ...parameters.flatMap((parameter, parameterIndex) => (parameter.definition.choices ? [0, 1] : [0, 0.5, 1]).map((normalized) => {
       const values = [...defaults];
-      values[parameterIndex] = parameter.definition.min + ((parameter.definition.max - parameter.definition.min) * normalized);
+      values[parameterIndex] = parameter.definition.scale === 'log'
+        ? parameter.definition.min * ((parameter.definition.max / parameter.definition.min) ** normalized)
+        : parameter.definition.min + ((parameter.definition.max - parameter.definition.min) * normalized);
       return { id: `parameter-${parameterIndex}-${String(normalized).replace('.', '_')}`, values };
     })),
   ];
@@ -70,6 +72,9 @@ function flattenedNativeProject(request, parameters, values) {
 }
 
 function normalizeNativeParameter(parameter, value) {
+  if (parameter.definition.scale === 'log') {
+    return Math.log(value / parameter.definition.min) / Math.log(parameter.definition.max / parameter.definition.min);
+  }
   return (value - parameter.definition.min) / (parameter.definition.max - parameter.definition.min);
 }
 
