@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import test from 'node:test';
 import { saveVerifiedVst3Bundle } from '../lib/artifact.mjs';
-import { deriveNativeIdentity, defaultExportRoot } from '../lib/generation.mjs';
+import { createNativeGenerationPlan, deriveNativeIdentity, defaultExportRoot, materializeNativeTemplates } from '../lib/generation.mjs';
 import { compareStereoParity, createParityScenarios } from '../lib/parity.mjs';
 import { publicArtifactDetails } from '../lib/publish.mjs';
 import { loadToolchainLock, validateNativeBuildRequest } from '../lib/spec.mjs';
@@ -72,6 +72,29 @@ test('the generated audio callback never resizes its buffers', async () => {
   const template = await readFile(new URL('../templates/BeatZStaticChain.hpp.tpl', import.meta.url), 'utf8');
   const processBody = template.slice(template.indexOf('void process'));
   assert.doesNotMatch(processBody, /\.resize\s*\(/u);
+});
+
+test('native exports expose every active effect parameter in an editable VST3 editor', async () => {
+  const project = applyProjectCommands(createInitialProject(), [
+    { type: 'add_module', moduleType: 'saturation', nodeId: 'saturation-1' },
+    { type: 'add_module', moduleType: 'filter', nodeId: 'filter-1' },
+  ], 'human');
+  const signal = Float32Array.from({ length: 4096 }, (_, index) => Math.sin(index * 0.1) * 0.2);
+  const analysis = analyzeStereo([signal, signal], 48000);
+  const request = await createNativeBuildRequest(await freezeProjectRevision(project, validateProjectForBuild(project, analysis)));
+  const root = await mkdtemp(join(tmpdir(), 'beatz-native-ui-test-'));
+  const plan = await createNativeGenerationPlan(request, await loadToolchainLock(), { workspaceRoot: root });
+  const files = await materializeNativeTemplates(plan);
+  const [config, cmake, source, chain] = await Promise.all([
+    readFile(files.config, 'utf8'), readFile(files.cmake, 'utf8'), readFile(files.pluginSource, 'utf8'), readFile(files.staticChain, 'utf8'),
+  ]);
+
+  assert.match(config, /PLUG_HAS_UI 1/u);
+  assert.doesNotMatch(cmake, /UI NONE|NO_IGRAPHICS/u);
+  assert.match(source, /Saturation 1 Drive/u);
+  assert.match(source, /Filter 1 Cutoff/u);
+  assert.match(chain, /void setParameter\(int parameterIndex, float value\)/u);
+  assert.doesNotMatch(chain, /void setMacro/u);
 });
 
 test('verified bundles are copied atomically without a Beat.Z subfolder', async () => {

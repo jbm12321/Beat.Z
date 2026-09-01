@@ -35,6 +35,24 @@ function fuidMacro(hex) {
   return hex.match(/.{8}/gu).map((part) => `0x${part}`).join(', ');
 }
 
+function effectiveParameterValue(request, node, parameterId, definition) {
+  const owner = request.dsp.macros
+    .flatMap((macro) => macro.mappings.map((mapping) => ({ macro, mapping })))
+    .find(({ mapping }) => mapping.nodeId === node.id && mapping.paramId === parameterId);
+  if (!owner) return node.params[parameterId];
+  const normalized = owner.mapping.inverted ? 1 - owner.macro.value : owner.macro.value;
+  if (definition.scale === 'log') return definition.min * ((definition.max / definition.min) ** normalized);
+  return definition.min + ((definition.max - definition.min) * normalized);
+}
+
+function nativeParameterInit(parameter) {
+  const { definition } = parameter;
+  if (definition.choices) {
+    return `  GetParam(kParam${parameter.index})->InitEnum(${cppString(parameter.label)}, ${Math.round(parameter.value)}, {${definition.choiceLabels.map(cppString).join(', ')}});`;
+  }
+  return `  GetParam(kParam${parameter.index})->InitDouble(${cppString(parameter.label)}, ${floatLiteral(parameter.value)}, ${floatLiteral(definition.min)}, ${floatLiteral(definition.max)}, ${floatLiteral(definition.step)}, ${cppString(definition.unit)});`;
+}
+
 export function deriveNativeIdentity(projectId) {
   const hash = createHash('sha256').update(`beat-z-project:${projectId}`).digest('hex');
   return Object.freeze({
@@ -86,14 +104,31 @@ export async function createNativeGenerationPlan(request, lock, options = {}) {
       arguments: ['-lang', 'cpp', ...lock.faust.codegenFlags, '-cn', className, '-o', outputHeader, sourcePath],
     });
   }
+  const typeCounts = new Map();
+  for (const node of activeNodes) {
+    const count = (typeCounts.get(node.type) ?? 0) + 1;
+    typeCounts.set(node.type, count);
+    node.displayIndex = count;
+    node.displayName = `${node.type[0].toUpperCase()}${node.type.slice(1)}`;
+  }
   const identity = deriveNativeIdentity(request.projectId);
   const filename = `${safeArtifactStem(request.dsp.pluginName)}-${request.dspHash.slice(0, 8)}.vst3`;
+  const parameters = activeNodes.flatMap((node, nodeIndex) => Object.entries(NATIVE_MODULE_CATALOG[node.type].parameters).map(([parameterId, definition]) => ({
+    index: 0,
+    nodeIndex: nodeIndex + 1,
+    nodeId: node.id,
+    parameterId,
+    definition,
+    label: `${node.displayName} ${node.displayIndex} ${definition.name}`,
+    value: effectiveParameterValue(request, node, parameterId, definition),
+  })));
+  parameters.forEach((parameter, index) => { parameter.index = index; });
   return {
     request,
     identity,
     plugin: { productName: request.dsp.pluginName, vendor: 'Beat.Z', version: '0.1.0' },
     activeNodes,
-    macros: request.dsp.macros.map((macro, index) => ({ ...macro, index })),
+    parameters,
     paths: {
       repositoryRoot: repoRoot,
       workspaceRoot,
@@ -128,7 +163,6 @@ export async function materializeNativeTemplates(plan, options = {}) {
     VST3_CONTROLLER_FUID: plan.identity.vst3ControllerFuid, NATIVE_SPEC_HASH: plan.request.dspHash.toUpperCase(),
   });
   const generatedCmake = renderTemplate(cmakeTemplate, { VERSION: plan.plugin.version, BUNDLE_IDENTIFIER: plan.identity.bundleIdentifier });
-  const nodeIndexes = new Map(plan.activeNodes.map((node, index) => [node.id, index + 1]));
   const chain = renderTemplate(chainTemplate, {
     DSP_INCLUDES: plan.activeNodes.map((node) => `#include "dsp/${node.className}.hpp"`).join('\n'),
     NODE_COUNT: plan.activeNodes.length,
@@ -136,25 +170,17 @@ export async function materializeNativeTemplates(plan, options = {}) {
     DSP_MEMBERS: plan.activeNodes.map((node, index) => `  std::unique_ptr<${node.className}> node${index + 1};`).join('\n'),
     UI_MEMBERS: plan.activeNodes.map((_node, index) => `  MapUI ui${index + 1};`).join('\n'),
     DSP_INIT: plan.activeNodes.map((node, index) => `    node${index + 1} = std::make_unique<${node.className}>();\n    node${index + 1}->buildUserInterface(&ui${index + 1});\n    node${index + 1}->init(sampleRate);`).join('\n'),
-    FIXED_PARAMETERS: plan.activeNodes.flatMap((node, index) => Object.entries(node.params).map(([parameterId, value]) => `    ui${index + 1}.setParamValue(${cppString(NATIVE_MODULE_CATALOG[node.type].parameters[parameterId].faustPath)}, ${floatLiteral(value)});`)).join('\n'),
-    MACRO_CASES: plan.macros.map((macro) => {
-      const mappings = macro.mappings.map((mapping) => {
-        const nodeIndex = nodeIndexes.get(mapping.nodeId);
-        const direction = mapping.inverted ? '(1.0f - normalized)' : 'normalized';
-        const mapped = mapping.scale === 'log'
-          ? `${floatLiteral(mapping.min)} * std::pow(${floatLiteral(mapping.max / mapping.min)}, ${direction})`
-          : `${floatLiteral(mapping.min)} + (${floatLiteral(mapping.max - mapping.min)} * ${direction})`;
-        return `        ui${nodeIndex}.setParamValue(${cppString(mapping.faustPath)}, ${mapped});`;
-      });
-      return `      case ${macro.index}: {\n${mappings.join('\n')}\n        break;\n      }`;
-    }).join('\n'),
+    FIXED_PARAMETERS: plan.parameters.map((parameter) => `    ui${parameter.nodeIndex}.setParamValue(${cppString(parameter.definition.faustPath)}, ${floatLiteral(parameter.value)});`).join('\n'),
+    PARAMETER_CASES: plan.parameters.map((parameter) => `      case ${parameter.index}: ui${parameter.nodeIndex}.setParamValue(${cppString(parameter.definition.faustPath)}, value); break;`).join('\n'),
     PROCESS_NODES: plan.activeNodes.map((_node, index) => `      node${index + 1}->compute(blockFrames, readChannels, writeChannels);\n      std::swap(readChannels, writeChannels);`).join('\n'),
   });
-  const pluginHeader = renderTemplate(headerTemplate, { PARAM_ENUM: plan.macros.map((macro) => `  kMacro${macro.index} = ${macro.index},`).join('\n') });
+  const pluginHeader = renderTemplate(headerTemplate, { PARAM_ENUM: plan.parameters.map((parameter) => `  kParam${parameter.index} = ${parameter.index},`).join('\n') });
   const pluginSource = renderTemplate(sourceTemplate, {
     VST3_PROCESSOR_UID: fuidMacro(plan.identity.vst3ComponentFuid), VST3_CONTROLLER_UID: fuidMacro(plan.identity.vst3ControllerFuid),
-    PARAM_INIT: plan.macros.map((macro) => `  GetParam(kMacro${macro.index})->InitDouble(${cppString(macro.name)}, ${macro.value}, 0.0, 1.0, 0.001);`).join('\n'),
-    APPLY_ALL_MACROS: plan.macros.map((macro) => `  OnParamChange(kMacro${macro.index});`).join('\n'),
+    PARAM_INIT: plan.parameters.map(nativeParameterInit).join('\n'),
+    APPLY_ALL_PARAMETERS: plan.parameters.map((parameter) => `  OnParamChange(kParam${parameter.index});`).join('\n'),
+    EDITOR_CONTROLS: plan.parameters.map((parameter) => `    pGraphics->AttachControl(new IVKnobControl(controlGrid.GetGridCell(${parameter.index % 4}, ${Math.floor(parameter.index / 4)}, controlRows, 4).GetCentredInside(96.f), kParam${parameter.index}, ${cppString(parameter.label)}, knobStyle));`).join('\n'),
+    CONTROL_ROWS: Math.max(1, Math.ceil(plan.parameters.length / 4)),
   });
   const plist = renderTemplate(plistTemplate, { BUNDLE_IDENTIFIER: plan.identity.bundleIdentifier, PRODUCT_NAME: xml(plan.plugin.productName), VERSION: plan.plugin.version });
   const files = {

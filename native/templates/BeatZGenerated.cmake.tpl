@@ -12,8 +12,7 @@ find_package(iPlug2 REQUIRED)
 iplug_add_plugin(BeatZGeneratedPlugin
   SOURCES BeatZGeneratedPlugin.cpp BeatZGeneratedPlugin.h BeatZStaticChain.hpp
   FORMATS VST3
-  UI NONE
-  DEFINES SAMPLE_TYPE_FLOAT NO_IGRAPHICS
+  DEFINES SAMPLE_TYPE_FLOAT
 )
 
 target_include_directories(BeatZGeneratedPlugin-vst3 PRIVATE ${FAUST_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})

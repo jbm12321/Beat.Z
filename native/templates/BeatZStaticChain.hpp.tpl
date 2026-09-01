@@ -40,11 +40,10 @@ struct StaticFaustInstances {
     initialized = true;
   }
 
-  void setMacro(int parameterIndex, float normalized) {
+  void setParameter(int parameterIndex, float value) {
     if (!initialized) return;
-    normalized = std::clamp(normalized, 0.0f, 1.0f);
     switch (parameterIndex) {
-{{MACRO_CASES}}
+{{PARAMETER_CASES}}
       default: break;
     }
   }
