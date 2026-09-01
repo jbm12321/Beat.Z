@@ -45,6 +45,28 @@ function effectiveParameterValue(request, node, parameterId, definition) {
   return definition.min + ((definition.max - definition.min) * normalized);
 }
 
+export function createAutomaticNativeParameters(request) {
+  return request.dsp.chain.flatMap((node, nodeIndex) => Object.entries(NATIVE_MODULE_CATALOG[node.type].parameters).map(([parameterId, definition]) => ({
+    index: 0,
+    nodeIndex: nodeIndex + 1,
+    nodeId: node.id,
+    parameterId,
+    definition,
+    label: '',
+    value: effectiveParameterValue(request, node, parameterId, definition),
+  }))).map((parameter, index, parameters) => {
+    const node = request.dsp.chain.find((candidate) => candidate.id === parameter.nodeId);
+    const displayIndex = parameters.filter((candidate) => candidate.nodeIndex <= parameter.nodeIndex && request.dsp.chain.find((nodeCandidate) => nodeCandidate.id === candidate.nodeId)?.type === node.type)
+      .map((candidate) => candidate.nodeId)
+      .filter((nodeId, index, nodeIds) => nodeIds.indexOf(nodeId) === index).length;
+    return {
+      ...parameter,
+      index,
+      label: `${node.type[0].toUpperCase()}${node.type.slice(1)} ${displayIndex} ${parameter.definition.name}`,
+    };
+  });
+}
+
 function nativeParameterInit(parameter) {
   const { definition } = parameter;
   if (definition.choices) {
@@ -104,25 +126,9 @@ export async function createNativeGenerationPlan(request, lock, options = {}) {
       arguments: ['-lang', 'cpp', ...lock.faust.codegenFlags, '-cn', className, '-o', outputHeader, sourcePath],
     });
   }
-  const typeCounts = new Map();
-  for (const node of activeNodes) {
-    const count = (typeCounts.get(node.type) ?? 0) + 1;
-    typeCounts.set(node.type, count);
-    node.displayIndex = count;
-    node.displayName = `${node.type[0].toUpperCase()}${node.type.slice(1)}`;
-  }
   const identity = deriveNativeIdentity(request.projectId);
   const filename = `${safeArtifactStem(request.dsp.pluginName)}-${request.dspHash.slice(0, 8)}.vst3`;
-  const parameters = activeNodes.flatMap((node, nodeIndex) => Object.entries(NATIVE_MODULE_CATALOG[node.type].parameters).map(([parameterId, definition]) => ({
-    index: 0,
-    nodeIndex: nodeIndex + 1,
-    nodeId: node.id,
-    parameterId,
-    definition,
-    label: `${node.displayName} ${node.displayIndex} ${definition.name}`,
-    value: effectiveParameterValue(request, node, parameterId, definition),
-  })));
-  parameters.forEach((parameter, index) => { parameter.index = index; });
+  const parameters = createAutomaticNativeParameters(request);
   return {
     request,
     identity,

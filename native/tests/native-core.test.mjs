@@ -36,16 +36,18 @@ test('each public artifact URL is a unique, predictable ZIP release URL', () => 
   });
 });
 
-test('parity scenarios cover defaults and 0, 0.5, 1 for every real macro', () => {
+test('parity scenarios cover valid endpoints for choices and 0, 0.5, 1 for continuous VST3 parameters', () => {
   assert.deepEqual(createParityScenarios([]), [{ id: 'defaults', values: [] }]);
-  assert.deepEqual(createParityScenarios([{ value: 0.25 }, { value: 0.75 }]), [
-    { id: 'defaults', values: [0.25, 0.75] },
-    { id: 'macro-0-0', values: [0, 0.75] },
-    { id: 'macro-0-0_5', values: [0.5, 0.75] },
-    { id: 'macro-0-1', values: [1, 0.75] },
-    { id: 'macro-1-0', values: [0.25, 0] },
-    { id: 'macro-1-0_5', values: [0.25, 0.5] },
-    { id: 'macro-1-1', values: [0.25, 1] },
+  assert.deepEqual(createParityScenarios([
+    { value: 0, definition: { min: 0, max: 1, choices: [0, 1] } },
+    { value: 0.75, definition: { min: 0, max: 100 } },
+  ]), [
+    { id: 'defaults', values: [0, 0.75] },
+    { id: 'parameter-0-0', values: [0, 0.75] },
+    { id: 'parameter-0-1', values: [1, 0.75] },
+    { id: 'parameter-1-0', values: [0, 0] },
+    { id: 'parameter-1-0_5', values: [0, 50] },
+    { id: 'parameter-1-1', values: [0, 100] },
   ]);
 });
 

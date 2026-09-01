@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { loadFaustFactoryFromBytes, renderFaustProjectOffline } from '../../src/features/audio-builder/faust/runtime.ts';
 import { NativeBuildError } from './errors.mjs';
+import { createAutomaticNativeParameters } from './generation.mjs';
 import { resolveWithin } from './safety.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -46,16 +47,29 @@ export function compareStereoParity(browser, native, tolerance) {
   return { passed: maximum <= tolerance && rmsError <= tolerance, maxAbsoluteError: maximum, rmsError, tolerance };
 }
 
-export function createParityScenarios(macros) {
-  const defaults = macros.map((macro) => macro.value);
+export function createParityScenarios(parameters) {
+  const defaults = parameters.map((parameter) => parameter.value);
   return [
     { id: 'defaults', values: defaults },
-    ...macros.flatMap((_macro, macroIndex) => [0, 0.5, 1].map((value) => {
+    ...parameters.flatMap((parameter, parameterIndex) => (parameter.definition.choices ? [0, 1] : [0, 0.5, 1]).map((normalized) => {
       const values = [...defaults];
-      values[macroIndex] = value;
-      return { id: `macro-${macroIndex}-${String(value).replace('.', '_')}`, values };
+      values[parameterIndex] = parameter.definition.min + ((parameter.definition.max - parameter.definition.min) * normalized);
+      return { id: `parameter-${parameterIndex}-${String(normalized).replace('.', '_')}`, values };
     })),
   ];
+}
+
+function flattenedNativeProject(request, parameters, values) {
+  const project = structuredClone(request.project);
+  project.macros = [];
+  parameters.forEach((parameter, index) => {
+    project.nodes[parameter.nodeId].params[parameter.parameterId] = values[index];
+  });
+  return project;
+}
+
+function normalizeNativeParameter(parameter, value) {
+  return (value - parameter.definition.min) / (parameter.definition.max - parameter.definition.min);
 }
 
 export async function buildVst3RenderHost(doctor, options = {}) {
@@ -105,22 +119,18 @@ export async function runVst3Parity(request, bundlePath, workspaceRoot, doctor, 
     return pending;
   };
   const evidence = [];
-  const scenarios = createParityScenarios(request.dsp.macros);
+  const parameters = createAutomaticNativeParameters(request);
+  const scenarios = createParityScenarios(parameters);
   for (const sampleRate of lock.parity.sampleRates) {
     const frames = sampleRate;
     const input = deterministicInput(sampleRate, frames);
     let maxAbsoluteError = 0;
     let rmsError = 0;
     for (const scenario of scenarios) {
-      const project = structuredClone(request.project);
-      const scenarioValues = new Map(request.dsp.macros.map((macro, index) => [macro.id, scenario.values[index]]));
-      project.macros.forEach((macro) => {
-        const value = scenarioValues.get(macro.id);
-        if (value !== undefined) macro.value = value;
-      });
+      const project = flattenedNativeProject(request, parameters, scenario.values);
       const browser = await renderFaustProjectOffline(project, input, sampleRate, loadFactory);
       const nativeOutputPath = resolveWithin(parityRoot, `${sampleRate}-${scenario.id}.f32`);
-      const parameterArguments = scenario.values.map((value, index) => `${index}=${value}`);
+      const parameterArguments = scenario.values.map((value, index) => `${index}=${normalizeNativeParameter(parameters[index], value)}`);
       const rendered = await run(hostPath, [bundlePath, String(sampleRate), String(frames), nativeOutputPath, ...parameterArguments]);
       if (!rendered.ok) throw new NativeBuildError('parity_render_failed', `Actual VST3 render failed at ${sampleRate} Hz: ${rendered.stderr || rendered.stdout}`);
       const encoded = await readFile(nativeOutputPath);
@@ -130,7 +140,7 @@ export async function runVst3Parity(request, bundlePath, workspaceRoot, doctor, 
       const samples = new Float32Array(encoded.buffer.slice(encoded.byteOffset, encoded.byteOffset + encoded.byteLength));
       const native = [samples.slice(0, frames), samples.slice(frames)];
       const comparison = compareStereoParity(browser, native, lock.parity.maxTolerance);
-      if (!comparison.passed) throw new NativeBuildError('parity_mismatch', `Browser/VST3 parity exceeded tolerance at ${sampleRate} Hz for ${scenario.id}.`);
+      if (!comparison.passed) throw new NativeBuildError('parity_mismatch', `Browser/VST3 parity exceeded tolerance at ${sampleRate} Hz for ${scenario.id} (max ${comparison.maxAbsoluteError.toExponential(3)}, rms ${comparison.rmsError.toExponential(3)}, tolerance ${comparison.tolerance.toExponential(3)}).`);
       maxAbsoluteError = Math.max(maxAbsoluteError, comparison.maxAbsoluteError);
       rmsError = Math.max(rmsError, comparison.rmsError);
     }
