@@ -37,3 +37,10 @@ next-env.d.ts
 /.wrangler/
 /outputs/
 /work/
+
+# native toolchains and generated build output
+/native/vendor/
+/native/build/
+/native/work/
+/native/generated/
+*.vst3

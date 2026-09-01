@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "target": {
+    "platform": "macos",
+    "architecture": "arm64",
+    "deploymentTarget": "13.0"
+  },
+  "node": {
+    "minimumVersion": "22.13.0"
+  },
+  "faust": {
+    "version": "2.85.5",
+    "browserPackage": "@grame/faustwasm",
+    "browserPackageVersion": "0.16.6",
+    "nativeCommand": "faust",
+    "codegenFlags": ["-single"]
+  },
+  "compiler": {
+    "name": "Apple clang",
+    "version": "17.0.0",
+    "sdkVersion": "15.5"
+  },
+  "cmake": {
+    "version": "4.3.1",
+    "generator": "Ninja"
+  },
+  "ninja": {
+    "version": "1.13.2"
+  },
+  "iPlug2": {
+    "repository": "https://github.com/iPlug2/iPlug2.git",
+    "revision": "b64192fe18afd9bc9a1fe324db5aceb48f4a0eee"
+  },
+  "vst3Sdk": {
+    "repository": "https://github.com/steinbergmedia/vst3sdk.git",
+    "version": "3.8.0",
+    "revision": "58f8da7936800732561402d7936584ca4505de07"
+  },
+  "parity": {
+    "sampleRates": [44100, 48000, 96000],
+    "maxTolerance": 0.0001
+  }
+}
