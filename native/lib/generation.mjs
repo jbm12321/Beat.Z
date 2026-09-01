@@ -13,6 +13,7 @@ import { validateNativeBuildRequest } from './spec.mjs';
 const execFileAsync = promisify(execFile);
 const nativeRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repositoryRoot = resolve(nativeRoot, '..');
+export const NATIVE_EDITOR_MAX_KNOBS_PER_ROW = 6;
 
 function cppString(value) {
   return JSON.stringify(String(value));
@@ -46,33 +47,119 @@ function effectiveParameterValue(request, node, parameterId, definition) {
 }
 
 export function createAutomaticNativeParameters(request) {
-  return request.dsp.chain.flatMap((node, nodeIndex) => Object.entries(NATIVE_MODULE_CATALOG[node.type].parameters).map(([parameterId, definition]) => ({
-    index: 0,
-    nodeIndex: nodeIndex + 1,
-    nodeId: node.id,
-    parameterId,
-    definition,
-    label: '',
-    value: effectiveParameterValue(request, node, parameterId, definition),
-  }))).map((parameter, index, parameters) => {
-    const node = request.dsp.chain.find((candidate) => candidate.id === parameter.nodeId);
-    const displayIndex = parameters.filter((candidate) => candidate.nodeIndex <= parameter.nodeIndex && request.dsp.chain.find((nodeCandidate) => nodeCandidate.id === candidate.nodeId)?.type === node.type)
-      .map((candidate) => candidate.nodeId)
-      .filter((nodeId, index, nodeIds) => nodeIds.indexOf(nodeId) === index).length;
-    return {
-      ...parameter,
-      index,
-      label: `${node.type[0].toUpperCase()}${node.type.slice(1)} ${displayIndex} ${parameter.definition.name}`,
-    };
+  const moduleCounts = new Map();
+  const parameters = [];
+  request.dsp.chain.forEach((node, nodeIndex) => {
+    const moduleDisplayIndex = (moduleCounts.get(node.type) ?? 0) + 1;
+    moduleCounts.set(node.type, moduleDisplayIndex);
+    const moduleName = `${node.type[0].toUpperCase()}${node.type.slice(1)}`;
+    const moduleLabel = `${moduleName} ${moduleDisplayIndex}`;
+    Object.entries(NATIVE_MODULE_CATALOG[node.type].parameters).forEach(([parameterId, definition]) => {
+      parameters.push({
+        index: parameters.length,
+        nodeIndex: nodeIndex + 1,
+        nodeId: node.id,
+        moduleType: node.type,
+        moduleDisplayIndex,
+        moduleLabel,
+        parameterId,
+        definition,
+        controlType: definition.choices ? 'switch' : 'knob',
+        controlLabel: definition.name,
+        label: `${moduleLabel} ${definition.name}`,
+        value: effectiveParameterValue(request, node, parameterId, definition),
+      });
+    });
   });
+  return parameters;
+}
+
+export function createNativeEditorModel(parameters) {
+  const modules = [];
+  for (const parameter of parameters) {
+    let moduleModel = modules.at(-1);
+    if (!moduleModel || moduleModel.nodeId !== parameter.nodeId) {
+      moduleModel = {
+        nodeId: parameter.nodeId,
+        moduleType: parameter.moduleType,
+        moduleDisplayIndex: parameter.moduleDisplayIndex,
+        label: parameter.moduleLabel,
+        controls: [],
+      };
+      modules.push(moduleModel);
+    }
+    moduleModel.controls.push({
+      parameterIndex: parameter.index,
+      parameterId: parameter.parameterId,
+      label: parameter.controlLabel,
+      hostLabel: parameter.label,
+      type: parameter.controlType,
+      choices: parameter.definition.choiceLabels ?? [],
+      unit: parameter.definition.unit,
+      min: parameter.definition.min,
+      max: parameter.definition.max,
+      step: parameter.definition.step,
+      scale: parameter.definition.scale,
+    });
+  }
+
+  const moduleViews = modules.flatMap((moduleModel) => {
+    const knobs = moduleModel.controls.filter((control) => control.type === 'knob');
+    const switches = moduleModel.controls.filter((control) => control.type === 'switch');
+    const knobChunks = knobs.length === 0
+      ? [[]]
+      : Array.from({ length: Math.ceil(knobs.length / NATIVE_EDITOR_MAX_KNOBS_PER_ROW) }, (_, index) => knobs.slice(index * NATIVE_EDITOR_MAX_KNOBS_PER_ROW, (index + 1) * NATIVE_EDITOR_MAX_KNOBS_PER_ROW));
+    return knobChunks.map((knobControls, index) => ({
+      ...moduleModel,
+      label: knobChunks.length === 1 ? moduleModel.label : `${moduleModel.label} ${index + 1}/${knobChunks.length}`,
+      controls: [...(index === 0 ? switches : []), ...knobControls],
+      knobCount: knobControls.length,
+      unitCount: Math.max(1, knobControls.length),
+    }));
+  });
+
+  const rows = [];
+  for (const moduleView of moduleViews) {
+    let row = rows.at(-1);
+    if (!row || row.usedUnits + moduleView.unitCount > NATIVE_EDITOR_MAX_KNOBS_PER_ROW) {
+      row = { index: rows.length, knobCount: 0, usedUnits: 0, modules: [] };
+      rows.push(row);
+    }
+    const controls = moduleView.controls.map((control, localIndex, controls) => {
+      if (control.type !== 'knob') return { ...control, slot: null };
+      const previousKnobs = controls.slice(0, localIndex).filter((candidate) => candidate.type === 'knob').length;
+      return { ...control, slot: row.usedUnits + previousKnobs };
+    });
+    row.modules.push({ ...moduleView, controls, unitStart: row.usedUnits });
+    row.knobCount += moduleView.knobCount;
+    row.usedUnits += moduleView.unitCount;
+  }
+
+  if (rows.length === 0) rows.push({ index: 0, knobCount: 0, usedUnits: 0, modules: [] });
+  const knobCount = parameters.filter((parameter) => parameter.controlType === 'knob').length;
+  const switchCount = parameters.length - knobCount;
+  return {
+    maxKnobsPerRow: NATIVE_EDITOR_MAX_KNOBS_PER_ROW,
+    moduleCount: modules.length,
+    knobCount,
+    switchCount,
+    rowCount: rows.length,
+    height: Math.max(520, 200 + (rows.length * 320)),
+    rows: rows.map((row) => ({
+      ...row,
+      layoutUnits: Math.max(3, row.usedUnits),
+      offsetUnits: Math.max(0, (Math.max(3, row.usedUnits) - row.usedUnits) / 2),
+    })),
+  };
 }
 
 function nativeParameterInit(parameter) {
   const { definition } = parameter;
   if (definition.choices) {
-    return `  GetParam(kParam${parameter.index})->InitEnum(${cppString(parameter.label)}, ${Math.round(parameter.value)}, {${definition.choiceLabels.map(cppString).join(', ')}});`;
+    return `  GetParam(kParam${parameter.index})->InitEnum(${cppString(parameter.label)}, ${Math.round(parameter.value)}, {${definition.choiceLabels.map(cppString).join(', ')}}, 0, ${cppString(parameter.moduleLabel)});`;
   }
-  return `  GetParam(kParam${parameter.index})->InitDouble(${cppString(parameter.label)}, ${floatLiteral(parameter.value)}, ${floatLiteral(definition.min)}, ${floatLiteral(definition.max)}, ${floatLiteral(definition.step)}, ${cppString(definition.unit)});`;
+  const shape = definition.scale === 'log' ? 'iplug::IParam::ShapeExp()' : 'iplug::IParam::ShapeLinear()';
+  return `  GetParam(kParam${parameter.index})->InitDouble(${cppString(parameter.label)}, ${floatLiteral(parameter.value)}, ${floatLiteral(definition.min)}, ${floatLiteral(definition.max)}, ${floatLiteral(definition.step)}, ${cppString(definition.unit)}, 0, ${cppString(parameter.moduleLabel)}, ${shape});`;
 }
 
 export function deriveNativeIdentity(projectId) {
@@ -129,12 +216,14 @@ export async function createNativeGenerationPlan(request, lock, options = {}) {
   const identity = deriveNativeIdentity(request.projectId);
   const filename = `${safeArtifactStem(request.dsp.pluginName)}-${request.dspHash.slice(0, 8)}.vst3`;
   const parameters = createAutomaticNativeParameters(request);
+  const editor = createNativeEditorModel(parameters);
   return {
     request,
     identity,
     plugin: { productName: request.dsp.pluginName, vendor: 'Beat.Z', version: '0.1.0' },
     activeNodes,
     parameters,
+    editor,
     paths: {
       repositoryRoot: repoRoot,
       workspaceRoot,
@@ -154,6 +243,40 @@ function renderTemplate(source, replacements) {
   return output;
 }
 
+function renderNativeEditorControls(editor) {
+  const lines = [];
+  for (const row of editor.rows) {
+    lines.push(`    const IRECT editorRow_${row.index} = controlDeck.SubRectVertical(${editor.rowCount}, ${row.index}).GetPadded(-2.f, -6.f, -2.f, -6.f);`);
+    row.modules.forEach((moduleModel, moduleIndex) => {
+      const suffix = `${row.index}_${moduleIndex}`;
+      const start = moduleModel.unitStart + row.offsetUnits;
+      const end = start + moduleModel.unitCount;
+      lines.push(
+        `    const IRECT moduleBounds_${suffix}(editorRow_${row.index}.L + editorRow_${row.index}.W() * ${floatLiteral(start)} / ${floatLiteral(row.layoutUnits)}, editorRow_${row.index}.T, editorRow_${row.index}.L + editorRow_${row.index}.W() * ${floatLiteral(end)} / ${floatLiteral(row.layoutUnits)}, editorRow_${row.index}.B);`,
+        `    pGraphics->AttachControl(new IVGroupControl(moduleBounds_${suffix}.GetPadded(-6.f), ${cppString(moduleModel.label.toUpperCase())}, 12.f, moduleStyle));`,
+        `    const IRECT moduleBody_${suffix} = moduleBounds_${suffix}.GetPadded(-18.f).GetReducedFromTop(28.f);`,
+      );
+
+      const switches = moduleModel.controls.filter((control) => control.type === 'switch');
+      if (switches.length > 0) {
+        lines.push(`    const IRECT switchRow_${suffix} = moduleBody_${suffix}.GetFromTop(66.f);`);
+        switches.forEach((control, switchIndex) => {
+          lines.push(`    pGraphics->AttachControl(new IVTabSwitchControl(switchRow_${suffix}.SubRectHorizontal(${switches.length}, ${switchIndex}).GetPadded(-4.f), kParam${control.parameterIndex}, {${control.choices.map(cppString).join(', ')}}, ${cppString(control.label)}, switchStyle, EVShape::EndsRounded, EDirection::Horizontal));`);
+        });
+      }
+
+      const knobs = moduleModel.controls.filter((control) => control.type === 'knob');
+      if (knobs.length > 0) {
+        lines.push(`    const IRECT knobRow_${suffix} = moduleBody_${suffix}.GetReducedFromTop(${switches.length > 0 ? '70.f' : '10.f'});`);
+        knobs.forEach((control, knobIndex) => {
+          lines.push(`    pGraphics->AttachControl(new IVKnobControl(knobRow_${suffix}.SubRectHorizontal(${knobs.length}, ${knobIndex}).GetCentredInside(126.f), kParam${control.parameterIndex}, ${cppString(control.label)}, knobStyle, true));`);
+        });
+      }
+    });
+  }
+  return lines.join('\n');
+}
+
 export async function materializeNativeTemplates(plan, options = {}) {
   const templateRoot = resolve(options.templateRoot ?? resolve(nativeRoot, 'templates'));
   await mkdir(plan.paths.dspRoot, { recursive: true, mode: 0o700 });
@@ -164,6 +287,7 @@ export async function materializeNativeTemplates(plan, options = {}) {
   const config = renderTemplate(configTemplate, {
     PRODUCT_NAME: plan.plugin.productName.replaceAll('\\', '\\\\').replaceAll('"', '\\"'),
     VERSION_HEX: versionHex(plan.plugin.version), VERSION: plan.plugin.version,
+    EDITOR_HEIGHT: plan.editor.height,
     IPLUG_UNIQUE_ID: plan.identity.iPlugUniqueId, BUNDLE_STEM: safeArtifactStem(plan.plugin.productName),
     BUNDLE_IDENTIFIER: plan.identity.bundleIdentifier, VST3_COMPONENT_FUID: plan.identity.vst3ComponentFuid,
     VST3_CONTROLLER_FUID: plan.identity.vst3ControllerFuid, NATIVE_SPEC_HASH: plan.request.dspHash.toUpperCase(),
@@ -185,8 +309,8 @@ export async function materializeNativeTemplates(plan, options = {}) {
     VST3_PROCESSOR_UID: fuidMacro(plan.identity.vst3ComponentFuid), VST3_CONTROLLER_UID: fuidMacro(plan.identity.vst3ControllerFuid),
     PARAM_INIT: plan.parameters.map(nativeParameterInit).join('\n'),
     APPLY_ALL_PARAMETERS: plan.parameters.map((parameter) => `  OnParamChange(kParam${parameter.index});`).join('\n'),
-    EDITOR_CONTROLS: plan.parameters.map((parameter) => `    pGraphics->AttachControl(new IVKnobControl(controlGrid.GetGridCell(${parameter.index % 4}, ${Math.floor(parameter.index / 4)}, controlRows, 4).GetCentredInside(96.f), kParam${parameter.index}, ${cppString(parameter.label)}, knobStyle));`).join('\n'),
-    CONTROL_ROWS: Math.max(1, Math.ceil(plan.parameters.length / 4)),
+    EDITOR_CONTROLS: renderNativeEditorControls(plan.editor),
+    EDITOR_SUMMARY: `${plan.editor.moduleCount} MODULE${plan.editor.moduleCount === 1 ? '' : 'S'}  /  ${plan.editor.knobCount} KNOB${plan.editor.knobCount === 1 ? '' : 'S'}  /  ${plan.editor.switchCount} SWITCH${plan.editor.switchCount === 1 ? '' : 'ES'}`,
   });
   const plist = renderTemplate(plistTemplate, { BUNDLE_IDENTIFIER: plan.identity.bundleIdentifier, PRODUCT_NAME: xml(plan.plugin.productName), VERSION: plan.plugin.version });
   const files = {
@@ -198,7 +322,7 @@ export async function materializeNativeTemplates(plan, options = {}) {
   await Promise.all([
     writeFile(files.config, config), writeFile(files.cmake, generatedCmake), writeFile(files.staticChain, chain),
     writeFile(files.pluginHeader, pluginHeader), writeFile(files.pluginSource, pluginSource),
-    writeFile(files.manifest, `${JSON.stringify({ dspHash: plan.request.dspHash, approvalHash: plan.request.approvalHash, artifact: plan.artifact }, null, 2)}\n`),
+    writeFile(files.manifest, `${JSON.stringify({ dspHash: plan.request.dspHash, approvalHash: plan.request.approvalHash, artifact: plan.artifact, editor: plan.editor }, null, 2)}\n`),
     writeFile(files.plist, plist),
   ]);
   return files;

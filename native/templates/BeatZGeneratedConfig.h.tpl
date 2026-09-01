@@ -23,11 +23,12 @@
 #define PLUG_DOES_STATE_CHUNKS 1
 #define PLUG_HAS_UI 1
 #define PLUG_HOST_RESIZE 0
-#define PLUG_WIDTH 720
-#define PLUG_HEIGHT 420
+#define PLUG_WIDTH 960
+#define PLUG_HEIGHT {{EDITOR_HEIGHT}}
 #define PLUG_FPS 60
 #define VST3_SUBCATEGORY "Fx"
 #define VST3_MANIFEST 0
+#define ROBOTO_FN "Roboto-Regular.ttf"
 
 // Strong native identity inputs. The reviewed adapter/CMake integration must
 // bind these exact 128-bit values to the VST3 processor and controller classes.
