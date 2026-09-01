@@ -229,7 +229,7 @@ export const clamp = (value: number, min: number, max: number) => Math.min(max, 
 
 export function createInitialProject(): ProjectV2 {
   return {
-    schemaVersion: 2, id: makeId('project'), name: 'Untitled', revision: 0, engine: structuredClone(ENGINE_PROVENANCE),
+    schemaVersion: 2, id: makeId('project'), name: 'Name your plugin', revision: 0, engine: structuredClone(ENGINE_PROVENANCE),
     chain: [], nodes: {}, macros: [], activity: [],
   };
 }
