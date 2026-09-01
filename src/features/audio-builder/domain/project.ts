@@ -122,6 +122,7 @@ export interface LegacyProjectV1 {
 
 export type ProjectCommand =
   | { type: 'rename_project'; name: string }
+  | { type: 'clear_project' }
   | { type: 'add_module'; moduleType: ModuleType; index?: number; nodeId?: string }
   | { type: 'set_parameter'; nodeId: string; paramId: string; value: number }
   | { type: 'move_module'; nodeId: string; index: number }
@@ -289,8 +290,8 @@ function requireMacro(project: ProjectV2, macroId: string) {
 
 function validateMacroName(project: ProjectV2, name: string, ignoreId?: string) {
   const clean = name.trim();
-  if (!clean || clean.length > 24) throw new Error('Macro names must contain 1–24 characters.');
-  if (project.macros.some((macro) => macro.id !== ignoreId && macro.name.toLowerCase() === clean.toLowerCase())) throw new Error('Macro names must be unique.');
+  if (!clean || clean.length > 24) throw new Error('Control names must contain 1–24 characters.');
+  if (project.macros.some((macro) => macro.id !== ignoreId && macro.name.toLowerCase() === clean.toLowerCase())) throw new Error('Control names must be unique.');
   return clean;
 }
 
@@ -309,14 +310,15 @@ function validateMappingTarget(project: ProjectV2, nodeId: string, paramId: stri
   const node = requireNode(project, nodeId);
   const definition = getParameterDefinition(node, paramId);
   if (!definition) throw new Error(`Parameter ${paramId} does not exist on ${MODULE_CATALOG[node.type].name}.`);
-  if (!definition.mappable) throw new Error(`${definition.name} cannot be assigned to a macro in this version.`);
+  if (!definition.mappable) throw new Error(`${definition.name} cannot be assigned to a control in this version.`);
   const occupied = project.macros.some((macro) => macro.mappings.some((mapping) => mapping.id !== ignoreMappingId && mapping.nodeId === nodeId && mapping.paramId === paramId));
-  if (occupied) throw new Error('A DSP parameter can be controlled by only one macro.');
+  if (occupied) throw new Error('A DSP parameter can be controlled by only one control.');
   return definition;
 }
 
 function describeCommand(project: ProjectV2, command: ProjectCommand) {
   if (command.type === 'rename_project') return `Renamed project to ${command.name.trim()}`;
+  if (command.type === 'clear_project') return 'Cleared all primitives and controls';
   if (command.type === 'add_module') return `Added ${MODULE_CATALOG[command.moduleType].name}`;
   if ('nodeId' in command && typeof command.nodeId === 'string' && project.nodes[command.nodeId]) {
     const moduleName = MODULE_CATALOG[project.nodes[command.nodeId].type].name;
@@ -345,6 +347,12 @@ function applyOne(project: ProjectV2, command: ProjectCommand) {
       project.name = name;
       return;
     }
+    case 'clear_project':
+      project.chain = [];
+      project.nodes = {};
+      project.macros = [];
+      delete project.migration;
+      return;
     case 'add_module': {
       if (!MODULE_CATALOG[command.moduleType]) throw new Error(`Unknown module type: ${String(command.moduleType)}`);
       const node = createNode(command.moduleType, command.nodeId);
@@ -393,8 +401,8 @@ function applyOne(project: ProjectV2, command: ProjectCommand) {
       project.macros.forEach((macro) => { macro.mappings = macro.mappings.filter((mapping) => mapping.nodeId !== command.nodeId); });
       return;
     case 'create_macro': {
-      if (project.macros.length >= 8) throw new Error('A plugin can expose at most eight macro controls.');
-      const name = validateMacroName(project, command.name ?? `Macro ${project.macros.length + 1}`);
+      if (project.macros.length >= 8) throw new Error('A plugin can expose at most eight controls.');
+      const name = validateMacroName(project, command.name ?? `Control ${project.macros.length + 1}`);
       const id = command.macroId ?? makeId('macro');
       if (project.macros.some((macro) => macro.id === id)) throw new Error(`Macro ID ${id} already exists.`);
       project.macros.push({ id, name, value: 0.5, mappings: [] });

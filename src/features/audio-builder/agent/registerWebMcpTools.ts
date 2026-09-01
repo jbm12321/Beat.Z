@@ -72,15 +72,15 @@ export async function registerWebMcpTools(adapter: WebMcpAdapter) {
   const tools: WebMcpTool[] = [
     {
       name: 'inspect-audio-project',
-      description: 'Inspect the current Faust audio-effect project, revision, macros, recent activity, and latest validation state without changing anything.',
+      description: 'Inspect the current Faust audio-effect project, revision, controls, recent activity, and latest validation state without changing anything.',
       inputSchema: objectSchema({}),
       execute: () => textResult('Current Faust audio-effect project.', { project: adapter.getProject(), validation: adapter.getValidation() }),
     },
     {
       name: 'list-audio-primitives',
-      description: 'List the supported Faust primitives, parameter ranges, scaling, choices, canonical source fingerprints, and macro limits.',
+      description: 'List the supported Faust primitives, parameter ranges, scaling, choices, canonical source fingerprints, and control limits.',
       inputSchema: objectSchema({}),
-      execute: () => textResult('Supported Faust v0.1 primitives.', { primitives: MODULE_CATALOG, limits: { macros: 8, parameterOwnership: 'one-macro-per-parameter' } }),
+      execute: () => textResult('Supported Faust v0.1 primitives.', { primitives: MODULE_CATALOG, limits: { controls: 8, parameterOwnership: 'one-control-per-parameter' } }),
     },
     {
       name: 'propose-audio-project-patch',

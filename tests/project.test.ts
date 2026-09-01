@@ -50,6 +50,26 @@ test('module lifecycle distinguishes reordering, disconnecting, reconnecting, by
   assert.ok(!project.chain.includes('filter-1'));
 });
 
+test('clearing a project removes every primitive and control while preserving its identity', () => {
+  let project = createInitialProject();
+  project = applyProjectCommands(project, [
+    { type: 'rename_project', name: 'My effect' },
+    { type: 'add_module', moduleType: 'gain', nodeId: 'gain-1' },
+    { type: 'add_module', moduleType: 'filter', nodeId: 'filter-1' },
+    { type: 'create_macro', name: 'Tone', macroId: 'macro-1' },
+  ], 'human');
+  const { id, name, engine } = project;
+
+  project = applyProjectCommands(project, [{ type: 'clear_project' }], 'human');
+
+  assert.equal(project.id, id);
+  assert.equal(project.name, name);
+  assert.deepEqual(project.engine, engine);
+  assert.deepEqual(project.chain, []);
+  assert.deepEqual(project.nodes, {});
+  assert.deepEqual(project.macros, []);
+});
+
 test('one macro maps across parameters with native ranges and inversion', () => {
   let project = createInitialProject();
   project = applyProjectCommands(project, [
@@ -78,7 +98,7 @@ test('mapping ownership and the eight-control limit are enforced', () => {
   project = applyProjectCommands(project, commands, 'agent');
   assert.equal(project.macros.length, 8);
   assert.throws(() => applyProjectCommands(project, [{ type: 'create_macro', name: 'Control 9' }], 'human'), /at most eight/i);
-  assert.throws(() => applyProjectCommands(project, [{ type: 'add_mapping', macroId: 'macro-2', nodeId: 'gain-1', paramId: 'level', min: -6, max: 6 }], 'human'), /only one macro/i);
+  assert.throws(() => applyProjectCommands(project, [{ type: 'add_mapping', macroId: 'macro-2', nodeId: 'gain-1', paramId: 'level', min: -6, max: 6 }], 'human'), /only one control/i);
 });
 
 test('a failed batch is atomic and leaves the source untouched', () => {
