@@ -17,6 +17,7 @@ export interface ProjectValidationResult {
   status: ValidationStatus;
   checkedAt: string;
   engine: typeof ENGINE_PROVENANCE;
+  projectSnapshot: ProjectV2;
   issues: ValidationIssue[];
   analysis?: AudioAnalysis;
 }
@@ -63,6 +64,7 @@ export function validateProjectForBuild(project: ProjectV2, analysis?: AudioAnal
     status,
     checkedAt: new Date().toISOString(),
     engine: structuredClone(ENGINE_PROVENANCE),
+    projectSnapshot: structuredClone(project),
     issues,
     analysis,
   };
