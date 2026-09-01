@@ -29,6 +29,7 @@ async function defaultRun(command, argumentsList) {
 }
 
 export function compareStereoParity(browser, native, tolerance) {
+  const limits = typeof tolerance === 'number' ? { maxTolerance: tolerance, rmsTolerance: tolerance } : tolerance;
   if (browser.length !== 2 || native.length !== 2 || browser[0].length !== browser[1].length || native[0].length !== native[1].length || browser[0].length !== native[0].length) {
     throw new NativeBuildError('parity_render_invalid', 'Browser and native stereo frame counts do not match.');
   }
@@ -44,7 +45,7 @@ export function compareStereoParity(browser, native, tolerance) {
     }
   }
   const rmsError = Math.sqrt(squaredError / Math.max(1, samples));
-  return { passed: maximum <= tolerance && rmsError <= tolerance, maxAbsoluteError: maximum, rmsError, tolerance };
+  return { passed: maximum <= limits.maxTolerance && rmsError <= limits.rmsTolerance, maxAbsoluteError: maximum, rmsError, maxTolerance: limits.maxTolerance, rmsTolerance: limits.rmsTolerance };
 }
 
 export function createParityScenarios(parameters) {
@@ -139,12 +140,12 @@ export async function runVst3Parity(request, bundlePath, workspaceRoot, doctor, 
       }
       const samples = new Float32Array(encoded.buffer.slice(encoded.byteOffset, encoded.byteOffset + encoded.byteLength));
       const native = [samples.slice(0, frames), samples.slice(frames)];
-      const comparison = compareStereoParity(browser, native, lock.parity.maxTolerance);
-      if (!comparison.passed) throw new NativeBuildError('parity_mismatch', `Browser/VST3 parity exceeded tolerance at ${sampleRate} Hz for ${scenario.id} (max ${comparison.maxAbsoluteError.toExponential(3)}, rms ${comparison.rmsError.toExponential(3)}, tolerance ${comparison.tolerance.toExponential(3)}).`);
+      const comparison = compareStereoParity(browser, native, lock.parity);
+      if (!comparison.passed) throw new NativeBuildError('parity_mismatch', `Browser/VST3 parity exceeded tolerance at ${sampleRate} Hz for ${scenario.id} (max ${comparison.maxAbsoluteError.toExponential(3)} / ${comparison.maxTolerance.toExponential(3)}, rms ${comparison.rmsError.toExponential(3)} / ${comparison.rmsTolerance.toExponential(3)}).`);
       maxAbsoluteError = Math.max(maxAbsoluteError, comparison.maxAbsoluteError);
       rmsError = Math.max(rmsError, comparison.rmsError);
     }
-    evidence.push({ sampleRate, passed: true, maxAbsoluteError, rmsError, tolerance: lock.parity.maxTolerance });
+    evidence.push({ sampleRate, passed: true, maxAbsoluteError, rmsError, maxTolerance: lock.parity.maxTolerance, rmsTolerance: lock.parity.rmsTolerance });
   }
   return evidence;
 }
