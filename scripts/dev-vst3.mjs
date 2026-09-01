@@ -2,7 +2,10 @@
 
 import { spawn } from 'node:child_process';
 
-const token = process.env.VST3_WORKER_TOKEN ?? 'beatz-local-demo-worker-token-2026';
+const token = process.env.VST3_WORKER_TOKEN ?? '';
+if (token.length < 24 || token.startsWith('REPLACE_')) {
+  throw new Error('Set VST3_WORKER_TOKEN to a unique secret of at least 24 characters in .env before starting the VST3 worker.');
+}
 const environment = {
   ...process.env,
   VST3_EXPORT_ENABLED: 'true',
