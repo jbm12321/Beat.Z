@@ -492,8 +492,15 @@ input[type="range"]:disabled { opacity: .38; }
 .readiness-list span::before { position: absolute; top: 17px; left: 12px; content: "○"; }
 .readiness-list span.is-ready { color: var(--ink); }
 .readiness-list span.is-ready::before { content: "●"; color: var(--green); font-size: 7px; }
+.readiness-list span.is-building { color: var(--ink); }
+.readiness-list span.is-building::before { width: 10px; height: 10px; box-sizing: border-box; content: ""; border: 1.5px solid var(--amber); border-right-color: transparent; border-radius: 50%; animation: build-spinner .7s linear infinite; }
+@keyframes build-spinner { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .readiness-list span.is-building::before { animation-duration: 1.8s; } }
 .frozen-hash { display: block; overflow-wrap: anywhere; padding: 10px; border: 1px solid var(--line); background: var(--paper); color: var(--muted); font-size: 8px; line-height: 1.5; }
 .build-gate-message { margin-top: 14px !important; padding-left: 10px; border-left: 2px solid var(--amber); }
+.build-download { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 14px; padding: 12px; border: 1px solid var(--line-dark); background: var(--paper); }
+.build-download .build-gate-message { flex: 1 1 180px; margin: 0 !important; }
+.vst3-download { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; text-decoration: none; font-size: 10px; white-space: nowrap; }
 .modal-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 20px; }
 .modal-actions button { min-height: 36px; }
 .analysis-table { margin: 24px 0 16px; border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
