@@ -15,7 +15,7 @@ import {
 test('a new project begins with a clean input-to-output chain', () => {
   const project = createInitialProject();
   assert.equal(project.schemaVersion, 2);
-  assert.equal(project.name, 'Untitled');
+  assert.equal(project.name, 'Name your plugin');
   assert.deepEqual(project.chain, []);
   assert.deepEqual(project.nodes, {});
   assert.equal(project.engine.effectDefinition, 'audio-effect-builder-faust');

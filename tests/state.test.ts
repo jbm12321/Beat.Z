@@ -17,6 +17,15 @@ class MemoryStorage {
   setItem(key: string, value: string) { this.data.set(key, value); }
 }
 
+test('a first-time visitor opens a fresh unnamed project', () => {
+  const result = restorePersistedProject(new MemoryStorage());
+  assert.equal(result.source, 'new');
+  assert.equal(result.project.name, 'Name your plugin');
+  assert.deepEqual(result.project.chain, []);
+  assert.deepEqual(result.project.nodes, {});
+  assert.deepEqual(result.project.macros, []);
+});
+
 test('persistence restores the last valid project when current storage is corrupt', () => {
   const storage = new MemoryStorage();
   const project = applyProjectCommands(createInitialProject(), [{ type: 'rename_project', name: 'Safe copy' }], 'human');
