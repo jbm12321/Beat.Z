@@ -1,12 +1,13 @@
-import type { IFaustMonoWebAudioNode } from '@grame/faustwasm/dist/esm/index.js';
-import { createFaustAudioNode, setFaustParameters, type StereoSamples } from '../faust/runtime.ts';
+import { createFaustAudioNode, setFaustParameters, type FaustRealtimeNode, type StereoSamples } from '../faust/runtime.ts';
 import type { DspNode, ProjectV2 } from '../domain/types.ts';
 
 type ModuleGraph = {
-  node: IFaustMonoWebAudioNode;
+  node: FaustRealtimeNode;
   update: (dspNode: DspNode, project: ProjectV2) => void;
   dispose: () => void;
 };
+
+export type BrowserAudioStatus = { kind: 'warning' | 'error'; message: string };
 
 type ActivePath = {
   input: AudioNode;
@@ -111,6 +112,7 @@ export class BrowserAudioEngine {
   private comparisonGain = 1;
   private rebuildGeneration = 0;
   private error: string | null = null;
+  private statusListener: ((status: BrowserAudioStatus) => void) | null = null;
 
   get isPlaying() {
     return this.playing;
@@ -118,6 +120,10 @@ export class BrowserAudioEngine {
 
   get lastError() {
     return this.error;
+  }
+
+  setStatusListener(listener: ((status: BrowserAudioStatus) => void) | null) {
+    this.statusListener = listener;
   }
 
   async ensureContext() {
@@ -249,13 +255,22 @@ export class BrowserAudioEngine {
     const generation = ++this.rebuildGeneration;
     void this.buildGraphPath(generation).catch((cause) => {
       if (generation !== this.rebuildGeneration) return;
-      this.error = cause instanceof Error ? cause.message : 'The Faust audio graph could not be built.';
-      this.bypassed = true;
-      this.applyBypassGains();
+      void this.buildGraphPath(generation, true).then(() => {
+        if (generation !== this.rebuildGeneration) return;
+        this.statusListener?.({ kind: 'warning', message: 'This browser blocked the low-latency Faust worklet. Effects are running in compatibility mode.' });
+      }).catch((fallbackCause) => {
+        if (generation !== this.rebuildGeneration) return;
+        const firstFailure = cause instanceof Error ? cause.message : 'The Faust audio graph could not be built.';
+        const fallbackFailure = fallbackCause instanceof Error ? fallbackCause.message : 'The compatibility processor could not be built.';
+        this.error = `${firstFailure} Compatibility fallback failed: ${fallbackFailure}`;
+        this.statusListener?.({ kind: 'error', message: `Effects are unavailable: ${this.error}` });
+        this.bypassed = true;
+        this.applyBypassGains();
+      });
     });
   }
 
-  private async buildGraphPath(generation: number) {
+  private async buildGraphPath(generation: number, useScriptProcessor = false) {
     if (!this.context || !this.project || !this.inputAnalyser || !this.wetGain) return;
     const context = this.context;
     const snapshot = structuredClone(this.project);
@@ -264,55 +279,61 @@ export class BrowserAudioEngine {
     let input: AudioNode | null = null;
     let current: AudioNode = this.inputAnalyser;
 
-    for (const nodeId of snapshot.chain) {
-      const dspNode = snapshot.nodes[nodeId];
-      if (!dspNode || dspNode.bypassed) continue;
-      const faustNode = await createFaustAudioNode(context, dspNode, snapshot);
+    try {
+      for (const nodeId of snapshot.chain) {
+        const dspNode = snapshot.nodes[nodeId];
+        if (!dspNode || dspNode.bypassed) continue;
+        const faustNode = await createFaustAudioNode(context, dspNode, snapshot, useScriptProcessor);
+        if (generation !== this.rebuildGeneration) {
+          faustNode.destroy();
+          modules.forEach((graph) => graph.dispose());
+          return;
+        }
+        const graph: ModuleGraph = {
+          node: faustNode,
+          update: (nextNode, nextProject) => setFaustParameters(faustNode, nextNode, nextProject),
+          dispose: () => faustNode.destroy(),
+        };
+        current.connect(faustNode);
+        if (!input) input = faustNode;
+        current = faustNode;
+        nodes.push(faustNode);
+        modules.set(nodeId, graph);
+      }
+
+      const pathGain = context.createGain();
+      pathGain.gain.value = 0;
+      current.connect(pathGain);
+      pathGain.connect(this.wetGain);
+      input ??= pathGain;
+      nodes.push(pathGain);
+      const nextPath: ActivePath = { input, gain: pathGain, nodes, modules };
+
       if (generation !== this.rebuildGeneration) {
-        faustNode.destroy();
-        modules.forEach((graph) => graph.dispose());
+        this.disposePath(nextPath);
         return;
       }
-      const graph: ModuleGraph = {
-        node: faustNode,
-        update: (nextNode, nextProject) => setFaustParameters(faustNode, nextNode, nextProject),
-        dispose: () => faustNode.destroy(),
-      };
-      current.connect(faustNode);
-      if (!input) input = faustNode;
-      current = faustNode;
-      nodes.push(faustNode);
-      modules.set(nodeId, graph);
-    }
 
-    const pathGain = context.createGain();
-    pathGain.gain.value = 0;
-    current.connect(pathGain);
-    pathGain.connect(this.wetGain);
-    input ??= pathGain;
-    nodes.push(pathGain);
-    const nextPath: ActivePath = { input, gain: pathGain, nodes, modules };
-
-    if (generation !== this.rebuildGeneration) {
-      this.disposePath(nextPath);
-      return;
+      const previousPath = this.activePath;
+      this.activePath = nextPath;
+      this.moduleGraphs = modules;
+      this.error = null;
+      this.updateGraphParameters();
+      const now = context.currentTime;
+      pathGain.gain.setValueAtTime(0, now);
+      pathGain.gain.linearRampToValueAtTime(1, now + 0.03);
+      if (previousPath) {
+        previousPath.gain.gain.cancelScheduledValues(now);
+        previousPath.gain.gain.setValueAtTime(previousPath.gain.gain.value, now);
+        previousPath.gain.gain.linearRampToValueAtTime(0, now + 0.03);
+        window.setTimeout(() => this.disposePath(previousPath), 45);
+      }
+      this.applyBypassGains(0.03);
+    } catch (error) {
+      modules.forEach((graph) => graph.dispose());
+      nodes.forEach((node) => { try { node.disconnect(); } catch { /* node may be detached */ } });
+      throw error;
     }
-
-    const previousPath = this.activePath;
-    this.activePath = nextPath;
-    this.moduleGraphs = modules;
-    this.error = null;
-    this.updateGraphParameters();
-    const now = context.currentTime;
-    pathGain.gain.setValueAtTime(0, now);
-    pathGain.gain.linearRampToValueAtTime(1, now + 0.03);
-    if (previousPath) {
-      previousPath.gain.gain.cancelScheduledValues(now);
-      previousPath.gain.gain.setValueAtTime(previousPath.gain.gain.value, now);
-      previousPath.gain.gain.linearRampToValueAtTime(0, now + 0.03);
-      window.setTimeout(() => this.disposePath(previousPath), 45);
-    }
-    this.applyBypassGains(0.03);
   }
 
   private updateGraphParameters() {

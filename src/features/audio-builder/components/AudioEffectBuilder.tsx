@@ -169,10 +169,12 @@ export function AudioEffectBuilder() {
   useEffect(() => {
     const engine = new BrowserAudioEngine();
     audioRef.current = engine;
+    engine.setStatusListener((status) => setNotice({ kind: status.kind === 'error' ? 'error' : 'success', text: status.message }));
     engine.setProject(projectRef.current);
     const timer = window.setInterval(() => setMeters(engine.getMeters()), 80);
     return () => {
       window.clearInterval(timer);
+      engine.setStatusListener(null);
       engine.dispose();
       audioRef.current = null;
     };
