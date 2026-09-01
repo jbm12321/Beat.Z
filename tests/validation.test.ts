@@ -50,6 +50,14 @@ test('a validated revision freezes into an immutable content-addressed snapshot'
   assert.equal(frozen.revision, project.revision);
 });
 
+test('freezing rejects different content even when the revision number matches', async () => {
+  const project = applyProjectCommands(createInitialProject(), [{ type: 'add_module', moduleType: 'gain', nodeId: 'gain-1' }], 'human');
+  const validation = validateProjectForBuild(project, healthyAnalysis());
+  const different = structuredClone(project);
+  different.nodes['gain-1'].params.level = 6;
+  await assert.rejects(() => freezeProjectRevision(different, validation), /different project content/i);
+});
+
 test('native build requests stay truthfully gated and name the exact frozen revision', async () => {
   const project = createInitialProject();
   const frozen = await freezeProjectRevision(project, validateProjectForBuild(project, healthyAnalysis()));

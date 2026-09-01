@@ -34,6 +34,7 @@ import { MacroSidebar } from './MacroSidebar';
 import { ModuleSidebar } from './ModuleSidebar';
 import { NativeExportModal } from './NativeExportModal';
 import { moduleDragKey, nodeDragKey } from './dnd';
+import { useVst3ExportSession } from '../../vst3-export/useVst3ExportSession';
 
 type Notice = { kind: 'error' | 'success'; text: string } | null;
 
@@ -58,7 +59,6 @@ export function AudioEffectBuilder() {
   const [comparison, setComparison] = useState<OfflineComparison | null>(null);
   const [validation, setValidation] = useState<ProjectValidationResult>(() => validateProjectForBuild(project));
   const [frozenRevision, setFrozenRevision] = useState<FrozenProjectRevision | null>(null);
-  const [buildGate, setBuildGate] = useState<NativeBuildGate | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [loudnessMatched, setLoudnessMatched] = useState(false);
@@ -74,6 +74,14 @@ export function AudioEffectBuilder() {
   const buildApprovedRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
+  const {
+    enabled: vst3ExportEnabled,
+    job: vst3ExportJob,
+    busy: vst3ExportBusy,
+    error: vst3ExportError,
+    submit: submitVst3Export,
+    reset: resetVst3Export,
+  } = useVst3ExportSession(showNative);
 
   projectRef.current = project;
   historyRef.current = history;
@@ -145,10 +153,12 @@ export function AudioEffectBuilder() {
     setValidation(nextValidation);
     setComparison(null);
     setLoudnessMatched(false);
-    setBuildGate(null);
+    frozenRef.current = null;
+    setFrozenRevision(null);
+    resetVst3Export();
     buildApprovedRef.current = false;
     audioRef.current?.setLoudnessMatchGain(1);
-  }, [project]);
+  }, [project, resetVst3Export]);
 
   useEffect(() => {
     if (!notice) return;
@@ -349,7 +359,6 @@ export function AudioEffectBuilder() {
       if (projectRef.current.revision !== frozen.revision) throw new Error('The project changed while it was being frozen. Validate the current revision again.');
       frozenRef.current = frozen;
       setFrozenRevision(frozen);
-      setBuildGate(null);
       buildApprovedRef.current = false;
       setNotice({ kind: 'success', text: `Revision ${frozen.revision} is frozen with an exact content fingerprint.` });
     } catch (error) {
@@ -359,12 +368,16 @@ export function AudioEffectBuilder() {
     }
   };
 
-  const requestNativeBuild = () => {
+  const requestNativeBuild = async () => {
     const frozen = frozenRef.current;
     if (!frozen) return;
     buildApprovedRef.current = true;
-    const gate = requestPluginBuild(frozen, true);
-    setBuildGate(gate);
+    try {
+      await submitVst3Export(frozen);
+      setNotice({ kind: 'success', text: 'The VST3 build was queued on your Mac.' });
+    } catch (error) {
+      setNotice({ kind: 'error', text: error instanceof Error ? error.message : 'The VST3 build could not be requested.' });
+    }
   };
 
   const approveCurrentProposal = () => {
@@ -691,13 +704,15 @@ export function AudioEffectBuilder() {
         <NativeExportModal
           validation={validation}
           frozen={frozenRevision}
-          buildGate={buildGate}
-          busy={analyzing}
+          exportEnabled={vst3ExportEnabled}
+          job={vst3ExportJob}
+          error={vst3ExportError}
+          busy={analyzing || vst3ExportBusy}
           onClose={() => setShowNative(false)}
           onExport={exportProject}
           onValidate={() => void validateAndShow()}
           onFreeze={() => void freezeCurrentRevision()}
-          onRequestBuild={requestNativeBuild}
+          onRequestBuild={() => void requestNativeBuild()}
         />
       ) : null}
 
