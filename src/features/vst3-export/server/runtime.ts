@@ -6,6 +6,7 @@ interface Vst3Environment {
   DB: D1Database;
   VST3_EXPORT_ENABLED?: string;
   VST3_WORKER_TOKEN?: string;
+  VST3_ARTIFACT_PUBLIC_URL?: string;
 }
 
 export function getVst3ExportService() {
@@ -14,5 +15,6 @@ export function getVst3ExportService() {
     repository: new D1BuildRepository(bindings.DB),
     enabled: bindings.VST3_EXPORT_ENABLED === 'true',
     workerToken: bindings.VST3_WORKER_TOKEN ?? '',
+    artifactPublicUrl: bindings.VST3_ARTIFACT_PUBLIC_URL ?? '',
   });
 }

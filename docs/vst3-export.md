@@ -4,9 +4,9 @@
 
 This branch adds one path:
 
-`Site project -> queued build -> this Mac -> verified .vst3 -> ~/Downloads`
+`Site project -> queued build -> this Mac -> verified .vst3 -> ~/Downloads + public Supabase ZIP`
 
-Browser preview remains Faust WASM/AudioWorklet. The Mac worker is used only for native export. The Site stores build instructions and status in D1; it never stores audio or VST3 binaries.
+Browser preview remains Faust WASM/AudioWorklet. The Mac worker is used only for native export. The Site stores build instructions and status in D1; the worker publishes each verified VST3 as a ZIP in public Supabase Storage.
 
 The backend has four job states: `queued`, `building`, `ready`, and `failed`. Only one job can build at a time.
 
@@ -14,9 +14,11 @@ The backend has four job states: `queued`, `building`, `ready`, and `failed`. On
 
 - `VST3_EXPORT_ENABLED=true` allows new submissions and worker claims. It defaults to off.
 - `VST3_WORKER_TOKEN` is a backend/worker secret and is never shown in the UI.
+- `VST3_ARTIFACT_PUBLIC_URL` is the non-secret public bucket base URL, for example `https://PROJECT.supabase.co/storage/v1/object/public/vst3-builds`. Set it in the Site runtime and worker environment.
+- `VST3_ARTIFACT_BUCKET=vst3-builds`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` are required **only by the Mac worker**. The service-role key must stay in its local environment and must never be placed in `.env` files that are committed, Cloudflare runtime variables, or browser code.
 - Turning export off blocks new work. A build already running may still report its result.
 
-There is intentionally no owner login, pairing flow, device manager, remote artifact storage, installer, DAW launch, or UI switch in this demo.
+The `vst3-builds` bucket must be created as **public** in Supabase Storage. Every completed archive is deliberately available at its returned URL; this is the requested distribution model. The worker uses a unique job-ID prefix so builds do not overwrite one another.
 
 ## What is frozen and built
 
@@ -39,6 +41,7 @@ A job becomes `ready` only after all of these pass:
 7. Actual VST3 versus committed browser WASM renders at 44.1, 48, and 96 kHz.
 8. Macro defaults and each macro at 0, 0.5, and 1, with maximum error no greater than `1e-4`.
 9. Atomic copy of the raw `.vst3` bundle directly into `~/Downloads`.
+10. ZIP packaging and upload to the configured public Supabase bucket. A job does not become `ready` if publication fails.
 
 ## Run the demo
 
@@ -55,7 +58,7 @@ Then open the local URL printed by the command:
 3. Open **Build**.
 4. Freeze the validated revision.
 5. Choose **Build VST3 on this Mac**.
-6. Wait for `ready`, then open Finder -> Downloads.
+6. Wait for `ready`, then choose **Download VST3** to download a ZIP containing the `.vst3` bundle, or open Finder -> Downloads on the build Mac.
 
 Stop the Site and worker together with `Ctrl-C`.
 

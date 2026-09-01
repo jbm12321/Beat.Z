@@ -6,6 +6,7 @@ import test from 'node:test';
 import { saveVerifiedVst3Bundle } from '../lib/artifact.mjs';
 import { deriveNativeIdentity, defaultExportRoot } from '../lib/generation.mjs';
 import { compareStereoParity, createParityScenarios } from '../lib/parity.mjs';
+import { publicArtifactDetails } from '../lib/publish.mjs';
 import { loadToolchainLock, validateNativeBuildRequest } from '../lib/spec.mjs';
 import { analyzeStereo } from '../../src/features/audio-builder/audio/analysis.ts';
 import { freezeProjectRevision } from '../../src/features/audio-builder/domain/build.ts';
@@ -20,6 +21,19 @@ test('native identity is stable per project while artifact hashes can change', (
 
 test('the default artifact destination is the normal Downloads folder', () => {
   assert.equal(defaultExportRoot({ HOME: '/Users/demo' }), '/Users/demo/Downloads');
+});
+
+test('each public artifact URL is a unique, predictable ZIP release URL', () => {
+  const jobId = '01234567-89ab-cdef-0123-456789abcdef';
+  assert.deepEqual(publicArtifactDetails({
+    jobId,
+    filename: 'Test-01234567.vst3',
+    bucket: 'vst3-builds',
+    publicUrl: 'https://example.supabase.co/storage/v1/object/public/vst3-builds/',
+  }), {
+    objectKey: `builds/${jobId}/Test-01234567.vst3.zip`,
+    downloadUrl: `https://example.supabase.co/storage/v1/object/public/vst3-builds/builds/${jobId}/Test-01234567.vst3.zip`,
+  });
 });
 
 test('parity scenarios cover defaults and 0, 0.5, 1 for every real macro', () => {

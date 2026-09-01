@@ -7,6 +7,8 @@ export interface Vst3Artifact {
   bundleSha256: string;
   architecture: 'arm64';
   dspHash: string;
+  objectKey: string;
+  downloadUrl: string;
 }
 
 export interface Vst3BuildEvidence {

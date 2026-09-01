@@ -29,7 +29,7 @@ export function NativeExportModal({ validation, frozen, exportEnabled, job, erro
           <span className={job?.status === 'ready' ? 'is-ready' : ''}>{job ? `Build · ${job.status}` : 'No build requested'}</span>
         </div>
         {frozen ? <code className="frozen-hash">{frozen.approvalHash}</code> : null}
-        {job?.status === 'ready' ? <p className="build-gate-message" role="status">Ready: {job.artifact?.filename} was saved in your Mac&apos;s Downloads folder.</p> : null}
+        {job?.status === 'ready' ? <p className="build-gate-message" role="status">Ready: {job.artifact?.filename} was saved in your Mac&apos;s Downloads folder. {job.artifact?.downloadUrl ? <a href={job.artifact.downloadUrl} download={`${job.artifact.filename}.zip`}>Download VST3</a> : null}</p> : null}
         {job?.status === 'failed' ? <p className="build-gate-message" role="alert">{job.error ?? 'The native build failed.'}</p> : null}
         {error ? <p className="build-gate-message" role="alert">{error}</p> : null}
         <div className="modal-actions">

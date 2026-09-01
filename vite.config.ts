@@ -18,6 +18,7 @@ const localBindingConfig = {
   vars: {
     VST3_EXPORT_ENABLED: process.env.VST3_EXPORT_ENABLED ?? 'false',
     VST3_WORKER_TOKEN: process.env.VST3_WORKER_TOKEN ?? '',
+    VST3_ARTIFACT_PUBLIC_URL: process.env.VST3_ARTIFACT_PUBLIC_URL ?? '',
   },
   d1_databases: d1
     ? [

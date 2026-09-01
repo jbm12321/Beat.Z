@@ -28,4 +28,4 @@ Start with [the architecture guide](docs/architecture.md), then see the [project
 
 ## Native boundary
 
-This repository does not claim to produce a validated VST3. It can validate and freeze an exact browser project revision. Native compilation, signing, VST3 validation, state/automation checks, DAW loading, and browser/native parity require a separate controlled service and remain explicitly gated.
+This repository does not claim to produce a validated VST3 by itself. It can validate and freeze an exact browser project revision. Native compilation, signing, VST3 validation, state/automation checks, DAW loading, browser/native parity, and public Supabase delivery require a separately configured controlled Mac worker; see [VST3 export](docs/vst3-export.md).
