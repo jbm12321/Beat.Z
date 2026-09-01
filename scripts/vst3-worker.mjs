@@ -2,6 +2,7 @@
 
 import { setTimeout as delay } from 'node:timers/promises';
 import { asNativeBuildFailure } from '../native/lib/errors.mjs';
+import { publishVerifiedVst3Bundle } from '../native/lib/publish.mjs';
 import { runNativeBuild } from '../native/lib/runner.mjs';
 import { assertHttpsEndpoint } from '../native/lib/safety.mjs';
 
@@ -29,6 +30,11 @@ async function build(job) {
       environment: process.env,
       onPhase: (_phase, message) => console.log(message),
     });
+    const published = await publishVerifiedVst3Bundle(result.artifact.path, {
+      jobId: job.id,
+      filename: result.artifact.filename,
+      environment: process.env,
+    });
     await request(`/api/vst3-worker/${encodeURIComponent(job.id)}/result`, {
       status: 'ready',
       artifact: {
@@ -36,6 +42,8 @@ async function build(job) {
         bundleSha256: result.artifact.bundleSha256,
         architecture: result.artifact.architecture,
         dspHash: result.artifact.dspHash,
+        objectKey: published.objectKey,
+        downloadUrl: published.downloadUrl,
       },
       evidence: {
         validatorPassed: result.evidence.validatorPassed,

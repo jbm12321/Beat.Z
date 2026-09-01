@@ -27,7 +27,7 @@ function publicJob(record: Vst3BuildRecord) {
   };
 }
 
-function validateOutcome(record: Vst3BuildRecord, outcome: Vst3BuildOutcome) {
+function validateOutcome(record: Vst3BuildRecord, outcome: Vst3BuildOutcome, artifactPublicUrl: string) {
   if (outcome.status === 'failed') {
     if (typeof outcome.error !== 'string' || outcome.error.trim().length === 0 || outcome.error.length > 500) {
       throw new Vst3ExportError('invalid_result', 'The worker failure message is invalid.', 400);
@@ -38,12 +38,14 @@ function validateOutcome(record: Vst3BuildRecord, outcome: Vst3BuildOutcome) {
   const safeFilename = /^[A-Za-z0-9][A-Za-z0-9._-]{0,119}\.vst3$/u.test(artifact?.filename ?? '');
   const safeHash = /^[a-f0-9]{64}$/u.test(artifact?.bundleSha256 ?? '');
   const exactArtifact = artifact?.architecture === 'arm64' && artifact?.dspHash === record.request.dspHash;
-  if (!safeFilename || !safeHash || !exactArtifact || !evidence?.validatorPassed || !evidence.stateRestorePassed || !evidence.parityPassed) {
+  const expectedObjectKey = `builds/${record.id}/${artifact?.filename}.zip`;
+  const exactPublicArtifact = artifact?.objectKey === expectedObjectKey && artifact?.downloadUrl === `${artifactPublicUrl.replace(/\/+$/u, '')}/${expectedObjectKey}`;
+  if (!safeFilename || !safeHash || !exactArtifact || !exactPublicArtifact || !evidence?.validatorPassed || !evidence.stateRestorePassed || !evidence.parityPassed) {
     throw new Vst3ExportError('invalid_result', 'A build cannot become ready without its exact artifact and all native verification gates.', 400);
   }
 }
 
-export function createVst3ExportService({ repository, enabled, workerToken }: { repository: BuildRepository; enabled: boolean; workerToken: string }) {
+export function createVst3ExportService({ repository, enabled, workerToken, artifactPublicUrl }: { repository: BuildRepository; enabled: boolean; workerToken: string; artifactPublicUrl: string }) {
   const authorizeWorker = (token: string) => {
     if (workerToken.length < 24 || token !== workerToken) throw new Vst3ExportError('unauthorized_worker', 'The Mac worker token is invalid.', 401);
   };
@@ -71,7 +73,7 @@ export function createVst3ExportService({ repository, enabled, workerToken }: { 
       authorizeWorker(token);
       const current = await repository.get(id);
       if (!current || current.status !== 'building') throw new Vst3ExportError('invalid_result', 'Only a building job can accept a result.', 409);
-      validateOutcome(current, outcome);
+      validateOutcome(current, outcome, artifactPublicUrl);
       const record = await repository.report(id, outcome, new Date().toISOString());
       if (!record) throw new Vst3ExportError('invalid_result', 'Only a building job can accept a result.', 409);
       return publicJob(record);
