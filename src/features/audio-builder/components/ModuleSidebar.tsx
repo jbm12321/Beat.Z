@@ -1,17 +1,22 @@
 import { MODULE_CATALOG, MODULE_TYPES } from '../domain/catalog';
 import type { ModuleType } from '../domain/types';
+import { Settings as SettingsIcon } from 'lucide-react';
 import { moduleDragKey } from './dnd';
 
-export function ModuleSidebar({ mobileOpen, onAddModule, onOpenInsert }: {
+export function ModuleSidebar({ mobileOpen, onAddModule, onOpenInsert, onHide }: {
   mobileOpen: boolean;
   onAddModule: (moduleType: ModuleType) => void;
   onOpenInsert: () => void;
+  onHide: () => void;
 }) {
   return (
     <aside className={`module-sidebar ${mobileOpen ? 'is-mobile-open' : ''}`} aria-label="Module pool">
       <header className="rail-header">
         <span>Primitives</span>
-        <button type="button" className="text-button" onClick={onOpenInsert}>+ Add</button>
+        <div className="rail-header-actions">
+          <button type="button" className="text-button compact-add-button" aria-label="Add primitive" title="Add primitive" onClick={onOpenInsert}>+</button>
+          <button type="button" className="rail-collapse-button" onClick={onHide}>Hide</button>
+        </div>
       </header>
       <div className="module-list">
         {MODULE_TYPES.map((moduleType, index) => {
@@ -38,7 +43,10 @@ export function ModuleSidebar({ mobileOpen, onAddModule, onOpenInsert }: {
           );
         })}
       </div>
-      <p className="rail-note">Three canonical Faust building blocks. Drag onto the path or click to append.</p>
+      <div className="module-rail-footer">
+        <p className="rail-note rail-logo" aria-label="Beat.Z">Beat.Z</p>
+        <button type="button" className="settings-button" disabled aria-label="Settings" title="Settings coming soon"><SettingsIcon aria-hidden="true" size={14} strokeWidth={1.5} /></button>
+      </div>
     </aside>
   );
 }

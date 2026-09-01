@@ -4,13 +4,12 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { BrowserAudioEngine } from '../audio/BrowserAudioEngine';
-import { renderAndAnalyzeProject, type OfflineComparison } from '../audio/compare';
+import { renderAndAnalyzeProject } from '../audio/compare';
 import {
   applyProjectCommands,
   createInitialProject,
   findAvailableMappingTarget,
   makeId,
-  parseProject,
 } from '../domain/project';
 import { MODULE_CATALOG, MODULE_TYPES } from '../domain/catalog';
 import {
@@ -19,7 +18,7 @@ import {
   getMappingForParameter,
   getParameterDefinition,
 } from '../domain/parameters';
-import type { MacroControl, MacroMapping, ModuleType, ProjectCommand, ProjectV2 } from '../domain/types';
+import type { MacroControl, MacroMapping, ModuleType, ProjectCommand } from '../domain/types';
 import { registerWebMcpTools } from '../agent/registerWebMcpTools';
 import { applyApprovedAgentProposal, authorizeAgentProposal, createAgentProposal, type AgentProposal, type AgentProposalInput } from '../agent/proposals';
 import { freezeProjectRevision, requestPluginBuild, type FrozenProjectRevision, type NativeBuildGate } from '../domain/build';
@@ -28,7 +27,6 @@ import { historyReducer, redoHistory, undoHistory } from '../state/history';
 import { restorePersistedProject, savePersistedProject } from '../state/persistence';
 import { DropZone } from './DropZone';
 import { AgentDrawer, type AgentStatus } from './AgentDrawer';
-import { AnalysisModal } from './AnalysisModal';
 import { AuditionBar } from './AuditionBar';
 import { MacroSidebar } from './MacroSidebar';
 import { ModuleSidebar } from './ModuleSidebar';
@@ -49,22 +47,19 @@ export function AudioEffectBuilder() {
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [showAgent, setShowAgent] = useState(false);
-  const [showExport, setShowExport] = useState(false);
   const [showNative, setShowNative] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'modules' | 'macros' | null>(null);
+  const [modulesHidden, setModulesHidden] = useState(false);
+  const [controlsHidden, setControlsHidden] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
   const [agentStatus, setAgentStatus] = useState<AgentStatus>('checking');
   const [agentHighlights, setAgentHighlights] = useState<string[]>([]);
   const [proposal, setProposal] = useState<AgentProposal | null>(null);
-  const [comparison, setComparison] = useState<OfflineComparison | null>(null);
   const [validation, setValidation] = useState<ProjectValidationResult>(() => validateProjectForBuild(project));
   const [frozenRevision, setFrozenRevision] = useState<FrozenProjectRevision | null>(null);
-  const [showAnalysis, setShowAnalysis] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  const [loudnessMatched, setLoudnessMatched] = useState(false);
-  const [titleDraft, setTitleDraft] = useState(project.name);
   const [playing, setPlaying] = useState(false);
-  const [sourceName, setSourceName] = useState('Built-in loop');
+  const [sourceName, setSourceName] = useState('Beat.Z demo loop');
   const [chainBypass, setChainBypass] = useState(false);
   const [meters, setMeters] = useState({ input: 0, output: 0, inputPeak: 0, outputPeak: 0 });
   const audioRef = useRef<BrowserAudioEngine | null>(null);
@@ -73,9 +68,7 @@ export function AudioEffectBuilder() {
   const frozenRef = useRef<FrozenProjectRevision | null>(null);
   const buildApprovedRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const importInputRef = useRef<HTMLInputElement | null>(null);
   const {
-    enabled: vst3ExportEnabled,
     job: vst3ExportJob,
     busy: vst3ExportBusy,
     error: vst3ExportError,
@@ -123,6 +116,20 @@ export function AudioEffectBuilder() {
     dispatchHistory({ type: 'sync', state: next });
   }, []);
 
+  const clearProject = () => {
+    const hasContent = Object.keys(projectRef.current.nodes).length > 0 || projectRef.current.macros.length > 0;
+    if (!hasContent || !window.confirm('Clear all primitives and controls? You can undo this action.')) return;
+    try {
+      commitCommands([{ type: 'clear_project' }]);
+      setSelectedNodeId(null);
+      setSelectedMacroId(null);
+      setInsertIndex(null);
+      setNotice({ kind: 'success', text: 'Cleared all primitives and controls.' });
+    } catch {
+      // The command layer reports any validation issue.
+    }
+  };
+
   useEffect(() => {
     const restored = restorePersistedProject(window.localStorage);
     projectRef.current = restored.project;
@@ -140,8 +147,6 @@ export function AudioEffectBuilder() {
     }
   }, [hydrated, project]);
 
-  useEffect(() => setTitleDraft(project.name), [project.name]);
-
   useEffect(() => {
     if (selectedNodeId && !project.nodes[selectedNodeId]) setSelectedNodeId(null);
     if (selectedMacroId && !project.macros.some((macro) => macro.id === selectedMacroId)) setSelectedMacroId(null);
@@ -151,8 +156,6 @@ export function AudioEffectBuilder() {
     const nextValidation = validateProjectForBuild(project);
     validationRef.current = nextValidation;
     setValidation(nextValidation);
-    setComparison(null);
-    setLoudnessMatched(false);
     frozenRef.current = null;
     setFrozenRevision(null);
     resetVst3Export();
@@ -194,7 +197,6 @@ export function AudioEffectBuilder() {
       const result = await renderAndAnalyzeProject(projectRef.current, audition.samples, audition.sampleRate);
       if (projectRef.current.revision !== revision) throw new Error('The project changed during analysis. Run the comparison again for the current revision.');
       const nextValidation = validateProjectForBuild(projectRef.current, result.processed);
-      setComparison(result);
       setValidation(nextValidation);
       validationRef.current = nextValidation;
       return result;
@@ -280,10 +282,14 @@ export function AudioEffectBuilder() {
     setMobilePanel(null);
   };
 
-  const commitProjectName = () => {
-    const name = titleDraft.trim();
-    if (name && name !== project.name) commitCommands([{ type: 'rename_project', name }]);
-    else setTitleDraft(project.name);
+  const commitProjectName = (element: HTMLElement) => {
+    const name = element.textContent?.trim() ?? '';
+    if (name === projectRef.current.name) return;
+    try {
+      commitCommands([{ type: 'rename_project', name }]);
+    } catch {
+      element.textContent = projectRef.current.name;
+    }
   };
 
   const togglePlayback = async () => {
@@ -302,15 +308,6 @@ export function AudioEffectBuilder() {
     }
   };
 
-  const restartPlayback = async () => {
-    try {
-      await audioRef.current?.restart();
-      setPlaying(true);
-    } catch {
-      setNotice({ kind: 'error', text: 'The audition source could not restart.' });
-    }
-  };
-
   const chooseAudio = async (file: File | undefined) => {
     if (!file) return;
     try {
@@ -326,7 +323,7 @@ export function AudioEffectBuilder() {
     const engine = audioRef.current;
     if (!engine) return;
     engine.useDemo();
-    setSourceName('Built-in loop');
+    setSourceName('Beat.Z demo loop');
     if (engine.isPlaying) await engine.restart();
     setNotice({ kind: 'success', text: 'Switched back to the built-in audition loop.' });
   };
@@ -335,23 +332,6 @@ export function AudioEffectBuilder() {
     const next = !chainBypass;
     setChainBypass(next);
     audioRef.current?.setBypass(next);
-  };
-
-  const toggleLoudnessMatch = () => {
-    if (!comparison) return;
-    const next = !loudnessMatched;
-    setLoudnessMatched(next);
-    audioRef.current?.setLoudnessMatchGain(next ? comparison.loudnessMatch.gain : 1);
-  };
-
-  const validateAndShow = async () => {
-    try {
-      await performAnalysis();
-      setShowAnalysis(true);
-      setNotice({ kind: 'success', text: 'Offline comparison and browser validation are complete.' });
-    } catch {
-      // performAnalysis reports the specific failure.
-    }
   };
 
   const freezeCurrentRevision = async () => {
@@ -367,6 +347,15 @@ export function AudioEffectBuilder() {
       setNotice({ kind: 'error', text: error instanceof Error ? error.message : 'The current revision could not be frozen.' });
     } finally {
       setAnalyzing(false);
+    }
+  };
+
+  const freezeBuild = async () => {
+    try {
+      if (validationRef.current.status !== 'valid') await performAnalysis();
+      await freezeCurrentRevision();
+    } catch {
+      // The individual validation and freeze steps report the relevant error.
     }
   };
 
@@ -414,36 +403,6 @@ export function AudioEffectBuilder() {
     }
   };
 
-  const exportProject = () => {
-    const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `${project.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'untitled'}.effect-project.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    setShowExport(false);
-    setNotice({ kind: 'success', text: 'Project recipe exported.' });
-  };
-
-  const importProject = async (file: File | undefined) => {
-    if (!file) return;
-    try {
-      const imported = parseProject(JSON.parse(await file.text()));
-      const next: ProjectV2 = structuredClone(imported);
-      next.revision = projectRef.current.revision + 1;
-      next.activity = [{ id: makeId('activity'), actor: 'human' as const, summary: 'Imported project recipe', timestamp: new Date().toISOString() }, ...next.activity].slice(0, 24);
-      projectRef.current = next;
-      dispatchHistory({ type: 'commit', project: next });
-      setSelectedNodeId(null);
-      setSelectedMacroId(null);
-      setShowExport(false);
-      setNotice({ kind: 'success', text: 'Project recipe imported.' });
-    } catch (error) {
-      setNotice({ kind: 'error', text: error instanceof Error ? error.message : 'That project file is invalid.' });
-    }
-  };
-
   const moveSelected = (offset: number) => {
     if (!selectedNodeId) return;
     const index = project.chain.indexOf(selectedNodeId);
@@ -476,59 +435,59 @@ export function AudioEffectBuilder() {
   };
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell ${modulesHidden ? 'modules-hidden' : ''} ${controlsHidden ? 'controls-hidden' : ''}`}>
       {mobilePanel && <button className="mobile-backdrop" aria-label="Close panel" onClick={() => setMobilePanel(null)} />}
 
       <ModuleSidebar
         mobileOpen={mobilePanel === 'modules'}
         onAddModule={addModule}
         onOpenInsert={() => setInsertIndex(project.chain.length)}
+        onHide={() => { setModulesHidden(true); setMobilePanel(null); }}
       />
 
       <section className="workspace" aria-label="Plugin workspace">
         <header className="workspace-header">
           <div className="project-title-wrap">
-            <button type="button" className="mobile-rail-button modules-toggle" onClick={() => setMobilePanel('modules')}>Modules</button>
-            <input
-              className="project-name"
-              aria-label="Project name"
-              value={titleDraft}
-              maxLength={64}
-              onChange={(event) => setTitleDraft(event.target.value)}
-              onBlur={commitProjectName}
-              onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); }}
-            />
+            <button type="button" className={`restore-rail-button ${modulesHidden ? 'is-visible' : ''}`} onClick={() => setModulesHidden(false)}>Primitives</button>
+            <button type="button" className={`mobile-rail-button modules-toggle ${modulesHidden ? 'is-hidden' : ''}`} onClick={() => { setModulesHidden(false); setMobilePanel('modules'); }}>Modules</button>
+            <button type="button" className="icon-button text-icon-button" aria-label="Undo" title="Undo" disabled={!history.past.length} onClick={undo}>Undo</button>
+            <button type="button" className="icon-button text-icon-button" aria-label="Redo" title="Redo" disabled={!history.future.length} onClick={redo}>Redo</button>
+            <button type="button" className="icon-button text-icon-button" aria-label="Clear project" title="Clear primitives and controls" disabled={!Object.keys(project.nodes).length && !project.macros.length} onClick={clearProject}>Clear</button>
           </div>
           <div className="workspace-actions">
-            <button type="button" className="icon-button" aria-label="Undo" title="Undo" disabled={!history.past.length} onClick={undo}>↶</button>
-            <button type="button" className="icon-button" aria-label="Redo" title="Redo" disabled={!history.future.length} onClick={redo}>↷</button>
-            <button type="button" className={`top-action ${chainBypass ? 'is-active' : ''}`} disabled={project.chain.length === 0} title={project.chain.length === 0 ? 'Add a Faust primitive before comparing.' : 'Switch between dry and processed playback.'} aria-pressed={chainBypass} onClick={toggleChainBypass}>Compare</button>
-            <button type="button" className={`top-action validation-action ${validation.status}`} disabled={analyzing} onClick={() => void validateAndShow()}>
-              <span className="validation-dot" /> {analyzing ? 'Checking…' : 'Validate'}
+            <button type="button" className={`agent-button ${showAgent ? 'is-active' : ''}`} aria-label={proposal && proposal.status !== 'applied' ? 'WebMCP proposal ready' : agentStatus === 'connected' ? 'WebMCP connected' : 'WebMCP actions'} onClick={() => setShowAgent((open) => !open)}>
+              <span className={`agent-dot ${agentStatus}`} /> WebMCP
             </button>
-            <button type="button" className="top-action" onClick={() => setShowNative(true)}>Build</button>
-            <button type="button" className={`agent-button ${showAgent ? 'is-active' : ''}`} onClick={() => setShowAgent((open) => !open)}>
-              <span className={`agent-dot ${agentStatus}`} /> {proposal && proposal.status !== 'applied' ? 'Proposal ready' : agentStatus === 'connected' ? 'Agent connected' : 'Agent actions'}
-            </button>
-            <button type="button" className="mobile-rail-button controls-toggle" onClick={() => setMobilePanel('macros')}>Controls</button>
-            <div className="export-wrap">
-              <button type="button" className="export-button" onClick={() => setShowExport((open) => !open)}>Export</button>
-              {showExport && (
-                <div className="export-menu" role="menu">
-                  <button type="button" role="menuitem" onClick={exportProject}><span>Project recipe</span><small>JSON</small></button>
-                  <button type="button" role="menuitem" onClick={() => importInputRef.current?.click()}><span>Import project</span><small>JSON</small></button>
-                  <hr />
-                  <button type="button" role="menuitem" className="native-menu-item" onClick={() => { setShowNative(true); setShowExport(false); }}>
-                    <span>VST3 plugin</span><small>Native builder required</small>
-                  </button>
-                </div>
-              )}
-            </div>
+            <button type="button" className={`mobile-rail-button controls-toggle ${controlsHidden ? 'is-hidden' : ''}`} onClick={() => { setControlsHidden(false); setMobilePanel('macros'); }}>Controls</button>
+            <button type="button" className={`restore-rail-button ${controlsHidden ? 'is-visible' : ''}`} onClick={() => setControlsHidden(false)}>Controls</button>
+            <button type="button" className="export-button" onClick={() => setShowNative(true)}><span>Download</span><span>plugin</span></button>
           </div>
         </header>
 
         <div className={`workspace-canvas ${selectedNode ? 'has-inspector' : ''}`}>
-          <div className="chain-label">Signal chain <span>Revision {project.revision}</span></div>
+          <div className="chain-label">
+            <span className="chain-label-title">Signal chain</span>
+            <strong
+              className="chain-project-name"
+              contentEditable
+              suppressContentEditableWarning
+              role="textbox"
+              aria-label="Project name"
+              tabIndex={0}
+              title="Edit project name"
+              onBlur={(event) => commitProjectName(event.currentTarget)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  event.currentTarget.blur();
+                }
+                if (event.key === 'Escape') {
+                  event.currentTarget.textContent = projectRef.current.name;
+                  event.currentTarget.blur();
+                }
+              }}
+            >{project.name}</strong>
+          </div>
           <div className="chain-scroll">
             <div className={`signal-chain ${project.chain.length === 0 ? 'is-empty' : ''}`} aria-label="Audio signal chain">
               <span className="terminal">Input</span>
@@ -556,7 +515,6 @@ export function AudioEffectBuilder() {
                       <span className="node-order">{String(index + 1).padStart(2, '0')}</span>
                       <strong>{definition.shortName}</strong>
                       <span className="node-value">{formatParameter(primary, getEffectiveParameter(project, node.id, primary.id))}</span>
-                      <span className="node-handle" aria-hidden="true">•••</span>
                     </div>
                     <DropZone index={index + 1} active={dropIndex === index + 1} onOpen={() => setInsertIndex(index + 1)} onDrop={handleDrop} onDragEnter={setDropIndex} />
                   </div>
@@ -566,7 +524,7 @@ export function AudioEffectBuilder() {
             </div>
           </div>
 
-          {project.chain.length === 0 && <p className="canvas-hint">Add your first module to shape the sound.</p>}
+          {project.chain.length === 0 && <p className="canvas-hint">Add Module</p>}
 
           {disconnectedNodes.length > 0 && (
             <div className="disconnected-shelf">
@@ -590,7 +548,7 @@ export function AudioEffectBuilder() {
 
           {insertIndex !== null && (
             <div className="insert-menu" role="dialog" aria-label="Choose a module">
-              <header><span>Insert module</span><button type="button" aria-label="Close" onClick={() => setInsertIndex(null)}>×</button></header>
+              <header><span>Primitives</span><button type="button" aria-label="Close" onClick={() => setInsertIndex(null)}>×</button></header>
               <div>
                 {MODULE_TYPES.map((moduleType) => (
                   <button type="button" key={moduleType} onClick={() => addModule(moduleType, insertIndex)}>
@@ -611,7 +569,6 @@ export function AudioEffectBuilder() {
                     <button type="button" disabled={project.chain.indexOf(selectedNode.id) === project.chain.length - 1} onClick={() => moveSelected(1)} aria-label="Move module right">→</button>
                   </>}
                   <button type="button" className={selectedNode.bypassed ? 'is-active' : ''} onClick={() => commitCommands([{ type: 'set_bypass', nodeId: selectedNode.id, bypassed: !selectedNode.bypassed }])}>{selectedNode.bypassed ? 'Enable' : 'Bypass'}</button>
-                  <button type="button" onClick={() => commitCommands([{ type: project.chain.includes(selectedNode.id) ? 'disconnect_module' : 'connect_module', nodeId: selectedNode.id }])}>{project.chain.includes(selectedNode.id) ? 'Disconnect' : 'Reconnect'}</button>
                   <button type="button" className="danger-action" onClick={() => {
                     const confirmed = window.confirm(`Delete ${MODULE_CATALOG[selectedNode.type].name}? Its macro mappings will also be removed.`);
                     if (confirmed) commitCommands([{ type: 'delete_module', nodeId: selectedNode.id }]);
@@ -646,7 +603,6 @@ export function AudioEffectBuilder() {
                           onChange={(event) => commitCommands([{ type: 'set_parameter', nodeId: selectedNode.id, paramId: parameter.id, value: Number(event.target.value) }])}
                         />
                       )}
-                      {mappingOwner ? <small>Controlled by {mappingOwner.macro.name}</small> : <small>Faust · smoothed</small>}
                     </label>
                   );
                 })}
@@ -660,9 +616,7 @@ export function AudioEffectBuilder() {
             activity={project.activity}
             proposal={proposal}
             currentRevision={project.revision}
-            canUndo={history.past.length > 0}
             onClose={() => setShowAgent(false)}
-            onUndo={undo}
             onApproveProposal={approveCurrentProposal}
             onDismissProposal={() => { proposalRef.current = null; setProposal(null); }}
           />
@@ -671,19 +625,13 @@ export function AudioEffectBuilder() {
         <AuditionBar
           playing={playing}
           sourceName={sourceName}
-          isDemo={sourceName === 'Built-in loop'}
+          isDemo={sourceName === 'Beat.Z demo loop'}
           meters={meters}
           chainBypass={chainBypass}
-          loudnessMatched={loudnessMatched}
-          canLoudnessMatch={Boolean(comparison)}
-          analyzing={analyzing}
           onTogglePlayback={() => void togglePlayback()}
           onChooseFile={() => fileInputRef.current?.click()}
           onUseDemo={() => void switchToDemoAudio()}
-          onRestart={() => void restartPlayback()}
           onToggleBypass={toggleChainBypass}
-          onToggleLoudnessMatch={toggleLoudnessMatch}
-          onAnalyze={() => void validateAndShow()}
         />
       </section>
 
@@ -692,34 +640,29 @@ export function AudioEffectBuilder() {
         mobileOpen={mobilePanel === 'macros'}
         selectedMacroId={selectedMacroId}
         selectedMacro={selectedMacro}
-        agentStatus={agentStatus}
         hasAvailableTarget={Boolean(availableTarget)}
         onCreateMacro={createMacro}
         onSelectMacro={setSelectedMacroId}
         onAddMapping={addMapping}
         onChangeMappingTarget={changeMappingTarget}
         onCommit={(commands) => { commitCommands(commands); }}
+        onHide={() => { setControlsHidden(true); setMobilePanel(null); }}
       />
 
-      {showAnalysis && comparison ? <AnalysisModal comparison={comparison} validation={validation} onClose={() => setShowAnalysis(false)} /> : null}
       {showNative ? (
         <NativeExportModal
-          validation={validation}
+          projectName={project.name}
           frozen={frozenRevision}
-          exportEnabled={vst3ExportEnabled}
           job={vst3ExportJob}
           error={vst3ExportError}
           busy={analyzing || vst3ExportBusy}
           onClose={() => setShowNative(false)}
-          onExport={exportProject}
-          onValidate={() => void validateAndShow()}
-          onFreeze={() => void freezeCurrentRevision()}
+          onFreezeBuild={() => void freezeBuild()}
           onRequestBuild={() => void requestNativeBuild()}
         />
       ) : null}
 
       <input ref={fileInputRef} className="visually-hidden" type="file" accept="audio/*" onChange={(event) => void chooseAudio(event.target.files?.[0])} />
-      <input ref={importInputRef} className="visually-hidden" type="file" accept="application/json,.json" onChange={(event) => void importProject(event.target.files?.[0])} />
       {notice && <div className={`notice ${notice.kind}`} role="status" aria-live="polite">{notice.text}</div>}
     </main>
   );
