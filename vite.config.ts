@@ -15,6 +15,10 @@ const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === 'seatbelt';
 const localBindingConfig = {
   main: 'vinext/server/app-router-entry',
   compatibility_flags: ['nodejs_compat'],
+  vars: {
+    VST3_EXPORT_ENABLED: process.env.VST3_EXPORT_ENABLED ?? 'false',
+    VST3_WORKER_TOKEN: process.env.VST3_WORKER_TOKEN ?? '',
+  },
   d1_databases: d1
     ? [
         {
@@ -55,6 +59,7 @@ export default defineConfig(async () => {
       cloudflare({
         viteEnvironment: { name: 'rsc', childEnvironments: ['ssr'] },
         config: localBindingConfig,
+        inspectorPort: isCodexSeatbeltSandbox ? false : undefined,
       }),
     ],
   };

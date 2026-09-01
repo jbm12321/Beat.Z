@@ -5,6 +5,8 @@ export interface FrozenProjectRevision {
   id: string;
   projectId: string;
   revision: number;
+  approvalHash: string;
+  /** @deprecated Use approvalHash. Kept for existing callers and exported recipes. */
   contentHash: string;
   frozenAt: string;
   project: ProjectV2;
@@ -45,11 +47,14 @@ export async function freezeProjectRevision(project: ProjectV2, validation: Proj
   if (validation.status !== 'valid') throw new Error('Only a fully validated project revision can be frozen.');
   const snapshot = structuredClone(validatedProject);
   const contentHash = await hashProject(snapshot);
+  const validationHash = await hashProject(validateProject(validation.projectSnapshot));
+  if (validationHash !== contentHash) throw new Error('Browser validation belongs to different project content. Validate this exact project again.');
   deepFreeze(snapshot);
   return Object.freeze({
     id: `frozen_${contentHash.slice(0, 16)}`,
     projectId: snapshot.id,
     revision: snapshot.revision,
+    approvalHash: contentHash,
     contentHash,
     frozenAt: new Date().toISOString(),
     project: snapshot,
