@@ -15,6 +15,7 @@ export function NativeExportModal({ validation, frozen, exportEnabled, job, erro
   onFreeze: () => void;
   onRequestBuild: () => void;
 }) {
+  const building = job?.status === 'building';
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
       <section className="native-modal" role="dialog" aria-modal="true" aria-labelledby="native-title" onMouseDown={(event) => event.stopPropagation()}>
@@ -26,10 +27,11 @@ export function NativeExportModal({ validation, frozen, exportEnabled, job, erro
           <span className={validation.status === 'valid' ? 'is-ready' : ''}>Browser validation · {validation.status}</span>
           <span className={frozen ? 'is-ready' : ''}>{frozen ? `Frozen revision ${frozen.revision}` : 'Approved revision not frozen'}</span>
           <span className={exportEnabled ? 'is-ready' : ''}>{exportEnabled === null ? 'Checking Mac builder…' : exportEnabled ? 'Mac builder enabled' : 'Mac builder unavailable'}</span>
-          <span className={job?.status === 'ready' ? 'is-ready' : ''}>{job ? `Build · ${job.status}` : 'No build requested'}</span>
+          <span className={job?.status === 'ready' ? 'is-ready' : building ? 'is-building' : ''} aria-live="polite" aria-busy={building}>{job ? `Build · ${job.status}` : 'No build requested'}</span>
         </div>
         {frozen ? <code className="frozen-hash">{frozen.approvalHash}</code> : null}
-        {job?.status === 'ready' ? <p className="build-gate-message" role="status">Ready: {job.artifact?.filename} was saved in your Mac&apos;s Downloads folder. {job.artifact?.downloadUrl ? <a href={job.artifact.downloadUrl} download={`${job.artifact.filename}.zip`}>Download VST3</a> : null}</p> : null}
+        {building ? <p className="build-gate-message" role="status">Your VST3 is building and being verified. A download link will appear here shortly.</p> : null}
+        {job?.status === 'ready' ? <div className="build-download" role="status"><p className="build-gate-message">Your VST3 is ready: {job.artifact?.filename}</p>{job.artifact?.downloadUrl ? <a className="export-button vst3-download" href={job.artifact.downloadUrl} download={`${job.artifact.filename}.zip`}>Download VST3 ZIP</a> : null}</div> : null}
         {job?.status === 'failed' ? <p className="build-gate-message" role="alert">{job.error ?? 'The native build failed.'}</p> : null}
         {error ? <p className="build-gate-message" role="alert">{error}</p> : null}
         <div className="modal-actions">
