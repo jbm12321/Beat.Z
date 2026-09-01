@@ -1,8 +1,4 @@
-import {
-  FaustMonoDspGenerator,
-  type IFaustMonoWebAudioNode,
-  type LooseFaustDspFactory,
-} from '@grame/faustwasm/dist/esm/index.js';
+import { FaustMonoDspGenerator, type LooseFaustDspFactory } from '@grame/faustwasm/dist/esm/index.js';
 import {
   MODULE_CATALOG,
   getEffectiveParameter,
@@ -13,6 +9,7 @@ import {
 
 export type StereoSamples = [Float32Array, Float32Array];
 export type FaustFactoryLoader = (type: ModuleType) => Promise<LooseFaustDspFactory>;
+export type FaustRealtimeNode = AudioNode & { destroy(): void; setParamValue(path: string, value: number): void };
 
 const browserFactoryCache = new Map<ModuleType, Promise<LooseFaustDspFactory>>();
 
@@ -41,21 +38,21 @@ export function loadFaustFactory(type: ModuleType) {
   return pending;
 }
 
-export function setFaustParameters(target: Pick<IFaustMonoWebAudioNode, 'setParamValue'>, node: DspNode, project?: ProjectV2) {
+export function setFaustParameters(target: Pick<FaustRealtimeNode, 'setParamValue'>, node: DspNode, project?: ProjectV2) {
   MODULE_CATALOG[node.type].parameters.forEach((definition) => {
     const value = project ? getEffectiveParameter(project, node.id, definition.id) : node.params[definition.id];
     target.setParamValue(definition.faustPath, value);
   });
 }
 
-export async function createFaustAudioNode(context: BaseAudioContext, node: DspNode, project: ProjectV2) {
+export async function createFaustAudioNode(context: BaseAudioContext, node: DspNode, project: ProjectV2, useScriptProcessor = false): Promise<FaustRealtimeNode> {
   const factory = await loadFaustFactory(node.type);
   const generator = new FaustMonoDspGenerator();
   const processorName = `aeb-${node.type}-${MODULE_CATALOG[node.type].definitionVersion.replaceAll('.', '-')}`;
-  const faustNode = await generator.createNode(context, node.type, factory, false, 1024, processorName);
+  const faustNode = await generator.createNode(context, node.type, factory, useScriptProcessor, 1024, processorName);
   if (!faustNode) throw new Error(`${MODULE_CATALOG[node.type].name} could not start its Faust processor.`);
   setFaustParameters(faustNode, node, project);
-  return faustNode;
+  return faustNode as FaustRealtimeNode;
 }
 
 export async function renderFaustModuleOffline(

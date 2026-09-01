@@ -74,3 +74,24 @@ test('parameter edits update the live graph without rebuilding its topology', ()
   assert.equal(rebuilds, 2);
   assert.equal(liveUpdates, 1);
 });
+
+test('a rejected AudioWorklet retries the exact Faust graph through the compatibility backend', async () => {
+  const engine = new BrowserAudioEngine();
+  const internals = engine as unknown as {
+    rebuildGraph: () => void;
+    buildGraphPath: (generation: number, useScriptProcessor?: boolean) => Promise<void>;
+  };
+  const attempts: boolean[] = [];
+  let status = '';
+  internals.buildGraphPath = async (_generation, useScriptProcessor = false) => {
+    attempts.push(useScriptProcessor);
+    if (!useScriptProcessor) throw new Error('Blob AudioWorklet URL was rejected.');
+  };
+  engine.setStatusListener((next) => { status = next.message; });
+
+  internals.rebuildGraph();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.deepEqual(attempts, [false, true]);
+  assert.match(status, /compatibility mode/i);
+});
