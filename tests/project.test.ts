@@ -120,8 +120,8 @@ test('exported project JSON validates as a portable round trip', () => {
   assert.deepEqual(restored, project);
 });
 
-test('the Faust primitive catalog exposes Pair 1 with exact shared contracts', () => {
-  assert.deepEqual(MODULE_TYPES, ['gain', 'filter', 'saturation', 'delay', 'reverb']);
+test('the Faust primitive catalog exposes the seven exact shared contracts', () => {
+  assert.deepEqual(MODULE_TYPES, ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor']);
   assert.deepEqual(MODULE_CATALOG.filter.parameters.map((parameter) => parameter.id), ['mode', 'cutoff', 'resonance']);
   assert.equal(MODULE_CATALOG.filter.parameters[0].kind, 'choice');
   assert.deepEqual(MODULE_CATALOG.filter.parameters[0].choices, [
@@ -154,6 +154,13 @@ test('the Faust primitive catalog exposes Pair 1 with exact shared contracts', (
   assert.deepEqual(MODULE_CATALOG.reverb.parameters[0].choices, [
     { value: 0, label: 'Room' }, { value: 1, label: 'Hall' }, { value: 2, label: 'Plate' },
   ]);
+  assert.deepEqual(MODULE_CATALOG.chorus.parameters.map((parameter) => parameter.id), ['mode', 'rate', 'depth', 'delay', 'mix', 'output']);
+  assert.deepEqual(MODULE_CATALOG.chorus.parameters[0].choices, [
+    { value: 0, label: 'Classic' }, { value: 1, label: 'Wide' }, { value: 2, label: 'Ensemble' },
+  ]);
+  assert.equal(MODULE_CATALOG.chorus.parameters[0].mappable, false);
+  assert.deepEqual(MODULE_CATALOG.compressor.parameters.map((parameter) => parameter.id), ['threshold', 'ratio', 'attack', 'release', 'makeup', 'mix']);
+  assert.equal(MODULE_CATALOG.compressor.parameters.find((parameter) => parameter.id === 'ratio')?.unit, 'ratio');
   MODULE_TYPES.forEach((type) => {
     const definition = MODULE_CATALOG[type];
     assert.ok(definition.parameters.length > 0);
@@ -169,6 +176,11 @@ test('the Faust primitive catalog exposes Pair 1 with exact shared contracts', (
 test('Pair 1 time units use the domain formatter without UI special cases', () => {
   assert.equal(formatParameter(MODULE_CATALOG.delay.parameters[1], 340), '340 ms');
   assert.equal(formatParameter(MODULE_CATALOG.reverb.parameters[2], 3.8), '3.8 s');
+});
+
+test('Compressor ratios use a native-style ratio label without changing existing unit formatting', () => {
+  assert.equal(formatParameter(MODULE_CATALOG.compressor.parameters[1], 4), '4.0:1');
+  assert.equal(formatParameter(MODULE_CATALOG.chorus.parameters[1], 0.8), '0.80 Hz');
 });
 
 test('new saturation nodes default to Soft Clip while exposing additive character parameters', () => {

@@ -8,7 +8,7 @@ import { promisify } from 'node:util';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const outputRoot = join(root, 'public', 'faust');
-const definitions = ['gain', 'filter', 'saturation', 'delay', 'reverb'];
+const definitions = ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor'];
 const execFileAsync = promisify(execFile);
 const toolchain = JSON.parse(await readFile(join(root, 'native', 'toolchain.lock.json'), 'utf8'));
 const faustCommand = toolchain.faust.nativeCommand;

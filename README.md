@@ -1,6 +1,6 @@
 # Audio Effect Builder
 
-A private, browser-first visual audio-effect builder. The v0.1 vertical slice uses three canonical Faust primitives—Gain, unified Filter, and Saturation—for live Web Audio auditioning and deterministic offline analysis. Human and WebMCP actions share one revisioned project model.
+A browser-first visual audio-effect builder with seven canonical Faust primitives: Gain, unified Filter, Saturation, Delay, Reverb, Chorus, and Compressor. Live Web Audio auditioning and deterministic offline analysis use the same committed Faust processors. Human and WebMCP actions share one revisioned project model.
 
 ## Quick start
 
@@ -22,7 +22,7 @@ npm run lint
 npm run build
 ```
 
-No API key, database, upload service, or `.env` file is required. Local audio is decoded in memory and is never persisted or included in exported project JSON.
+No API key, database, upload service, or `.env` file is required for ordinary browser development. Native VST3 export additionally uses the Site's D1 job queue and a separately configured Mac worker. Local audio is decoded in memory and is never persisted or included in exported project JSON.
 
 Start with [the architecture guide](docs/architecture.md), then see the [project contract](docs/project-model.md), [Faust audio engine](docs/audio-engine.md), [WebMCP contract](docs/webmcp.md), and [development guide](docs/development.md).
 

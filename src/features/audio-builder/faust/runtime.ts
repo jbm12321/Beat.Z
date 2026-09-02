@@ -19,8 +19,13 @@ let faustRuntimePromise: Promise<FaustRuntimeModule> | null = null;
 
 function loadFaustRuntime(): Promise<FaustRuntimeModule> {
   if (faustRuntimePromise) return faustRuntimePromise;
-  const specifier = typeof window === 'undefined' ? nodeRuntimeSpecifier : browserRuntimePath;
-  faustRuntimePromise = import(/* @vite-ignore */ specifier)
+  const viteEnvironment = (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env;
+  const isViteDevelopment = typeof window !== 'undefined' && viteEnvironment?.DEV === true;
+  const specifier = typeof window === 'undefined' || isViteDevelopment ? nodeRuntimeSpecifier : browserRuntimePath;
+  const runtimeImport = isViteDevelopment
+    ? import('@grame/faustwasm/dist/esm/index.js')
+    : import(/* @vite-ignore */ specifier);
+  faustRuntimePromise = runtimeImport
     .then((runtime: FaustRuntimeModule) => {
       if (typeof runtime.FaustMonoDspGenerator !== 'function') {
         throw new Error('FaustMonoDspGenerator is missing from the runtime module.');
