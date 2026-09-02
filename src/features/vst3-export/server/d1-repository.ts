@@ -1,6 +1,13 @@
 import { createVst3BuildJobsTable } from '../../../../db/schema.ts';
 import type { NativeBuildRequestV1 } from '../contract.ts';
-import type { BuildRepository, Vst3BuildOutcome, Vst3BuildRecord, Vst3BuildStatus } from './repository.ts';
+import {
+  STALE_BUILD_ERROR,
+  STALE_BUILD_TIMEOUT_MS,
+  type BuildRepository,
+  type Vst3BuildOutcome,
+  type Vst3BuildRecord,
+  type Vst3BuildStatus,
+} from './repository.ts';
 
 interface JobRow {
   id: string;
@@ -54,6 +61,13 @@ export class D1BuildRepository implements BuildRepository {
 
   async claimOldest(now: string) {
     await this.#ready();
+    const staleBefore = new Date(Date.parse(now) - STALE_BUILD_TIMEOUT_MS).toISOString();
+    await this.database.prepare(`
+      UPDATE vst3_build_jobs
+      SET status = 'failed', error_text = ?, finished_at = ?
+      WHERE status = 'building'
+        AND (started_at IS NULL OR started_at < ?)
+    `).bind(STALE_BUILD_ERROR, now, staleBefore).run();
     const row = await this.database.prepare(`
       UPDATE vst3_build_jobs
       SET status = 'building', started_at = ?

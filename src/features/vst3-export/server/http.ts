@@ -7,8 +7,7 @@ export function workerToken(request: Request) {
 
 export function jsonError(error: unknown) {
   if (error instanceof Vst3ExportError) return Response.json({ error: error.message, code: error.code }, { status: error.httpStatus });
-  const message = error instanceof Error ? error.message : 'The VST3 request could not be completed.';
-  return Response.json({ error: message, code: 'invalid_request' }, { status: 400 });
+  return Response.json({ error: 'The VST3 request could not be completed.', code: 'invalid_request' }, { status: 400 });
 }
 
 export async function readLimitedJson(request: Request, maximumBytes = 512 * 1024) {

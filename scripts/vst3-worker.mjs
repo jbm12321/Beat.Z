@@ -6,7 +6,11 @@ import { publishVerifiedVst3Bundle } from '../native/lib/publish.mjs';
 import { runNativeBuild } from '../native/lib/runner.mjs';
 import { assertHttpsEndpoint } from '../native/lib/safety.mjs';
 
-const endpoint = assertHttpsEndpoint(process.env.VST3_EXPORT_ENDPOINT ?? 'http://127.0.0.1:3000', { allowLoopbackHttp: true });
+const liveEndpoint = 'https://audio-effect-builder-bm26.jbm111.chatgpt.site';
+const endpoint = assertHttpsEndpoint(process.env.VST3_EXPORT_ENDPOINT ?? liveEndpoint);
+if (endpoint.origin !== liveEndpoint) {
+  throw new Error(`VST3_EXPORT_ENDPOINT must point to ${liveEndpoint}.`);
+}
 const token = process.env.VST3_WORKER_TOKEN ?? '';
 const once = process.argv.includes('--once');
 if (token.length < 24) throw new Error('VST3_WORKER_TOKEN must contain at least 24 characters.');
@@ -59,13 +63,22 @@ async function build(job) {
   }
 }
 
-console.log(`VST3 Mac worker connected to ${endpoint.origin}`);
+let connected = false;
+let lastPollError = '';
+console.log(`VST3 Mac worker configured for ${endpoint.origin}`);
 do {
   try {
     const { job } = await request('/api/vst3-worker/claim');
+    if (!connected) console.log(`VST3 Mac worker connected to ${endpoint.origin}`);
+    connected = true;
+    lastPollError = '';
     if (job) await build(job);
   } catch (error) {
     if (once) throw error;
+    const message = error instanceof Error ? error.message : String(error);
+    if (message !== lastPollError) console.error('Error.');
+    connected = false;
+    lastPollError = message;
   }
   if (!once) await delay(1500);
 } while (!once);
