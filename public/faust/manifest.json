@@ -7,6 +7,8 @@
     "basics": "1.23.0",
     "filters": "1.7.1",
     "maths": "2.9.0",
+    "misceffects": "2.5.2",
+    "oscillators": "1.7.0",
     "platform": "1.3.0",
     "signals": "1.6.0"
   },
@@ -33,7 +35,7 @@
     "saturation": {
       "definitionVersion": "0.1.0",
       "source": "faust/saturation.dsp",
-      "sourceSha256": "238cd373e164ba480c6367ae7ef1c071205346361c7f597d6c1dc3878af0a75b",
+      "sourceSha256": "f8a7bbe451c3abd30e4c61fd6210ea3b6a2fef2ae5b67fda2c49c2890969bbf1",
       "wasm": "/faust/saturation/dsp-module.wasm",
       "metadata": "/faust/saturation/dsp-meta.json",
       "inputs": 2,

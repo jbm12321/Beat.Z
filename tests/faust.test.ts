@@ -131,3 +131,25 @@ test('Faust Saturation drive and tone progressively change the processed signal'
   assert.ok(coloration / (input.length - start) > 0.05);
   assert.ok(rms(dark[0], start) < rms(driven[0], start) * 0.2);
 });
+
+test('Faust Saturation characters are distinct, stable, and retain legacy Soft Clip defaults', async () => {
+  const sampleRate = 48000;
+  const input = sine(900, sampleRate, sampleRate, 0.65);
+  const node = createNode('saturation', 'sat-characters');
+  Object.assign(node.params, { drive: 18, tone: 12000, mix: 100, output: 0, bias: 0.3, clip: 0.3, age: 70, wow: 30 });
+  const outputs: Float32Array[] = [];
+  for (const character of [0, 1, 2, 3]) {
+    node.params.character = character;
+    const rendered = await renderFaustModuleOffline(node, [input, input], sampleRate, await loadFactory('saturation'));
+    assert.ok(rendered.every((channel) => channel.every(Number.isFinite)));
+    outputs.push(rendered[0]);
+  }
+  const start = sampleRate / 4;
+  for (let index = 0; index < outputs.length; index += 1) {
+    for (let comparison = index + 1; comparison < outputs.length; comparison += 1) {
+      let difference = 0;
+      for (let sample = start; sample < input.length; sample += 1) difference += Math.abs(outputs[index][sample] - outputs[comparison][sample]);
+      assert.ok(difference / (input.length - start) > 0.0005, `characters ${index} and ${comparison} should sound distinct`);
+    }
+  }
+});

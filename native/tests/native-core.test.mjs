@@ -93,42 +93,17 @@ test('the generated audio callback never resizes its buffers', async () => {
   assert.doesNotMatch(processBody, /\.resize\s*\(/u);
 });
 
-test('the native editor groups the frozen chain into one visible six-knob row', async () => {
+test('the native editor preserves every Saturation v2 parameter in visible wrapped rows', async () => {
   const request = await nativeRequestForModules(['gain', 'filter', 'saturation']);
   const parameters = createAutomaticNativeParameters(request);
   const editor = createNativeEditorModel(parameters);
 
-  assert.equal(editor.rowCount, 1);
-  assert.equal(editor.knobCount, 6);
-  assert.equal(editor.switchCount, 1);
-  assert.equal(editor.height, 520);
-  assert.deepEqual(editor.rows[0].modules.map((module) => module.label), ['Gain 1', 'Filter 1', 'Saturation 1']);
-  assert.deepEqual(editor.rows[0].modules.flatMap((module) => module.controls.filter((control) => control.type === 'knob').map((control) => control.slot)), [0, 1, 2, 3, 4, 5]);
-  assert.deepEqual(editor.rows[0].modules.map((module) => ({
-    title: module.label,
-    controls: module.controls.map(({ label, type, choices, unit }) => ({ label, type, choices, unit })),
-  })), [
-    {
-      title: 'Gain 1',
-      controls: [{ label: 'Level', type: 'knob', choices: [], unit: 'dB' }],
-    },
-    {
-      title: 'Filter 1',
-      controls: [
-        { label: 'Mode', type: 'switch', choices: ['High Pass', 'Low Pass'], unit: '' },
-        { label: 'Cutoff', type: 'knob', choices: [], unit: 'Hz' },
-        { label: 'Resonance', type: 'knob', choices: [], unit: 'Q' },
-      ],
-    },
-    {
-      title: 'Saturation 1',
-      controls: [
-        { label: 'Drive', type: 'knob', choices: [], unit: 'dB' },
-        { label: 'Tone', type: 'knob', choices: [], unit: 'Hz' },
-        { label: 'Mix', type: 'knob', choices: [], unit: '%' },
-      ],
-    },
-  ]);
+  assert.equal(editor.rowCount, 3);
+  assert.equal(editor.knobCount, 11);
+  assert.equal(editor.switchCount, 2);
+  assert.ok(editor.rows.every((row) => row.knobCount <= 6));
+  assert.deepEqual(editor.rows.flatMap((row) => row.modules.map((module) => module.label)), ['Gain 1', 'Filter 1', 'Saturation 1 1/2', 'Saturation 1 2/2']);
+  assert.deepEqual(parameters.filter((parameter) => parameter.moduleType === 'saturation').map((parameter) => parameter.parameterId), ['character', 'drive', 'tone', 'mix', 'output', 'bias', 'clip', 'age', 'wow']);
   assert.equal('pages' in editor, false);
 });
 
@@ -136,15 +111,16 @@ test('the native editor wraps complete modules into visible rows without paginat
   const request = await nativeRequestForModules(['saturation', 'saturation', 'gain']);
   const editor = createNativeEditorModel(createAutomaticNativeParameters(request));
 
-  assert.equal(editor.rowCount, 2);
-  assert.equal(editor.height, 840);
+  assert.equal(editor.rowCount, 4);
+  assert.equal(editor.height, 1480);
   assert.deepEqual(editor.rows.map((row) => row.modules.map((module) => module.label)), [
-    ['Saturation 1', 'Saturation 2'],
-    ['Gain 1'],
+    ['Saturation 1 1/2'],
+    ['Saturation 1 2/2'],
+    ['Saturation 2 1/2'],
+    ['Saturation 2 2/2', 'Gain 1'],
   ]);
   assert.ok(editor.rows.every((row) => row.knobCount <= 6));
-  assert.deepEqual(editor.rows[0].modules.flatMap((module) => module.controls.filter((control) => control.type === 'knob').map((control) => control.slot)), [0, 1, 2, 3, 4, 5]);
-  assert.deepEqual(editor.rows[1].modules[0].controls.map((control) => control.slot), [0]);
+  assert.deepEqual(editor.rows[0].modules[0].controls.filter((control) => control.type === 'knob').map((control) => control.slot), [0, 1, 2, 3, 4, 5]);
 });
 
 test('repeated modules have stable section and host parameter numbering', async () => {
@@ -178,7 +154,7 @@ test('native exports expose every active effect parameter in an editable VST3 ed
 
   assert.match(config, /PLUG_HAS_UI 1/u);
   assert.match(config, /PLUG_WIDTH 960/u);
-  assert.match(config, /PLUG_HEIGHT 520/u);
+  assert.match(config, /PLUG_HEIGHT 1160/u);
   assert.match(config, /ROBOTO_FN "Roboto-Regular\.ttf"/u);
   assert.doesNotMatch(cmake, /UI NONE|NO_IGRAPHICS/u);
   assert.match(cmake, /RESOURCES \$\{IPLUG2_DIR\}\/Examples\/IPlugEffect\/resources\/fonts\/Roboto-Regular\.ttf/u);
@@ -187,26 +163,23 @@ test('native exports expose every active effect parameter in an editable VST3 ed
   assert.match(source, /LoadFont\("Roboto-Regular", "Helvetica", ETextStyle::Normal\)/u);
   assert.match(source, /WithShowLabel\(true\)[\s\S]*WithShowValue\(true\)/u);
   assert.match(source, /new IVKnobControl\([^;]*kParam0, "Level"/u);
-  assert.match(source, /new IVKnobControl\([^;]*kParam1, "Drive"/u);
-  assert.match(source, /new IVKnobControl\([^;]*kParam2, "Tone"/u);
-  assert.match(source, /new IVKnobControl\([^;]*kParam3, "Mix"/u);
-  assert.match(source, /new IVTabSwitchControl\([^;]*kParam4[^;]*\{"High Pass", "Low Pass"\}[^;]*"Mode"/u);
-  assert.doesNotMatch(source, /new IVKnobControl\([^;]*kParam4/u);
-  assert.match(source, /new IVKnobControl\([^;]*kParam5, "Cutoff"/u);
-  assert.match(source, /new IVKnobControl\([^;]*kParam6, "Resonance"/u);
+  assert.match(source, /new IVTabSwitchControl\([^;]*kParam1[^;]*\{"Soft Clip", "Cubic", "Fuzz", "Tape"\}[^;]*"Character"/u);
+  assert.match(source, /new IVKnobControl\([^;]*kParam2, "Drive"/u);
+  assert.match(source, /new IVKnobControl\([^;]*kParam9, "Wow"/u);
+  assert.match(source, /new IVTabSwitchControl\([^;]*kParam10[^;]*\{"High Pass", "Low Pass"\}[^;]*"Mode"/u);
   assert.match(source, /InitDouble\("Gain 1 Level"[^;]*"dB"[^;]*"Gain 1"/u);
   assert.match(source, /InitEnum\("Filter 1 Mode"[^;]*\{"High Pass", "Low Pass"\}[^;]*"Filter 1"/u);
-  assert.match(source, /new IVGroupControl\([^;]*"SATURATION 1"/u);
+  assert.match(source, /new IVGroupControl\([^;]*"SATURATION 1 1\/2"/u);
   assert.match(source, /new IVGroupControl\([^;]*"FILTER 1"/u);
-  assert.match(source, /"3 MODULES  \/  6 KNOBS  \/  1 SWITCH"/u);
-  assert.match(source, /SubRectVertical\(1, 0\)/u);
+  assert.match(source, /"3 MODULES  \/  11 KNOBS  \/  2 SWITCHES"/u);
+  assert.match(source, /SubRectVertical\(3, 0\)/u);
   assert.doesNotMatch(source, /editor-page|PAGE 1 \/|"PREV"|"NEXT"/u);
   assert.match(source, /iplug::IParam::ShapeExp\(\)/u);
   assert.match(chain, /void setParameter\(int parameterIndex, float value\)/u);
   assert.doesNotMatch(chain, /void setMacro/u);
-  assert.equal(manifest.editor.rowCount, 1);
-  assert.equal(manifest.editor.knobCount, 6);
-  assert.equal(manifest.editor.switchCount, 1);
+  assert.equal(manifest.editor.rowCount, 3);
+  assert.equal(manifest.editor.knobCount, 11);
+  assert.equal(manifest.editor.switchCount, 2);
 });
 
 test('verified bundles are copied atomically without a Beat.Z subfolder', async () => {

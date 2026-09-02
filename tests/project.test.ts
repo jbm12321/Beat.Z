@@ -5,6 +5,7 @@ import {
   MODULE_TYPES,
   applyProjectCommands,
   createInitialProject,
+  createNode,
   getEffectiveParameter,
   migrateLegacyProject,
   validateProject,
@@ -123,6 +124,9 @@ test('the Faust vertical slice exposes exactly Gain, Filter, and Saturation', ()
   assert.deepEqual(MODULE_CATALOG.filter.parameters.map((parameter) => parameter.id), ['mode', 'cutoff', 'resonance']);
   assert.equal(MODULE_CATALOG.filter.parameters[0].kind, 'choice');
   assert.deepEqual(MODULE_CATALOG.filter.parameters[0].choices?.map((choice) => choice.label), ['High Pass', 'Low Pass']);
+  assert.deepEqual(MODULE_CATALOG.saturation.parameters.map((parameter) => parameter.id), ['character', 'drive', 'tone', 'mix', 'output', 'bias', 'clip', 'age', 'wow']);
+  assert.deepEqual(MODULE_CATALOG.saturation.parameters[0].choices?.map((choice) => choice.label), ['Soft Clip', 'Cubic', 'Fuzz', 'Tape']);
+  assert.equal(MODULE_CATALOG.saturation.parameters[0].mappable, false);
   MODULE_TYPES.forEach((type) => {
     const definition = MODULE_CATALOG[type];
     assert.ok(definition.parameters.length > 0);
@@ -132,6 +136,13 @@ test('the Faust vertical slice exposes exactly Gain, Filter, and Saturation', ()
       assert.ok(parameter.min < parameter.max);
       assert.ok(parameter.default >= parameter.min && parameter.default <= parameter.max);
     });
+  });
+});
+
+test('new saturation nodes default to Soft Clip while exposing additive character parameters', () => {
+  const saturation = createNode('saturation', 'sat-v2');
+  assert.deepEqual(saturation.params, {
+    character: 0, drive: 6, tone: 8000, mix: 50, output: 0, bias: 0, clip: 0.5, age: 0, wow: 0,
   });
 });
 

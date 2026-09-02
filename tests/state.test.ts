@@ -57,6 +57,20 @@ test('persistence migrates legacy projects without deleting their original backu
   assert.equal(storage.getItem(LEGACY_STORAGE_KEY), JSON.stringify(legacy));
 });
 
+test('persistence upgrades current Saturation saves to Soft Clip without altering their existing settings', () => {
+  const storage = new MemoryStorage();
+  const project = applyProjectCommands(createInitialProject(), [{ type: 'add_module', moduleType: 'saturation', nodeId: 'sat-1' }], 'human');
+  const old = structuredClone(project);
+  old.nodes['sat-1'].params = { drive: 18, tone: 4000, mix: 65 };
+  old.engine.moduleSourceSha256.saturation = '238cd373e164ba480c6367ae7ef1c071205346361c7f597d6c1dc3878af0a75b';
+  storage.setItem(STORAGE_KEY, JSON.stringify(old));
+  const restored = restorePersistedProject(storage);
+  assert.equal(restored.source, 'current');
+  assert.deepEqual(restored.project.nodes['sat-1'].params, {
+    character: 0, drive: 18, tone: 4000, mix: 65, output: 0, bias: 0, clip: 0.5, age: 0, wow: 0,
+  });
+});
+
 test('undo and redo create monotonic revisions while restoring whole snapshots', () => {
   const initial = createInitialProject();
   const renamed = applyProjectCommands(initial, [{ type: 'rename_project', name: 'One' }], 'human');
