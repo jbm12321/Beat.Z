@@ -2,7 +2,7 @@
 
 ## Canonical definitions
 
-The seven files under `faust/` are the canonical v0.1 DSP definitions. The build script uses the pinned native Faust 2.85.9 executable to generate the committed browser WASM with `-single -ftz 2`; the Mac worker uses that same compiler version and flags to generate VST3 C++. The native target also pins `-ffp-contract=off` so Clang preserves the same separate float-operation boundaries as WebAssembly. `@grame/faustwasm` 0.16.6 remains the browser runtime. The manifest records source SHA-256 fingerprints and library versions so browser and native builds share one explicit DSP provenance.
+The eight files under `faust/` are the canonical v0.1 DSP definitions. The build script uses the pinned native Faust 2.85.9 executable to generate the committed browser WASM with `-single -ftz 2`; the Mac worker uses that same compiler version and flags to generate VST3 C++. The native target also pins `-ffp-contract=off` so Clang preserves the same separate float-operation boundaries as WebAssembly. `@grame/faustwasm` 0.16.6 remains the browser runtime. The manifest records source SHA-256 fingerprints and library versions so browser and native builds share one explicit DSP provenance.
 
 ## Live signal flow
 
@@ -31,12 +31,13 @@ The browser runtime fingerprint is deployment provenance, not DSP engine provena
 - Delay: one stereo `de.sdelay` feedback structure provides Digital, cross-feedback Ping-Pong, and darker saturated/modulated Tape modes. Time is converted from milliseconds at the active sample rate and the feedback ceiling is 0.90.
 - Reverb: one stereo `re.jpverb` core provides Beat.Z Room, Hall, and Plate voicings, with `de.sdelay` pre-delay on the wet path.
 - Chorus: fractional delays driven by phase-offset `os.oscp` modulators provide Classic, Wide, and normalized three-voice Ensemble modes.
-- Compressor: the permissively licensed `co.compressor_stereo` core provides linked-stereo ratio, threshold, attack, release, wet-only makeup, and parallel Mix control.
+- Compressor: Clean preserves the permissively licensed linked-stereo `co.compressor_stereo` path; Punch uses a high-passed peak detector with transient-preserving timing; Glue uses linked RMS detection for smoother gain movement. All modes retain wet-only makeup and parallel Mix control.
+- Phaser: one six-stage all-pass core provides Classic, Wide, and Deep voicings through distinct sweep geometry, stereo phase, feedback, and wet polarity. A single outer dry/wet mixer preserves the exact dry endpoint without evaluating three complete phasers per sample.
 
 ## Offline rendering and analysis
 
 Offline comparison uses `FaustMonoDspGenerator.createOfflineProcessor` with the same committed factories. It reports peak and RMS/average dBFS, stereo activity, clipping at absolute sample `>= 1`, invalid non-finite samples, and silence below `−80 dBFS`. Loudness matching calculates a bounded comparison-only gain and never mutates the project.
 
-Tests render the actual processors at 44.1, 48, and 96 kHz. They verify source/metadata fingerprints, stereo I/O, dry endpoints, all Filter/Delay/Reverb/Chorus modes, timed and cross-channel repeats, decaying stereo reverb tails, normalized chorus voices, linked-stereo compression, finite extremes, and existing Gain/Saturation behavior.
+Tests render the actual processors at 44.1, 48, and 96 kHz. They verify source/metadata fingerprints, stereo I/O, dry endpoints, all Filter/Delay/Reverb/Chorus/Compressor/Phaser modes, timed and cross-channel repeats, decaying stereo reverb tails, normalized chorus voices, linked-stereo compression, distinct detector behavior, phaser stereo movement, finite extremes, and existing Gain/Saturation behavior.
 
-The compiler is pinned to Faust 2.85.9 with `-single -ftz 2`; native DSP compilation additionally uses `-ffp-contract=off`. Pair 1 records `delays.lib` 1.2.0, `reverbs.lib` 1.5.1, and `filters.lib` 1.7.1 from the bundled Faust release. Their upstream license declarations remain in the installed libraries; distribution licensing still requires human release review.
+The compiler is pinned to Faust 2.85.9 with `-single -ftz 2`; native DSP compilation additionally uses `-ffp-contract=off`. The engine records `delays.lib` 1.2.0, `reverbs.lib` 1.5.1, `filters.lib` 1.7.1, `compressors.lib` 1.6.0, `analyzers.lib` 1.3.0, and `phaflangers.lib` 1.1.0 from the bundled Faust release. The Compressor deliberately avoids the GPLv3 RMS compressor family and builds Glue from the MIT-style `an.rms_envelope_tau` envelope and `co.compression_gain_mono` gain computer. Upstream license declarations remain in the installed libraries; distribution licensing still requires human release review.

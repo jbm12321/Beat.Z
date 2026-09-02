@@ -1,4 +1,4 @@
-export type ModuleType = 'gain' | 'filter' | 'saturation' | 'delay' | 'reverb' | 'chorus' | 'compressor';
+export type ModuleType = 'gain' | 'filter' | 'saturation' | 'delay' | 'reverb' | 'chorus' | 'compressor' | 'phaser';
 export type ParameterScale = 'linear' | 'log';
 export type ParameterKind = 'continuous' | 'choice';
 
@@ -81,6 +81,7 @@ export interface EngineProvenance {
     platform: '1.3.0';
     reverbs: '1.5.1';
     compressors: '1.6.0';
+    phaflangers: '1.1.0';
     signals: '1.6.0';
   };
   moduleSourceSha256: Record<ModuleType, string>;
@@ -280,16 +281,36 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   },
   compressor: {
     type: 'compressor', name: 'Compressor', shortName: 'COMP', description: 'Control dynamics with linked stereo compression.', definitionVersion: '0.1.0',
-    sourceSha256: '8440fc44c50c362eb6287707d90a9e10033db2d9a5a0a662ef22a93d90db4ff9',
-    wasmSha256: '47913563a1382be3bd7eff04dd26a57a80ecd09c36dbb09d983b38c65b3f9e2d',
+    sourceSha256: '5c63fd9f14183aae0c1b3b1cd4a22cf674623bb39a6508218d1857599b8232d6',
+    wasmSha256: '5b8c083fea87784b1005ad39ca9b37be255d8852b6d96e4e6e2abb6447d14631',
     wasmPath: '/faust/compressor/dsp-module.wasm', metadataPath: '/faust/compressor/dsp-meta.json',
     parameters: [
+      parameter('mode', 'Mode', 0, 2, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Compressor/Compressor_Mode', {
+        kind: 'choice', choices: [{ value: 0, label: 'Clean' }, { value: 1, label: 'Punch' }, { value: 2, label: 'Glue' }], mappable: false,
+      }),
       parameter('threshold', 'Threshold', -48, 0, -18, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Compressor/Compressor_Threshold'),
       parameter('ratio', 'Ratio', 1, 20, 4, 0.1, 'ratio', 'log', '/Audio_Effect_Builder_Compressor/Compressor_Ratio'),
       parameter('attack', 'Attack', 0.1, 200, 20, 0.1, 'ms', 'log', '/Audio_Effect_Builder_Compressor/Compressor_Attack'),
       parameter('release', 'Release', 20, 2000, 250, 1, 'ms', 'log', '/Audio_Effect_Builder_Compressor/Compressor_Release'),
       parameter('makeup', 'Makeup', -12, 24, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Compressor/Compressor_Makeup'),
       parameter('mix', 'Mix', 0, 100, 100, 1, '%', 'linear', '/Audio_Effect_Builder_Compressor/Compressor_Mix'),
+    ],
+  },
+  phaser: {
+    type: 'phaser', name: 'Phaser', shortName: 'PHAS', description: 'Add sweeping all-pass movement and stereo depth.', definitionVersion: '0.1.0',
+    sourceSha256: 'b812485b365ccf92ba7fb8680feced1b3ce27b86a568c8634ca6ce949c827c04',
+    wasmSha256: 'efb34fc50e334da4c1b2c3886a35906f359881ddba8aabd52f123cd4f525741c',
+    wasmPath: '/faust/phaser/dsp-module.wasm', metadataPath: '/faust/phaser/dsp-meta.json',
+    parameters: [
+      parameter('mode', 'Mode', 0, 2, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Phaser/Phaser_Mode', {
+        kind: 'choice', choices: [{ value: 0, label: 'Classic' }, { value: 1, label: 'Wide' }, { value: 2, label: 'Deep' }], mappable: false,
+      }),
+      parameter('rate', 'Rate', 0.05, 5, 0.5, 0.01, 'Hz', 'log', '/Audio_Effect_Builder_Phaser/Phaser_Rate'),
+      parameter('depth', 'Depth', 0, 100, 60, 1, '%', 'linear', '/Audio_Effect_Builder_Phaser/Phaser_Depth'),
+      parameter('center', 'Center', 100, 2000, 700, 1, 'Hz', 'log', '/Audio_Effect_Builder_Phaser/Phaser_Center'),
+      parameter('feedback', 'Feedback', -85, 85, 15, 1, '%', 'linear', '/Audio_Effect_Builder_Phaser/Phaser_Feedback'),
+      parameter('mix', 'Mix', 0, 100, 50, 1, '%', 'linear', '/Audio_Effect_Builder_Phaser/Phaser_Mix'),
+      parameter('output', 'Output', -24, 12, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Phaser/Phaser_Output'),
     ],
   },
 };
@@ -340,9 +361,22 @@ export const PRE_CHORUS_COMPRESSOR_ENGINE_PROVENANCE = Object.freeze({
     reverb: 'bec502b0ca2f0b01dd7c10051cd848417f24ca0eb45b73c2854a49da54abb5ff',
   },
 });
-export const ENGINE_PROVENANCE: EngineProvenance = {
+export const PRE_PHASER_COMPRESSOR_MODES_ENGINE_PROVENANCE = Object.freeze({
   effectDefinition: 'audio-effect-builder-faust', definitionVersion: '0.1.0', faustWasmVersion: '0.16.6', faustCompilerVersion: '2.85.9',
   libraries: { analyzers: '1.3.0', basics: '1.22.0', compressors: '1.6.0', delays: '1.2.0', filters: '1.7.1', maths: '2.9.0', misceffects: '2.5.2', oscillators: '1.7.0', platform: '1.3.0', reverbs: '1.5.1', signals: '1.6.0' },
+  moduleSourceSha256: {
+    gain: 'caca77ad2ac86cf0ef26f62a22d1d0c62a7d4b7f86c6c4e3fef77e9d19fbd35d',
+    filter: '076d102ec4209b0a9e33d4199e302896a3951017e88a1e821ec106347c03ee7f',
+    saturation: '9074635f03744b4b4f280eac15839585716d4a23a732ac7c59e26eb1c3bab068',
+    delay: 'fb9a020e31f2b4f290a17ad2a18ec5d87c6f701195af2bc95e38f2d99cef1b92',
+    reverb: 'bec502b0ca2f0b01dd7c10051cd848417f24ca0eb45b73c2854a49da54abb5ff',
+    chorus: '19432a2946b7711dc6f4d694e3fdc5c665df67dddbcadc59622c4052539aa419',
+    compressor: '8440fc44c50c362eb6287707d90a9e10033db2d9a5a0a662ef22a93d90db4ff9',
+  },
+});
+export const ENGINE_PROVENANCE: EngineProvenance = {
+  effectDefinition: 'audio-effect-builder-faust', definitionVersion: '0.1.0', faustWasmVersion: '0.16.6', faustCompilerVersion: '2.85.9',
+  libraries: { analyzers: '1.3.0', basics: '1.22.0', compressors: '1.6.0', delays: '1.2.0', filters: '1.7.1', maths: '2.9.0', misceffects: '2.5.2', oscillators: '1.7.0', phaflangers: '1.1.0', platform: '1.3.0', reverbs: '1.5.1', signals: '1.6.0' },
   moduleSourceSha256: Object.fromEntries(MODULE_TYPES.map((type) => [type, MODULE_CATALOG[type].sourceSha256])) as Record<ModuleType, string>,
 };
 
@@ -748,13 +782,22 @@ export function upgradeProjectEngine(value: unknown): ProjectV2 {
   const isPreSaturationV2 = sameJson(project.engine, PRE_SATURATION_V2_ENGINE_PROVENANCE);
   const isPreAudibility = sameJson(project.engine, PRE_AUDIBILITY_ENGINE_PROVENANCE);
   const isPreChorusCompressor = sameJson(project.engine, PRE_CHORUS_COMPRESSOR_ENGINE_PROVENANCE);
-  if (!isPrePair1 && !isPreCanonicalCompiler && !isPreSaturationV2 && !isPreAudibility && !isPreChorusCompressor) return validateProject(project);
+  const isPrePhaserCompressorModes = sameJson(project.engine, PRE_PHASER_COMPRESSOR_MODES_ENGINE_PROVENANCE);
+  if (!isPrePair1 && !isPreCanonicalCompiler && !isPreSaturationV2 && !isPreAudibility && !isPreChorusCompressor && !isPrePhaserCompressorModes) return validateProject(project);
   if (isPreSaturationV2) {
     for (const node of Object.values(project.nodes as Record<string, unknown>)) {
       if (!isRecord(node) || node.type !== 'saturation' || !isRecord(node.params)) continue;
       const keys = Object.keys(node.params).sort();
       if (keys.join(',') !== 'drive,mix,tone') throw new Error('The historical Saturation project has an unsupported parameter set.');
       node.params = { ...createNode('saturation', String(node.id)).params, ...node.params };
+    }
+  }
+  if (isPrePhaserCompressorModes) {
+    for (const node of Object.values(project.nodes as Record<string, unknown>)) {
+      if (!isRecord(node) || node.type !== 'compressor' || !isRecord(node.params)) continue;
+      const keys = Object.keys(node.params).sort();
+      if (keys.join(',') !== 'attack,makeup,mix,ratio,release,threshold') throw new Error('The historical Compressor project has an unsupported parameter set.');
+      node.params = { mode: 0, ...node.params };
     }
   }
   project.engine = structuredClone(ENGINE_PROVENANCE);
