@@ -12,11 +12,10 @@ The backend has four job states: `queued`, `building`, `ready`, and `failed`. On
 
 ## Backend controls
 
-- `VST3_EXPORT_ENABLED=true` allows new submissions and worker claims. It defaults to off.
 - `VST3_WORKER_TOKEN` is a backend/worker secret and is never shown in the UI.
 - `VST3_ARTIFACT_PUBLIC_URL` is the non-secret public bucket base URL, for example `https://PROJECT.supabase.co/storage/v1/object/public/vst3-builds`. Set it in the Site runtime and worker environment.
 - `VST3_ARTIFACT_BUCKET=vst3-builds`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` are required **only by the Mac worker**. The service-role key must stay in its local environment and must never be placed in `.env` files that are committed, Cloudflare runtime variables, or browser code.
-- Turning export off blocks new work. A build already running may still report its result.
+- The site accepts build requests continuously. A queued request is built only when the authorized Mac worker claims it.
 
 The `vst3-builds` bucket must be created as **public** in Supabase Storage. Every completed archive is deliberately available at its returned URL; this is the requested distribution model. The worker uses a unique job-ID prefix so builds do not overwrite one another.
 
@@ -54,9 +53,9 @@ npm run dev:vst3
 Then open the local URL printed by the command:
 
 1. Add at least one module.
-2. Audition and validate the project.
+2. Audition the project and resolve any blocking audio analysis issues.
 3. Open **Build**.
-4. Freeze the validated revision.
+4. Freeze the current analyzed revision.
 5. Choose **Build VST3 on this Mac**.
 6. Wait for `ready`, then choose **Download VST3** to download a ZIP containing the `.vst3` bundle, or open Finder -> Downloads on the build Mac.
 

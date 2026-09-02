@@ -13,7 +13,7 @@ export function AnalysisModal({ comparison, projectName, onClose }: {
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
       <section className="analysis-modal" role="dialog" aria-modal="true" aria-labelledby="analysis-title" onMouseDown={(event) => event.stopPropagation()}>
         <button type="button" className="modal-close" aria-label="Close analysis" onClick={onClose}>×</button>
-        <h2 id="analysis-title">Frozen: {projectName}</h2>
+        <h2 id="analysis-title">Audio analysis: {projectName}</h2>
         <div className="analysis-table" role="table" aria-label="Audio comparison levels">
           <div role="row"><span role="columnheader">Render</span><span role="columnheader">Average</span><span role="columnheader">Peak</span><span role="columnheader">Stereo</span></div>
           <div role="row"><strong role="cell">Dry</strong><span role="cell">{db(comparison.dry.averageDb)}</span><span role="cell">{db(comparison.dry.peakDb)}</span><span role="cell">{comparison.dry.stereoActivity > 0.0001 ? 'Active' : 'Mono'}</span></div>

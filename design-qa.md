@@ -7,7 +7,7 @@
 - Focused comparison: `/private/tmp/beatz-logo-comparison.png`.
 - Reference viewport: 1087 x 740 CSS px at device scale 1; source capture is 1087 x 740 px.
 - Implementation viewport: desktop local preview; implementation capture is 1280 x 720 px. The focused modal regions were normalized to a 560 x 350 CSS px frame for comparison.
-- States: completed build (reference) and not frozen (implementation). The content differs intentionally; the comparison target is the persistent modal frame and Beat.Z footer position.
+- States: completed build (reference) and not prepared (implementation). The content differs intentionally; the comparison target is the persistent modal frame and Beat.Z footer position.
 
 ## Full-view comparison evidence
 
@@ -38,7 +38,7 @@ The completed-build reference resolves the Beat.Z logo 39 px from the modal's ri
 ## Interaction checks
 
 - Opened the Download Plugin modal from the local builder.
-- Confirmed the Freeze Build action remains present and enabled.
+- Confirmed the Prepare Download action remains present and enabled.
 - Confirmed closing/build behavior code was untouched.
 - Checked browser console warnings and errors: none.
 

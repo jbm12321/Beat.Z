@@ -67,10 +67,10 @@ test('logarithmic parity scenarios use the same normalized curve as the native k
 
 test('parity comparison separately enforces peak and sustained-error ceilings', () => {
   const browser = [new Float32Array(100), new Float32Array(100)];
-  assert.equal(compareStereoParity(browser, browser, { maxTolerance: 5e-4, rmsTolerance: 1e-4 }).passed, true);
+  assert.equal(compareStereoParity(browser, browser, { maxTolerance: 5e-4, rmsTolerance: 1.5e-4 }).passed, true);
   const isolatedPeak = [new Float32Array(browser[0]), new Float32Array(browser[1])];
   isolatedPeak[0][0] = 4e-4;
-  assert.equal(compareStereoParity(browser, isolatedPeak, { maxTolerance: 5e-4, rmsTolerance: 1e-4 }).passed, true);
+  assert.equal(compareStereoParity(browser, isolatedPeak, { maxTolerance: 5e-4, rmsTolerance: 1.5e-4 }).passed, true);
   const sustainedMismatch = [new Float32Array(100).fill(1.5e-4), new Float32Array(100)];
   assert.equal(compareStereoParity(browser, sustainedMismatch, { maxTolerance: 5e-4, rmsTolerance: 1e-4 }).passed, false);
 });

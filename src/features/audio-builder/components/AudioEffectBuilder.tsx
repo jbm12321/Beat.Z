@@ -74,7 +74,7 @@ export function AudioEffectBuilder() {
     error: vst3ExportError,
     submit: submitVst3Export,
     reset: resetVst3Export,
-  } = useVst3ExportSession(showNative);
+  } = useVst3ExportSession();
 
   projectRef.current = project;
   historyRef.current = history;
@@ -236,7 +236,7 @@ export function AudioEffectBuilder() {
     if (!frozen || !buildApprovedRef.current) {
       return {
         status: 'unavailable', code: 'approval_required', projectId: projectRef.current.id, revision: frozen?.revision ?? projectRef.current.revision,
-        contentHash: frozen?.contentHash ?? '', message: 'Freeze a validated revision and approve the native build request in the page first.',
+        contentHash: frozen?.contentHash ?? '', message: 'Prepare the current project for download and approve the native build request in the page first.',
       };
     }
     return requestPluginBuild(frozen, true);
@@ -334,28 +334,34 @@ export function AudioEffectBuilder() {
     audioRef.current?.setBypass(next);
   };
 
-  const freezeCurrentRevision = async () => {
-    try {
-      setAnalyzing(true);
-      const frozen = await freezeProjectRevision(projectRef.current, validationRef.current);
-      if (projectRef.current.revision !== frozen.revision) throw new Error('The project changed while it was being frozen. Validate the current revision again.');
-      frozenRef.current = frozen;
-      setFrozenRevision(frozen);
-      buildApprovedRef.current = false;
-      setNotice({ kind: 'success', text: `Revision ${frozen.revision} is frozen with an exact content fingerprint.` });
-    } catch (error) {
-      setNotice({ kind: 'error', text: error instanceof Error ? error.message : 'The current revision could not be frozen.' });
-    } finally {
-      setAnalyzing(false);
-    }
+  const freezeCurrentRevision = async (validationResult: ProjectValidationResult) => {
+    const frozen = await freezeProjectRevision(projectRef.current, validationResult);
+    if (projectRef.current.revision !== frozen.revision) throw new Error('The project changed while it was being prepared. Analyze the current revision again.');
+    frozenRef.current = frozen;
+    setFrozenRevision(frozen);
+    buildApprovedRef.current = false;
+    setNotice({ kind: 'success', text: `Revision ${frozen.revision} is prepared with an exact content fingerprint.` });
   };
 
   const freezeBuild = async () => {
     try {
-      if (validationRef.current.status !== 'valid') await performAnalysis();
-      await freezeCurrentRevision();
-    } catch {
-      // The individual validation and freeze steps report the relevant error.
+      setAnalyzing(true);
+      let currentValidation = validationRef.current;
+      if (currentValidation.status !== 'valid' || currentValidation.revision !== projectRef.current.revision) {
+        const comparison = await performAnalysis();
+        currentValidation = validateProjectForBuild(projectRef.current, comparison.processed);
+        validationRef.current = currentValidation;
+        setValidation(currentValidation);
+      }
+      if (currentValidation.status !== 'valid') {
+        const issue = currentValidation.issues.find((entry) => entry.severity === 'error');
+        throw new Error(issue?.message ?? 'The current project needs a successful audio analysis before it can be prepared for download.');
+      }
+      await freezeCurrentRevision(currentValidation);
+    } catch (error) {
+      setNotice({ kind: 'error', text: error instanceof Error ? error.message : 'The current project could not be prepared for download.' });
+    } finally {
+      setAnalyzing(false);
     }
   };
 
