@@ -385,6 +385,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, [role="button"]
 .inspector-title > div:first-child { display: flex; align-items: baseline; gap: 10px; }
 .inspector-title span { color: var(--muted); font-size: 9px; font-weight: 700; }
 .inspector-title strong { font-size: 13px; font-weight: 500; }
+.inspector-character { display: flex; align-items: flex-start; flex-direction: column; gap: 5px; margin-left: 6px; }
+.inspector-character > span { font-size: 8px; letter-spacing: .08em; text-transform: uppercase; }
+.inspector-character .parameter-select { width: 112px; height: 28px; }
 .inspector-actions { display: flex; align-items: center; gap: 5px; }
 .inspector-actions button { min-height: 28px; padding: 0 9px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 9px; }
 .inspector-actions button:hover:not(:disabled), .inspector-actions button.is-active { border-color: var(--ink); color: var(--ink); }

@@ -564,7 +564,42 @@ export function AudioEffectBuilder() {
           {selectedNode && (
             <section className="node-inspector" aria-label={`${MODULE_CATALOG[selectedNode.type].name} parameters`}>
               <header className="inspector-title">
-                <div><span>{MODULE_CATALOG[selectedNode.type].shortName}</span><strong>{MODULE_CATALOG[selectedNode.type].name}</strong></div>
+                <div>
+                  <span>{MODULE_CATALOG[selectedNode.type].shortName}</span>
+                  <strong>{MODULE_CATALOG[selectedNode.type].name}</strong>
+                  {selectedNode.type === 'filter' && (() => {
+                    const mode = MODULE_CATALOG.filter.parameters.find((parameter) => parameter.id === 'mode')!;
+                    const effective = getEffectiveParameter(project, selectedNode.id, mode.id);
+                    return (
+                      <label className="inspector-character">
+                        <span>{mode.name}</span>
+                        <select
+                          className="parameter-select"
+                          value={effective}
+                          onChange={(event) => commitCommands([{ type: 'set_parameter', nodeId: selectedNode.id, paramId: mode.id, value: Number(event.target.value) }])}
+                        >
+                          {mode.choices?.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}
+                        </select>
+                      </label>
+                    );
+                  })()}
+                  {selectedNode.type === 'saturation' && (() => {
+                    const character = MODULE_CATALOG.saturation.parameters.find((parameter) => parameter.id === 'character')!;
+                    const effective = getEffectiveParameter(project, selectedNode.id, character.id);
+                    return (
+                      <label className="inspector-character">
+                        <span>{character.name}</span>
+                        <select
+                          className="parameter-select"
+                          value={effective}
+                          onChange={(event) => commitCommands([{ type: 'set_parameter', nodeId: selectedNode.id, paramId: character.id, value: Number(event.target.value) }])}
+                        >
+                          {character.choices?.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}
+                        </select>
+                      </label>
+                    );
+                  })()}
+                </div>
                 <div className="inspector-actions">
                   {project.chain.includes(selectedNode.id) && <>
                     <button type="button" disabled={project.chain.indexOf(selectedNode.id) === 0} onClick={() => moveSelected(-1)} aria-label="Move module left">←</button>
@@ -580,8 +615,10 @@ export function AudioEffectBuilder() {
               </header>
               <div className="parameter-grid">
                 {MODULE_CATALOG[selectedNode.type].parameters.filter((parameter) => {
+                  if (selectedNode.type === 'filter' && parameter.id === 'mode') return false;
                   if (selectedNode.type !== 'saturation') return true;
-                  if (['character', 'drive', 'tone', 'mix', 'output'].includes(parameter.id)) return true;
+                  if (parameter.id === 'character') return false;
+                  if (['drive', 'tone', 'mix', 'output'].includes(parameter.id)) return true;
                   const character = selectedNode.params.character;
                   return (character === 1 && parameter.id === 'bias')
                     || (character === 2 && parameter.id === 'clip')
