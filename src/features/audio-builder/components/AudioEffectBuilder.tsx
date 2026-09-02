@@ -495,7 +495,9 @@ export function AudioEffectBuilder() {
               {project.chain.map((nodeId, index) => {
                 const node = project.nodes[nodeId];
                 const definition = MODULE_CATALOG[node.type];
-                const primary = definition.parameters[0];
+                const primary = node.type === 'saturation'
+                  ? definition.parameters.find((parameter) => parameter.id === 'character')!
+                  : definition.parameters[0];
                 return (
                   <div className="chain-fragment" key={node.id}>
                     <div
@@ -577,7 +579,14 @@ export function AudioEffectBuilder() {
                 </div>
               </header>
               <div className="parameter-grid">
-                {MODULE_CATALOG[selectedNode.type].parameters.map((parameter) => {
+                {MODULE_CATALOG[selectedNode.type].parameters.filter((parameter) => {
+                  if (selectedNode.type !== 'saturation') return true;
+                  if (['character', 'drive', 'tone', 'mix', 'output'].includes(parameter.id)) return true;
+                  const character = selectedNode.params.character;
+                  return (character === 1 && parameter.id === 'bias')
+                    || (character === 2 && parameter.id === 'clip')
+                    || (character === 3 && ['age', 'wow'].includes(parameter.id));
+                }).map((parameter) => {
                   const mappingOwner = getMappingForParameter(project, selectedNode.id, parameter.id);
                   const effective = getEffectiveParameter(project, selectedNode.id, parameter.id);
                   return (

@@ -14,7 +14,7 @@ export interface ParameterDefinition {
   max: number;
   default: number;
   step: number;
-  unit: 'dB' | 'Hz' | '%' | 'Q' | 'mode';
+  unit: 'dB' | 'Hz' | '%' | 'Q' | 'mode' | 'type';
   scale: ParameterScale;
   kind: ParameterKind;
   choices?: ParameterChoice[];
@@ -203,12 +203,20 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   },
   saturation: {
     type: 'saturation', name: 'Saturation', shortName: 'SAT', description: 'Add harmonic color and weight.', definitionVersion: '0.1.0',
-    sourceSha256: '238cd373e164ba480c6367ae7ef1c071205346361c7f597d6c1dc3878af0a75b',
+    sourceSha256: 'f8a7bbe451c3abd30e4c61fd6210ea3b6a2fef2ae5b67fda2c49c2890969bbf1',
     wasmPath: '/faust/saturation/dsp-module.wasm', metadataPath: '/faust/saturation/dsp-meta.json',
     parameters: [
+      parameter('character', 'Character', 0, 3, 0, 1, 'type', 'linear', '/Audio_Effect_Builder_Saturation/Saturation_Character', {
+        kind: 'choice', choices: [{ value: 0, label: 'Soft Clip' }, { value: 1, label: 'Cubic' }, { value: 2, label: 'Fuzz' }, { value: 3, label: 'Tape' }], mappable: false,
+      }),
       parameter('drive', 'Drive', 0, 24, 6, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Saturation/Saturation_Drive'),
       parameter('tone', 'Tone', 200, 16000, 8000, 1, 'Hz', 'log', '/Audio_Effect_Builder_Saturation/Saturation_Tone'),
       parameter('mix', 'Mix', 0, 100, 50, 1, '%', 'linear', '/Audio_Effect_Builder_Saturation/Saturation_Mix'),
+      parameter('output', 'Output', -24, 24, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Saturation/Saturation_Output'),
+      parameter('bias', 'Bias', -1, 1, 0, 0.01, '%', 'linear', '/Audio_Effect_Builder_Saturation/Saturation_Bias'),
+      parameter('clip', 'Clip', 0.1, 1, 0.5, 0.01, '%', 'linear', '/Audio_Effect_Builder_Saturation/Saturation_Clip'),
+      parameter('age', 'Age', 0, 100, 0, 1, '%', 'linear', '/Audio_Effect_Builder_Saturation/Saturation_Age'),
+      parameter('wow', 'Wow', 0, 100, 0, 1, '%', 'linear', '/Audio_Effect_Builder_Saturation/Saturation_Wow'),
     ],
   },
 };
@@ -607,6 +615,22 @@ export function migrateLegacyProject(value: unknown): ProjectV2 {
 export function parseProject(value: unknown): ProjectV2 {
   if (isRecord(value) && value.schemaVersion === 1) return migrateLegacyProject(value);
   return validateProject(value);
+}
+
+/** Upgrades saved v0.1 Saturation nodes without changing their audible Soft Clip settings. */
+export function upgradeSaturationProject(value: unknown): ProjectV2 {
+  if (!isRecord(value) || value.schemaVersion !== 2 || !isRecord(value.nodes)) return validateProject(value);
+  const project = structuredClone(value) as Record<string, unknown>;
+  let upgraded = false;
+  for (const node of Object.values(project.nodes as Record<string, unknown>)) {
+    if (!isRecord(node) || node.type !== 'saturation' || !isRecord(node.params)) continue;
+    const keys = Object.keys(node.params).sort();
+    if (keys.join(',') !== 'drive,mix,tone') continue;
+    node.params = { ...createNode('saturation', String(node.id)).params, ...node.params };
+    upgraded = true;
+  }
+  if (upgraded) project.engine = structuredClone(ENGINE_PROVENANCE);
+  return validateProject(project);
 }
 
 export function findAvailableMappingTarget(project: ProjectV2) {

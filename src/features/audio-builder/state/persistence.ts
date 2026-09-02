@@ -4,6 +4,7 @@ import {
   STORAGE_KEY,
   createInitialProject,
   migrateLegacyProject,
+  upgradeSaturationProject,
   validateProject,
   type ProjectV2,
 } from '../domain/project.ts';
@@ -30,7 +31,7 @@ export function restorePersistedProject(storage: ProjectStorage): PersistedProje
   let currentFailed = false;
   try {
     const current = parseJson(storage.getItem(STORAGE_KEY));
-    if (current) return { project: validateProject(current), source: 'current' };
+    if (current) return { project: upgradeSaturationProject(current), source: 'current' };
   } catch {
     currentFailed = true;
   }
@@ -54,7 +55,7 @@ export function restorePersistedProject(storage: ProjectStorage): PersistedProje
     const lastValid = parseJson(storage.getItem(LAST_VALID_STORAGE_KEY));
     if (lastValid) {
       return {
-        project: validateProject(lastValid),
+        project: upgradeSaturationProject(lastValid),
         source: 'last-valid',
         warning: 'The current save was invalid, so the last valid project was restored.',
       };

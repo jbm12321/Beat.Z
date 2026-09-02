@@ -9,7 +9,9 @@
         "/usr/share/faust/signals.lib",
         "/usr/share/faust/maths.lib",
         "/usr/share/faust/platform.lib",
-        "/usr/share/faust/filters.lib"
+        "/usr/share/faust/filters.lib",
+        "/usr/share/faust/oscillators.lib",
+        "/usr/share/faust/misceffects.lib"
     ],
     "include_pathnames": [
         "/faust/user/inc0",
@@ -18,8 +20,8 @@
         "/usr/share/faust",
         "."
     ],
-    "size": 84,
-    "code": "WFjH",
+    "size": 262432,
+    "code": "+MTy",
     "inputs": 2,
     "outputs": 2,
     "meta": [
@@ -37,6 +39,15 @@
         },
         {
             "filename": "saturation"
+        },
+        {
+            "filters.lib/dcblocker:author": "Julius O. Smith III"
+        },
+        {
+            "filters.lib/dcblocker:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+        },
+        {
+            "filters.lib/dcblocker:license": "MIT-style STK-4.3 license"
         },
         {
             "filters.lib/fir:author": "Julius O. Smith III"
@@ -75,6 +86,15 @@
             "filters.lib/name": "Faust Filters Library"
         },
         {
+            "filters.lib/pole:author": "Julius O. Smith III"
+        },
+        {
+            "filters.lib/pole:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+        },
+        {
+            "filters.lib/pole:license": "MIT-style STK-4.3 license"
+        },
+        {
             "filters.lib/tf2:author": "Julius O. Smith III"
         },
         {
@@ -96,6 +116,15 @@
             "filters.lib/version": "1.7.1"
         },
         {
+            "filters.lib/zero:author": "Julius O. Smith III"
+        },
+        {
+            "filters.lib/zero:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+        },
+        {
+            "filters.lib/zero:license": "MIT-style STK-4.3 license"
+        },
+        {
             "license": "MIT"
         },
         {
@@ -114,7 +143,31 @@
             "maths.lib/version": "2.9.0"
         },
         {
+            "misceffects.lib/cubicnl:author": "Julius O. Smith III"
+        },
+        {
+            "misceffects.lib/cubicnl:license": "STK-4.3"
+        },
+        {
+            "misceffects.lib/cubicnl_nodc:author": "Julius O. Smith III"
+        },
+        {
+            "misceffects.lib/cubicnl_nodc:license": "STK-4.3"
+        },
+        {
+            "misceffects.lib/name": "Misc Effects Library"
+        },
+        {
+            "misceffects.lib/version": "2.5.2"
+        },
+        {
             "name": "Audio Effect Builder Saturation"
+        },
+        {
+            "oscillators.lib/name": "Faust Oscillator Library"
+        },
+        {
+            "oscillators.lib/version": "1.7.0"
         },
         {
             "platform.lib/name": "Generic Platform Library"
@@ -139,11 +192,88 @@
             "items": [
                 {
                     "type": "hslider",
-                    "label": "Saturation/Drive",
+                    "label": "Saturation/Age",
+                    "varname": "fHslider6",
+                    "shortname": "Saturation_Age",
+                    "address": "/Audio_Effect_Builder_Saturation/Saturation_Age",
+                    "index": 262292,
+                    "meta": [
+                        {
+                            "style": "knob"
+                        },
+                        {
+                            "unit": "%"
+                        }
+                    ],
+                    "init": 0,
+                    "min": 0,
+                    "max": 100,
+                    "step": 1
+                },
+                {
+                    "type": "hslider",
+                    "label": "Saturation/Bias",
+                    "varname": "fHslider4",
+                    "shortname": "Saturation_Bias",
+                    "address": "/Audio_Effect_Builder_Saturation/Saturation_Bias",
+                    "index": 262228,
+                    "meta": [
+                        {
+                            "style": "knob"
+                        },
+                        {
+                            "unit": "%"
+                        }
+                    ],
+                    "init": 0,
+                    "min": -1,
+                    "max": 1,
+                    "step": 0.01
+                },
+                {
+                    "type": "hslider",
+                    "label": "Saturation/Character",
                     "varname": "fHslider1",
+                    "shortname": "Saturation_Character",
+                    "address": "/Audio_Effect_Builder_Saturation/Saturation_Character",
+                    "index": 262184,
+                    "meta": [
+                        {
+                            "style": "menu"
+                        }
+                    ],
+                    "init": 0,
+                    "min": 0,
+                    "max": 3,
+                    "step": 1
+                },
+                {
+                    "type": "hslider",
+                    "label": "Saturation/Clip",
+                    "varname": "fHslider5",
+                    "shortname": "Saturation_Clip",
+                    "address": "/Audio_Effect_Builder_Saturation/Saturation_Clip",
+                    "index": 262268,
+                    "meta": [
+                        {
+                            "style": "knob"
+                        },
+                        {
+                            "unit": "%"
+                        }
+                    ],
+                    "init": 0.5,
+                    "min": 0.1,
+                    "max": 1,
+                    "step": 0.01
+                },
+                {
+                    "type": "hslider",
+                    "label": "Saturation/Drive",
+                    "varname": "fHslider2",
                     "shortname": "Saturation_Drive",
                     "address": "/Audio_Effect_Builder_Saturation/Saturation_Drive",
-                    "index": 32,
+                    "index": 262188,
                     "meta": [
                         {
                             "style": "knob"
@@ -163,7 +293,7 @@
                     "varname": "fHslider0",
                     "shortname": "Saturation_Mix",
                     "address": "/Audio_Effect_Builder_Saturation/Saturation_Mix",
-                    "index": 12,
+                    "index": 262156,
                     "meta": [
                         {
                             "style": "knob"
@@ -179,11 +309,31 @@
                 },
                 {
                     "type": "hslider",
+                    "label": "Saturation/Output",
+                    "varname": "fHslider8",
+                    "shortname": "Saturation_Output",
+                    "address": "/Audio_Effect_Builder_Saturation/Saturation_Output",
+                    "index": 262340,
+                    "meta": [
+                        {
+                            "style": "knob"
+                        },
+                        {
+                            "unit": "dB"
+                        }
+                    ],
+                    "init": 0,
+                    "min": -24,
+                    "max": 24,
+                    "step": 0.1
+                },
+                {
+                    "type": "hslider",
                     "label": "Saturation/Tone",
-                    "varname": "fHslider2",
+                    "varname": "fHslider3",
                     "shortname": "Saturation_Tone",
                     "address": "/Audio_Effect_Builder_Saturation/Saturation_Tone",
-                    "index": 48,
+                    "index": 262204,
                     "meta": [
                         {
                             "scale": "log"
@@ -198,6 +348,26 @@
                     "init": 8000,
                     "min": 200,
                     "max": 16000,
+                    "step": 1
+                },
+                {
+                    "type": "hslider",
+                    "label": "Saturation/Wow",
+                    "varname": "fHslider7",
+                    "shortname": "Saturation_Wow",
+                    "address": "/Audio_Effect_Builder_Saturation/Saturation_Wow",
+                    "index": 262316,
+                    "meta": [
+                        {
+                            "style": "knob"
+                        },
+                        {
+                            "unit": "%"
+                        }
+                    ],
+                    "init": 0,
+                    "min": 0,
+                    "max": 100,
                     "step": 1
                 }
             ]
