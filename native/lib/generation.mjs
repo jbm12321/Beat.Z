@@ -15,6 +15,21 @@ const nativeRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repositoryRoot = resolve(nativeRoot, '..');
 export const NATIVE_EDITOR_MAX_KNOBS_PER_ROW = 6;
 
+// Faust 2.85.9 with `-ftz 2` can emit `&-temporary` for the exponent check
+// used by a few reverb feedback paths. Apple Clang correctly rejects taking
+// the address of that rvalue. The mask below ignores the sign bit, so pointing
+// at the named positive value preserves the generated test exactly.
+const FAUST_FTZ_RVALUE_ADDRESS = /reinterpret_cast<int\*>\(&-([A-Za-z_]\w*)\)(?=\s*&\s*2139095040)/gu;
+
+export function repairFaustFtzRvalueAddresses(source) {
+  let repairs = 0;
+  const repaired = source.replace(FAUST_FTZ_RVALUE_ADDRESS, (_match, identifier) => {
+    repairs += 1;
+    return `reinterpret_cast<int*>(&${identifier})`;
+  });
+  return { source: repaired, repairs };
+}
+
 function cppString(value) {
   return JSON.stringify(String(value));
 }
@@ -349,5 +364,8 @@ export async function generatePinnedFaustHeaders(plan, options = {}) {
     if (!result.ok) throw new NativeBuildError('faust_codegen_failed', `Faust failed while generating ${node.className}: ${result.stderr || result.stdout}`);
     const generated = await stat(node.outputHeader);
     if (!generated.isFile() || generated.size === 0) throw new NativeBuildError('faust_codegen_failed', `Faust did not produce ${node.className}.`);
+    const generatedSource = await readFile(node.outputHeader, 'utf8');
+    const repaired = repairFaustFtzRvalueAddresses(generatedSource);
+    if (repaired.repairs > 0) await writeFile(node.outputHeader, repaired.source);
   }
 }

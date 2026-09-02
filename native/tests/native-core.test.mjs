@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path';
 import test from 'node:test';
 import { saveVerifiedVst3Bundle } from '../lib/artifact.mjs';
 import { sha256Canonical } from '../lib/canonical.mjs';
-import { createAutomaticNativeParameters, createNativeEditorModel, createNativeGenerationPlan, deriveNativeIdentity, defaultExportRoot, materializeNativeTemplates } from '../lib/generation.mjs';
+import { createAutomaticNativeParameters, createNativeEditorModel, createNativeGenerationPlan, deriveNativeIdentity, defaultExportRoot, materializeNativeTemplates, repairFaustFtzRvalueAddresses } from '../lib/generation.mjs';
 import { inspectNativeToolchain } from '../lib/doctor.mjs';
 import { compareStereoParity, createParityScenarios, parityDiagnostics } from '../lib/parity.mjs';
 import { publicArtifactDetails } from '../lib/publish.mjs';
@@ -161,6 +161,14 @@ test('compiler output and filesystem paths never enter the public build failure'
   assert.equal(asNativeBuildFailure(error).message, 'The VST3 could not be built by the Mac worker.');
   assert.doesNotMatch(asNativeBuildFailure(error).message, /clang|private|stack/u);
   assert.match(formatNativeBuildDiagnostics(error), /clang failed/u);
+});
+
+test('the native generator repairs Faust 2.85.9 ftz rvalue addresses for Apple Clang', () => {
+  const source = '((*reinterpret_cast<int*>(&-fTemp264) & 2139095040) ? -fTemp264 : 0.0f);';
+  const repaired = repairFaustFtzRvalueAddresses(source);
+  assert.equal(repaired.repairs, 1);
+  assert.equal(repaired.source, '((*reinterpret_cast<int*>(&fTemp264) & 2139095040) ? -fTemp264 : 0.0f);');
+  assert.deepEqual(repairFaustFtzRvalueAddresses('float untouched = 0.0f;'), { source: 'float untouched = 0.0f;', repairs: 0 });
 });
 
 test('the Mac independently validates the Site request hashes and allowlist', async () => {
