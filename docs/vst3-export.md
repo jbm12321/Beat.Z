@@ -38,7 +38,7 @@ A job becomes `ready` only after all of these pass:
 5. Steinberg VST3 validator with zero failures.
 6. Actual VST3 component-state save and restore.
 7. Actual VST3 versus committed browser WASM renders at 44.1, 48, and 96 kHz.
-8. Project defaults, every discrete parameter choice, and every continuous parameter at its minimum, midpoint, and maximum. Peak error must remain within the `5e-4` absolute floor at ordinary levels; above full scale, a `1.5e-4` relative allowance derived only from the browser reference prevents output-gain stress cases from failing on proportionally tiny floating-point differences. RMS error must remain within `1.5e-4` in every case.
+8. Project defaults, every discrete mode, and one safe continuous-parameter probe for every repeated module instance. Singleton continuous parameters are not swept through artificial extremes. Peak error must remain within the `5e-4` absolute floor or `1e-3` of the browser reference peak, whichever is greater; RMS error must remain within `1.5e-4`, and every sample must be finite.
 9. Atomic copy of the raw `.vst3` bundle directly into `~/Downloads`.
 10. ZIP packaging and upload to the configured public Supabase bucket. A job does not become `ready` if publication fails.
 

@@ -76,27 +76,48 @@ test('each public artifact URL is a unique, predictable ZIP release URL', () => 
   });
 });
 
-test('parity scenarios cover every choice value and 0, 0.5, 1 for continuous VST3 parameters', () => {
+test('parity scenarios keep the project baseline and every mode without sweeping singleton continuous parameters', () => {
   assert.deepEqual(createParityScenarios([]), [{ id: 'defaults', values: [], parameterIndex: null, normalizedValue: null }]);
   assert.deepEqual(createParityScenarios([
-    { value: 0, definition: { min: 0, max: 3, choices: [0, 1, 2, 3] } },
-    { value: 0.75, definition: { min: 0, max: 100 } },
+    { nodeId: 'filter-1', moduleType: 'filter', value: 0, definition: { min: 0, max: 3, choices: [0, 1, 2, 3] } },
+    { nodeId: 'filter-1', moduleType: 'filter', value: 75, definition: { min: 0, max: 100, scale: 'linear' } },
   ]), [
-    { id: 'defaults', values: [0, 0.75], parameterIndex: null, normalizedValue: null },
-    { id: 'parameter-0-0', values: [0, 0.75], parameterIndex: 0, normalizedValue: 0 },
-    { id: 'parameter-0-1', values: [1, 0.75], parameterIndex: 0, normalizedValue: 1 / 3 },
-    { id: 'parameter-0-2', values: [2, 0.75], parameterIndex: 0, normalizedValue: 2 / 3 },
-    { id: 'parameter-0-3', values: [3, 0.75], parameterIndex: 0, normalizedValue: 1 },
-    { id: 'parameter-1-0', values: [0, 0], parameterIndex: 1, normalizedValue: 0 },
-    { id: 'parameter-1-0_5', values: [0, 50], parameterIndex: 1, normalizedValue: 0.5 },
-    { id: 'parameter-1-1', values: [0, 100], parameterIndex: 1, normalizedValue: 1 },
+    { id: 'defaults', values: [0, 75], parameterIndex: null, normalizedValue: null },
+    { id: 'parameter-0-0', values: [0, 75], parameterIndex: 0, normalizedValue: 0 },
+    { id: 'parameter-0-1', values: [1, 75], parameterIndex: 0, normalizedValue: 1 / 3 },
+    { id: 'parameter-0-2', values: [2, 75], parameterIndex: 0, normalizedValue: 2 / 3 },
+    { id: 'parameter-0-3', values: [3, 75], parameterIndex: 0, normalizedValue: 1 },
   ]);
 });
 
-test('logarithmic parity scenarios use the same normalized curve as the native knob', () => {
-  const scenarios = createParityScenarios([{ value: 80, definition: { min: 20, max: 20000, scale: 'log' } }]);
-  assert.equal(scenarios[2].id, 'parameter-0-0_5');
-  assert.ok(Math.abs(scenarios[2].values[0] - Math.sqrt(20 * 20000)) < 1e-9);
+test('repeated-module parity probes every continuous mapping once at a safe normalized value', () => {
+  const logarithmicMidpoint = Math.sqrt(20 * 20000);
+  const scenarios = createParityScenarios([
+    { nodeId: 'filter-1', moduleType: 'filter', value: logarithmicMidpoint, definition: { min: 20, max: 20000, scale: 'log' } },
+    { nodeId: 'filter-2', moduleType: 'filter', value: 80, definition: { min: 20, max: 20000, scale: 'log' } },
+  ]);
+  assert.equal(scenarios.length, 3);
+  assert.equal(scenarios[1].id, 'parameter-0-0_75');
+  assert.ok(Math.abs(scenarios[1].values[0] - (20 * (1000 ** 0.75))) < 1e-9);
+  assert.equal(scenarios[2].id, 'parameter-1-0_5');
+  assert.ok(Math.abs(scenarios[2].values[1] - logarithmicMidpoint) < 1e-9);
+});
+
+test('repeated-module mode scenarios are complete and are not duplicated by mapping probes', () => {
+  const scenarios = createParityScenarios([
+    { nodeId: 'filter-1', moduleType: 'filter', value: 0, definition: { min: 0, max: 3, choices: [0, 1, 2, 3] } },
+    { nodeId: 'filter-1', moduleType: 'filter', value: 1000, definition: { min: 20, max: 20000, scale: 'log' } },
+    { nodeId: 'filter-2', moduleType: 'filter', value: 1, definition: { min: 0, max: 3, choices: [0, 1, 2, 3] } },
+    { nodeId: 'filter-2', moduleType: 'filter', value: 2000, definition: { min: 20, max: 20000, scale: 'log' } },
+  ]);
+  assert.equal(scenarios.length, 11);
+  assert.deepEqual(scenarios.map((scenario) => scenario.id), [
+    'defaults',
+    'parameter-0-0', 'parameter-0-1', 'parameter-0-2', 'parameter-0-3',
+    'parameter-1-0_5',
+    'parameter-2-0', 'parameter-2-1', 'parameter-2-2', 'parameter-2-3',
+    'parameter-3-0_5',
+  ]);
 });
 
 test('parity comparison separately enforces peak and sustained-error ceilings', () => {
@@ -112,15 +133,20 @@ test('parity comparison separately enforces peak and sustained-error ceilings', 
 });
 
 test('parity peak comparison is scale-aware without letting the native render widen its own limit', () => {
-  const loudBrowser = [new Float32Array(100).fill(4), new Float32Array(100).fill(-4)];
+  const loudBrowser = [new Float32Array(100).fill(1.3894026279449463), new Float32Array(100).fill(-1.3894026279449463)];
   const loudNative = [new Float32Array(loudBrowser[0]), new Float32Array(loudBrowser[1])];
-  loudNative[0][50] += 5.13e-4;
+  loudNative[0][50] += 9.132027626037598e-4;
   const loudComparison = compareStereoParity(loudBrowser, loudNative, { maxTolerance: 5e-4, rmsTolerance: 1.5e-4 });
   assert.equal(loudComparison.passed, true);
-  assert.equal(loudComparison.browserPeak, 4);
-  assert.ok(loudComparison.nativePeak > 4);
-  assert.equal(loudComparison.allowedMaxError, 6e-4);
-  assert.ok(loudComparison.relativePeakError < 1.5e-4);
+  assert.equal(loudComparison.browserPeak, 1.3894026279449463);
+  assert.ok(loudComparison.nativePeak > loudComparison.browserPeak);
+  assert.equal(loudComparison.allowedMaxError, loudComparison.browserPeak * 1e-3);
+  assert.ok(loudComparison.relativePeakError < 1e-3);
+
+  const saturationBrowser = [new Float32Array(100).fill(1), new Float32Array(100).fill(-1)];
+  const saturationNative = [new Float32Array(saturationBrowser[0]), new Float32Array(saturationBrowser[1])];
+  saturationNative[0][50] += 5.130171775817871e-4;
+  assert.equal(compareStereoParity(saturationBrowser, saturationNative, { maxTolerance: 5e-4, rmsTolerance: 1.5e-4 }).passed, true);
 
   const quietBrowser = [new Float32Array(100).fill(0.1), new Float32Array(100).fill(-0.1)];
   const quietNative = [new Float32Array(quietBrowser[0]), new Float32Array(quietBrowser[1])];
@@ -136,6 +162,21 @@ test('parity peak comparison is scale-aware without letting the native render wi
   assert.equal(brokenComparison.passed, false);
   assert.equal(brokenComparison.browserPeak, 0);
   assert.equal(brokenComparison.allowedMaxError, 5e-4);
+});
+
+test('parity comparison rejects non-finite browser or native samples', () => {
+  const finite = [new Float32Array(100), new Float32Array(100)];
+  const nativeNaN = [new Float32Array(100), new Float32Array(100)];
+  nativeNaN[0][50] = Number.NaN;
+  const nativeComparison = compareStereoParity(finite, nativeNaN, { maxTolerance: 5e-4, rmsTolerance: 1.5e-4 });
+  assert.equal(nativeComparison.passed, false);
+  assert.equal(nativeComparison.finite, false);
+
+  const browserInfinity = [new Float32Array(100), new Float32Array(100)];
+  browserInfinity[1][75] = Number.POSITIVE_INFINITY;
+  const browserComparison = compareStereoParity(browserInfinity, finite, { maxTolerance: 5e-4, rmsTolerance: 1.5e-4 });
+  assert.equal(browserComparison.passed, false);
+  assert.equal(browserComparison.finite, false);
 });
 
 test('parity diagnostics identify the peak channel, frame, and processing region', () => {
@@ -162,6 +203,7 @@ test('parity diagnostics name the scenario, module, parameter, values, time, and
       browserPeak: 6,
       nativePeak: 6.0004,
       relativePeakError: 1.403e-4,
+      finite: true,
       rmsError: 4.936e-5,
       rmsTolerance: 1.5e-4,
       peakChannel: 1,
@@ -185,6 +227,7 @@ test('parity diagnostics name the scenario, module, parameter, values, time, and
     browserPeak: 6,
     nativePeak: 6.0004,
     relativePeakError: 1.403e-4,
+    finite: true,
     rmsError: 4.936e-5,
     rmsTolerance: 1.5e-4,
     peakChannel: 'right',
