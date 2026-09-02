@@ -68,9 +68,9 @@ export interface EngineProvenance {
   effectDefinition: 'audio-effect-builder-faust';
   definitionVersion: '0.1.0';
   faustWasmVersion: '0.16.6';
-  faustCompilerVersion: '2.86.2';
+  faustCompilerVersion: '2.85.9';
   libraries: {
-    basics: '1.23.0';
+    basics: '1.22.0';
     filters: '1.7.1';
     maths: '2.9.0';
     platform: '1.3.0';
@@ -223,8 +223,8 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
 
 export const MODULE_TYPES = Object.keys(MODULE_CATALOG) as ModuleType[];
 export const ENGINE_PROVENANCE: EngineProvenance = {
-  effectDefinition: 'audio-effect-builder-faust', definitionVersion: '0.1.0', faustWasmVersion: '0.16.6', faustCompilerVersion: '2.86.2',
-  libraries: { basics: '1.23.0', filters: '1.7.1', maths: '2.9.0', platform: '1.3.0', signals: '1.6.0' },
+  effectDefinition: 'audio-effect-builder-faust', definitionVersion: '0.1.0', faustWasmVersion: '0.16.6', faustCompilerVersion: '2.85.9',
+  libraries: { basics: '1.22.0', filters: '1.7.1', maths: '2.9.0', platform: '1.3.0', signals: '1.6.0' },
   moduleSourceSha256: Object.fromEntries(MODULE_TYPES.map((type) => [type, MODULE_CATALOG[type].sourceSha256])) as Record<ModuleType, string>,
 };
 
@@ -622,6 +622,15 @@ export function upgradeSaturationProject(value: unknown): ProjectV2 {
   if (!isRecord(value) || value.schemaVersion !== 2 || !isRecord(value.nodes)) return validateProject(value);
   const project = structuredClone(value) as Record<string, unknown>;
   let upgraded = false;
+  if (isRecord(project.engine) && project.engine.faustCompilerVersion === '2.86.2') {
+    const previousEngine = structuredClone(ENGINE_PROVENANCE) as unknown as Record<string, unknown>;
+    previousEngine.faustCompilerVersion = '2.86.2';
+    (previousEngine.libraries as Record<string, unknown>).basics = '1.23.0';
+    if (sameJson(project.engine, previousEngine)) {
+      project.engine = structuredClone(ENGINE_PROVENANCE);
+      upgraded = true;
+    }
+  }
   for (const node of Object.values(project.nodes as Record<string, unknown>)) {
     if (!isRecord(node) || node.type !== 'saturation' || !isRecord(node.params)) continue;
     const keys = Object.keys(node.params).sort();

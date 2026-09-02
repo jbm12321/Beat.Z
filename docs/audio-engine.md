@@ -2,7 +2,7 @@
 
 ## Canonical definitions
 
-`faust/gain.dsp`, `faust/filter.dsp`, and `faust/saturation.dsp` are the canonical v0.1 DSP definitions. The build script pins `@grame/faustwasm` 0.16.6, compiles with Faust 2.86.2, writes static stereo factories to `public/faust`, and records source SHA-256 fingerprints and library versions. The same sources—not Web Audio approximations—are the intended input to a future native build system.
+`faust/gain.dsp`, `faust/filter.dsp`, and `faust/saturation.dsp` are the canonical v0.1 DSP definitions. The build script uses the pinned native Faust 2.85.9 executable to generate the committed browser WASM with `-single -ftz 2`; the Mac worker uses that same compiler version and flags to generate VST3 C++. The native target also pins `-ffp-contract=off` so Clang preserves the same separate float-operation boundaries as WebAssembly. `@grame/faustwasm` 0.16.6 remains the browser runtime. The manifest records source SHA-256 fingerprints and library versions so browser and native builds share one explicit DSP provenance.
 
 ## Live signal flow
 

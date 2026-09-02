@@ -1,105 +1,105 @@
 {
-    "name": "Audio Effect Builder Gain",
-    "filename": "gain",
-    "version": "2.86.2",
-    "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2",
-    "library_list": [
-        "/usr/share/faust/stdfaust.lib",
-        "/usr/share/faust/signals.lib",
-        "/usr/share/faust/maths.lib",
-        "/usr/share/faust/platform.lib",
-        "/usr/share/faust/basics.lib"
-    ],
-    "include_pathnames": [
-        "/faust/user/inc0",
-        "/share/faust",
-        "/usr/local/share/faust",
-        "/usr/share/faust",
-        "."
-    ],
-    "size": 24,
-    "code": "rM0G",
-    "inputs": 2,
-    "outputs": 2,
-    "meta": [
+  "name": "Audio Effect Builder Gain",
+  "filename": "gain.dsp",
+  "version": "2.85.9",
+  "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2",
+  "library_list": [
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/stdfaust.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/signals.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/maths.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/platform.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/basics.lib"
+  ],
+  "include_pathnames": [
+    "/opt/homebrew/opt/faust/share/faust",
+    "/usr/local/share/faust",
+    "/usr/share/faust",
+    "/Users/baumolinari/Projects/Beat.Z/faust",
+    "/Users/baumolinari/Projects/Beat.Z/faust"
+  ],
+  "size": 24,
+  "code": "aW1wb3J0KCJzdGRmYXVzdC5saWIiKTsKCmRlY2xhcmUgbmFtZSAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIgR2FpbiI7CmRlY2xhcmUgdmVyc2lvbiAiMC4xLjAiOwpkZWNsYXJlIGF1dGhvciAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIiOwpkZWNsYXJlIGxpY2Vuc2UgIk1JVCI7CgpsZXZlbERiID0gaHNsaWRlcigiR2Fpbi9MZXZlbFt1bml0OmRCXVtzdHlsZTprbm9iXSIsIDAuMCwgLTI0LjAsIDI0LjAsIDAuMSk7CmxldmVsID0gKGxldmVsRGIgOiBzaS5zbW9vKSA6IGJhLmRiMmxpbmVhcjsKCnByb2Nlc3MgPSAqKGxldmVsKSwgKihsZXZlbCk7Cg==",
+  "inputs": 2,
+  "outputs": 2,
+  "meta": [
+    {
+      "author": "Audio Effect Builder"
+    },
+    {
+      "basics.lib/name": "Faust Basic Element Library"
+    },
+    {
+      "basics.lib/version": "1.22.0"
+    },
+    {
+      "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2"
+    },
+    {
+      "filename": "gain.dsp"
+    },
+    {
+      "license": "MIT"
+    },
+    {
+      "maths.lib/author": "GRAME"
+    },
+    {
+      "maths.lib/copyright": "GRAME"
+    },
+    {
+      "maths.lib/license": "LGPL with exception"
+    },
+    {
+      "maths.lib/name": "Faust Math Library"
+    },
+    {
+      "maths.lib/version": "2.9.0"
+    },
+    {
+      "name": "Audio Effect Builder Gain"
+    },
+    {
+      "platform.lib/name": "Generic Platform Library"
+    },
+    {
+      "platform.lib/version": "1.3.0"
+    },
+    {
+      "signals.lib/name": "Faust Routing Library"
+    },
+    {
+      "signals.lib/version": "1.6.0"
+    },
+    {
+      "version": "0.1.0"
+    }
+  ],
+  "ui": [
+    {
+      "type": "vgroup",
+      "label": "Audio Effect Builder Gain",
+      "items": [
         {
-            "author": "Audio Effect Builder"
-        },
-        {
-            "basics.lib/name": "Faust Basic Element Library"
-        },
-        {
-            "basics.lib/version": "1.23.0"
-        },
-        {
-            "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2"
-        },
-        {
-            "filename": "gain"
-        },
-        {
-            "license": "MIT"
-        },
-        {
-            "maths.lib/author": "GRAME"
-        },
-        {
-            "maths.lib/copyright": "GRAME"
-        },
-        {
-            "maths.lib/license": "LGPL with exception"
-        },
-        {
-            "maths.lib/name": "Faust Math Library"
-        },
-        {
-            "maths.lib/version": "2.9.0"
-        },
-        {
-            "name": "Audio Effect Builder Gain"
-        },
-        {
-            "platform.lib/name": "Generic Platform Library"
-        },
-        {
-            "platform.lib/version": "1.3.0"
-        },
-        {
-            "signals.lib/name": "Faust Routing Library"
-        },
-        {
-            "signals.lib/version": "1.6.0"
-        },
-        {
-            "version": "0.1.0"
+          "type": "hslider",
+          "label": "Gain/Level",
+          "varname": "fHslider0",
+          "shortname": "Gain_Level",
+          "address": "/Audio_Effect_Builder_Gain/Gain_Level",
+          "index": 8,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "dB"
+            }
+          ],
+          "init": 0,
+          "min": -24,
+          "max": 24,
+          "step": 0.1
         }
-    ],
-    "ui": [
-        {
-            "type": "vgroup",
-            "label": "Audio Effect Builder Gain",
-            "items": [
-                {
-                    "type": "hslider",
-                    "label": "Gain/Level",
-                    "varname": "fHslider0",
-                    "shortname": "Gain_Level",
-                    "address": "/Audio_Effect_Builder_Gain/Gain_Level",
-                    "index": 8,
-                    "meta": [
-                        {
-                            "style": "knob"
-                        },
-                        {
-                            "unit": "dB"
-                        }
-                    ],
-                    "init": 0,
-                    "min": -24,
-                    "max": 24,
-                    "step": 0.1
-                }
-            ]
-        }
-    ]
+      ]
+    }
+  ]
 }

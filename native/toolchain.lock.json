@@ -9,16 +9,18 @@
     "minimumVersion": "22.13.0"
   },
   "faust": {
-    "version": "2.85.5",
+    "version": "2.85.9",
     "browserPackage": "@grame/faustwasm",
     "browserPackageVersion": "0.16.6",
-    "nativeCommand": "faust",
-    "codegenFlags": ["-single"]
+    "nativeCommand": "/opt/homebrew/opt/faust/bin/faust",
+    "includeRoot": "/opt/homebrew/opt/faust/include",
+    "codegenFlags": ["-single", "-ftz", "2"]
   },
   "compiler": {
     "name": "Apple clang",
     "version": "17.0.0",
-    "sdkVersion": "15.5"
+    "sdkVersion": "15.5",
+    "dspFlags": ["-ffp-contract=off"]
   },
   "cmake": {
     "version": "4.3.1",

@@ -2,9 +2,9 @@
   "effectDefinition": "audio-effect-builder-faust",
   "definitionVersion": "0.1.0",
   "faustWasmVersion": "0.16.6",
-  "faustCompilerVersion": "2.86.2",
+  "faustCompilerVersion": "2.85.9",
   "libraries": {
-    "basics": "1.23.0",
+    "basics": "1.22.0",
     "filters": "1.7.1",
     "maths": "2.9.0",
     "misceffects": "2.5.2",

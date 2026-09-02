@@ -8,8 +8,8 @@ import { assertDisplayName, assertSafeId, assertSha256 } from './safety.mjs';
 
 const nativeRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-function fail(message) {
-  throw new NativeBuildError('invalid_build_request', message);
+function fail(message, options = {}) {
+  throw new NativeBuildError('invalid_build_request', message, options);
 }
 
 function object(value, label) {
@@ -73,6 +73,7 @@ export function toolchainContract(lock) {
     architecture: lock.target.architecture,
     deploymentTarget: lock.target.deploymentTarget,
     faust: { version: lock.faust.version, codegenFlags: lock.faust.codegenFlags },
+    compiler: { dspFlags: lock.compiler.dspFlags },
     cmake: lock.cmake,
     ninja: lock.ninja,
     iPlug2Revision: lock.iPlug2.revision,
@@ -92,10 +93,26 @@ export function validateNativeBuildRequest(request, lock) {
   assertSha256(request.approvalHash, 'Approval hash');
   assertSha256(request.dspHash, 'DSP hash');
   object(request.project, 'project');
+  object(request.project.engine, 'project engine');
   if (request.project.id !== request.projectId || request.project.revision !== request.revision) fail('Project identity does not match the build request.');
   if (sha256Canonical(request.project) !== request.approvalHash) fail('Approval hash does not match the frozen project.');
   const dsp = validateDsp(request.dsp);
+  object(dsp.engine, 'DSP engine');
   if (dsp.projectId !== request.projectId) fail('DSP project id does not match the build request.');
+  object(request.toolchain, 'build request toolchain');
+  object(request.toolchain.faust, 'build request Faust toolchain');
+  const requestedVersions = {
+    project: request.project.engine.faustCompilerVersion,
+    dsp: dsp.engine.faustCompilerVersion,
+    toolchain: request.toolchain.faust.version,
+    supported: lock.faust.version,
+  };
+  if (Object.values(requestedVersions).some((version) => version !== lock.faust.version)) {
+    fail(`Faust compiler version mismatch: project ${String(requestedVersions.project)}, DSP ${String(requestedVersions.dsp)}, request ${String(requestedVersions.toolchain)}, supported ${requestedVersions.supported}.`, {
+      publicMessage: 'This queued build uses an outdated toolchain. Submit a fresh build.',
+      diagnostics: { faustCompilerVersions: requestedVersions },
+    });
+  }
   const expectedToolchain = toolchainContract(lock);
   if (canonicalJson(request.toolchain) !== canonicalJson(expectedToolchain)) fail('Build request toolchain does not match the pinned native toolchain.');
   if (sha256Canonical({ dsp, toolchain: request.toolchain }) !== request.dspHash) fail('DSP hash does not match the effective native specification.');
