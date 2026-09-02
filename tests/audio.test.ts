@@ -75,23 +75,24 @@ test('parameter edits update the live graph without rebuilding its topology', ()
   assert.equal(liveUpdates, 1);
 });
 
-test('a rejected AudioWorklet retries the exact Faust graph through the compatibility backend', async () => {
+test('a rejected AudioWorklet reports the failure without using a compatibility backend', async () => {
   const engine = new BrowserAudioEngine();
   const internals = engine as unknown as {
     rebuildGraph: () => void;
-    buildGraphPath: (generation: number, useScriptProcessor?: boolean) => Promise<void>;
+    buildGraphPath: (generation: number) => Promise<void>;
   };
-  const attempts: boolean[] = [];
+  let attempts = 0;
   let status = '';
-  internals.buildGraphPath = async (_generation, useScriptProcessor = false) => {
-    attempts.push(useScriptProcessor);
-    if (!useScriptProcessor) throw new Error('Blob AudioWorklet URL was rejected.');
+  internals.buildGraphPath = async () => {
+    attempts += 1;
+    throw new Error('Faust worklet initialization failed.');
   };
   engine.setStatusListener((next) => { status = next.message; });
 
   internals.rebuildGraph();
   await new Promise((resolve) => setTimeout(resolve, 0));
 
-  assert.deepEqual(attempts, [false, true]);
-  assert.match(status, /compatibility mode/i);
+  assert.equal(attempts, 1);
+  assert.equal(engine.lastError, 'Faust worklet initialization failed.');
+  assert.match(status, /Low-latency effects are unavailable: Faust worklet initialization failed\./i);
 });

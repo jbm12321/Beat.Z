@@ -1,4 +1,4 @@
-import { FaustMonoDspGenerator, type LooseFaustDspFactory } from '@grame/faustwasm/dist/esm/index.js';
+import type { LooseFaustDspFactory } from '@grame/faustwasm/dist/esm/index.js';
 import {
   MODULE_CATALOG,
   getEffectiveParameter,
@@ -12,6 +12,28 @@ export type FaustFactoryLoader = (type: ModuleType) => Promise<LooseFaustDspFact
 export type FaustRealtimeNode = AudioNode & { destroy(): void; setParamValue(path: string, value: number): void };
 
 const browserFactoryCache = new Map<ModuleType, Promise<LooseFaustDspFactory>>();
+const browserRuntimePath = '/faust/faustwasm-runtime.js';
+const nodeRuntimeSpecifier = '@grame/faustwasm/dist/esm/index.js';
+type FaustRuntimeModule = Pick<typeof import('@grame/faustwasm/dist/esm/index.js'), 'FaustMonoDspGenerator'>;
+let faustRuntimePromise: Promise<FaustRuntimeModule> | null = null;
+
+function loadFaustRuntime(): Promise<FaustRuntimeModule> {
+  if (faustRuntimePromise) return faustRuntimePromise;
+  const specifier = typeof window === 'undefined' ? nodeRuntimeSpecifier : browserRuntimePath;
+  faustRuntimePromise = import(/* @vite-ignore */ specifier)
+    .then((runtime: FaustRuntimeModule) => {
+      if (typeof runtime.FaustMonoDspGenerator !== 'function') {
+        throw new Error('FaustMonoDspGenerator is missing from the runtime module.');
+      }
+      return runtime;
+    })
+    .catch((cause: unknown) => {
+      faustRuntimePromise = null;
+      const detail = cause instanceof Error ? cause.message : String(cause);
+      throw new Error(`Faust runtime ${specifier} could not be loaded: ${detail}`);
+    });
+  return faustRuntimePromise;
+}
 
 export async function loadFaustFactoryFromBytes(wasmBytes: ArrayBuffer | Uint8Array, json: string): Promise<LooseFaustDspFactory> {
   const code = wasmBytes instanceof Uint8Array ? Uint8Array.from(wasmBytes) : new Uint8Array(wasmBytes.slice(0));
@@ -45,11 +67,12 @@ export function setFaustParameters(target: Pick<FaustRealtimeNode, 'setParamValu
   });
 }
 
-export async function createFaustAudioNode(context: BaseAudioContext, node: DspNode, project: ProjectV2, useScriptProcessor = false): Promise<FaustRealtimeNode> {
+export async function createFaustAudioNode(context: BaseAudioContext, node: DspNode, project: ProjectV2): Promise<FaustRealtimeNode> {
   const factory = await loadFaustFactory(node.type);
+  const { FaustMonoDspGenerator } = await loadFaustRuntime();
   const generator = new FaustMonoDspGenerator();
   const processorName = `aeb-${node.type}-${MODULE_CATALOG[node.type].definitionVersion.replaceAll('.', '-')}`;
-  const faustNode = await generator.createNode(context, node.type, factory, useScriptProcessor, 1024, processorName);
+  const faustNode = await generator.createNode(context, node.type, factory, false, 1024, processorName);
   if (!faustNode) throw new Error(`${MODULE_CATALOG[node.type].name} could not start its Faust processor.`);
   setFaustParameters(faustNode, node, project);
   return faustNode as FaustRealtimeNode;
@@ -66,6 +89,7 @@ export async function renderFaustModuleOffline(
   const right = input[1] ?? left;
   if (left.length !== right.length) throw new Error('Offline stereo channels must contain the same number of frames.');
   if (node.bypassed) return [Float32Array.from(left), Float32Array.from(right)];
+  const { FaustMonoDspGenerator } = await loadFaustRuntime();
   const generator = new FaustMonoDspGenerator();
   const processor = await generator.createOfflineProcessor(sampleRate, 128, factory);
   if (!processor) throw new Error(`${MODULE_CATALOG[node.type].name} could not create an offline Faust processor.`);

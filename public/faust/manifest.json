@@ -3,6 +3,12 @@
   "definitionVersion": "0.1.0",
   "faustWasmVersion": "0.16.6",
   "faustCompilerVersion": "2.85.9",
+  "browserRuntime": {
+    "package": "@grame/faustwasm",
+    "version": "0.16.6",
+    "path": "/faust/faustwasm-runtime.js",
+    "sha256": "a05bb39ea20ecce89f16408ec97b7c0ef2f2ecb5c87386066de05fa6a79d49fd"
+  },
   "libraries": {
     "analyzers": "1.3.0",
     "basics": "1.22.0",
