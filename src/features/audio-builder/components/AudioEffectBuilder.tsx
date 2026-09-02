@@ -594,7 +594,7 @@ export function AudioEffectBuilder() {
                     const effective = getEffectiveParameter(project, selectedNode.id, character.id);
                     return (
                       <label className="inspector-character">
-                        <span>{character.name}</span>
+                        <span>Mode</span>
                         <select
                           className="parameter-select"
                           value={effective}
