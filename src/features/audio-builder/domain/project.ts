@@ -1,4 +1,4 @@
-export type ModuleType = 'gain' | 'filter' | 'saturation';
+export type ModuleType = 'gain' | 'filter' | 'saturation' | 'delay' | 'reverb';
 export type ParameterScale = 'linear' | 'log';
 export type ParameterKind = 'continuous' | 'choice';
 
@@ -14,7 +14,7 @@ export interface ParameterDefinition {
   max: number;
   default: number;
   step: number;
-  unit: 'dB' | 'Hz' | '%' | 'Q' | 'mode' | 'type';
+  unit: 'dB' | 'Hz' | '%' | 'Q' | 'mode' | 'type' | 'ms' | 's';
   scale: ParameterScale;
   kind: ParameterKind;
   choices?: ParameterChoice[];
@@ -29,6 +29,7 @@ export interface ModuleDefinition {
   description: string;
   definitionVersion: '0.1.0';
   sourceSha256: string;
+  wasmSha256: string;
   wasmPath: string;
   metadataPath: string;
   parameters: ParameterDefinition[];
@@ -70,10 +71,15 @@ export interface EngineProvenance {
   faustWasmVersion: '0.16.6';
   faustCompilerVersion: '2.85.9';
   libraries: {
+    analyzers: '1.3.0';
     basics: '1.22.0';
+    delays: '1.2.0';
     filters: '1.7.1';
     maths: '2.9.0';
+    misceffects: '2.5.2';
+    oscillators: '1.7.0';
     platform: '1.3.0';
+    reverbs: '1.5.1';
     signals: '1.6.0';
   };
   moduleSourceSha256: Record<ModuleType, string>;
@@ -186,16 +192,18 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   gain: {
     type: 'gain', name: 'Gain', shortName: 'GAIN', description: 'Clean level adjustment.', definitionVersion: '0.1.0',
     sourceSha256: 'caca77ad2ac86cf0ef26f62a22d1d0c62a7d4b7f86c6c4e3fef77e9d19fbd35d',
+    wasmSha256: '54303a27ef533cc9f5b9983e6c0621174d42e92c0e8f645bde0bbdaa74e8fb87',
     wasmPath: '/faust/gain/dsp-module.wasm', metadataPath: '/faust/gain/dsp-meta.json',
     parameters: [parameter('level', 'Level', -24, 24, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Gain/Gain_Level')],
   },
   filter: {
     type: 'filter', name: 'Filter', shortName: 'FILT', description: 'Remove lows or highs with resonant shaping.', definitionVersion: '0.1.0',
-    sourceSha256: '873e26b2ca7ac309783f154f4becd1fc479d046cd295d0ae732aa81cfbc931eb',
+    sourceSha256: '6918312c734213e2476c899588f4917a0d7dfc469196ce0aec718d22e03c25d6',
+    wasmSha256: '7f188b00b97a5bc3744cf07698a28455a408af1771d0828d61ccc654a1658663',
     wasmPath: '/faust/filter/dsp-module.wasm', metadataPath: '/faust/filter/dsp-meta.json',
     parameters: [
-      parameter('mode', 'Mode', 0, 1, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Filter/Filter_Mode', {
-        kind: 'choice', choices: [{ value: 0, label: 'High Pass' }, { value: 1, label: 'Low Pass' }], mappable: false,
+      parameter('mode', 'Mode', 0, 3, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Filter/Filter_Mode', {
+        kind: 'choice', choices: [{ value: 0, label: 'High Pass' }, { value: 1, label: 'Low Pass' }, { value: 2, label: 'Band Pass' }, { value: 3, label: 'Notch' }], mappable: false,
       }),
       parameter('cutoff', 'Cutoff', 20, 20000, 80, 1, 'Hz', 'log', '/Audio_Effect_Builder_Filter/Filter_Cutoff'),
       parameter('resonance', 'Resonance', 0.1, 20, 0.7, 0.1, 'Q', 'log', '/Audio_Effect_Builder_Filter/Filter_Resonance'),
@@ -204,6 +212,7 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   saturation: {
     type: 'saturation', name: 'Saturation', shortName: 'SAT', description: 'Add harmonic color and weight.', definitionVersion: '0.1.0',
     sourceSha256: 'f8a7bbe451c3abd30e4c61fd6210ea3b6a2fef2ae5b67fda2c49c2890969bbf1',
+    wasmSha256: '14c322467c0188bbc9fd901a94333e85722fea24f4e9150663cf9477555ada78',
     wasmPath: '/faust/saturation/dsp-module.wasm', metadataPath: '/faust/saturation/dsp-meta.json',
     parameters: [
       parameter('character', 'Character', 0, 3, 0, 1, 'type', 'linear', '/Audio_Effect_Builder_Saturation/Saturation_Character', {
@@ -219,12 +228,66 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
       parameter('wow', 'Wow', 0, 100, 0, 1, '%', 'linear', '/Audio_Effect_Builder_Saturation/Saturation_Wow'),
     ],
   },
+  delay: {
+    type: 'delay', name: 'Delay', shortName: 'DLY', description: 'Add rhythmic stereo echoes.', definitionVersion: '0.1.0',
+    sourceSha256: 'ffb3c7f559aeedd613450d814c910552faca1129651f05cfc846a3511876c647',
+    wasmSha256: '8d23c0fcf45ce5565bd8a9b75307242c4a631de26705550f73f2c69deb8c3eb0',
+    wasmPath: '/faust/delay/dsp-module.wasm', metadataPath: '/faust/delay/dsp-meta.json',
+    parameters: [
+      parameter('mode', 'Mode', 0, 2, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Delay/Delay_Mode', {
+        kind: 'choice', choices: [{ value: 0, label: 'Digital' }, { value: 1, label: 'Ping-Pong' }, { value: 2, label: 'Tape' }], mappable: false,
+      }),
+      parameter('time', 'Time', 20, 2000, 250, 1, 'ms', 'log', '/Audio_Effect_Builder_Delay/Delay_Time'),
+      parameter('feedback', 'Feedback', 0, 90, 30, 1, '%', 'linear', '/Audio_Effect_Builder_Delay/Delay_Feedback'),
+      parameter('tone', 'Tone', 500, 16000, 8000, 1, 'Hz', 'log', '/Audio_Effect_Builder_Delay/Delay_Tone'),
+      parameter('mix', 'Mix', 0, 100, 25, 1, '%', 'linear', '/Audio_Effect_Builder_Delay/Delay_Mix'),
+      parameter('output', 'Output', -24, 12, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Delay/Delay_Output'),
+    ],
+  },
+  reverb: {
+    type: 'reverb', name: 'Reverb', shortName: 'VERB', description: 'Create depth with shared spatial voicings.', definitionVersion: '0.1.0',
+    sourceSha256: '95310a51570124fe27680d0946cf54c8316ec96e6afa3ce0ac619c61676adda3',
+    wasmSha256: '8eb5ea751de350fb216d55a553367afbf8454637ef78f09b1b13b7f79127c2fd',
+    wasmPath: '/faust/reverb/dsp-module.wasm', metadataPath: '/faust/reverb/dsp-meta.json',
+    parameters: [
+      parameter('mode', 'Mode', 0, 2, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Reverb/Reverb_Mode', {
+        kind: 'choice', choices: [{ value: 0, label: 'Room' }, { value: 1, label: 'Hall' }, { value: 2, label: 'Plate' }], mappable: false,
+      }),
+      parameter('preDelay', 'Pre Delay', 0, 200, 20, 1, 'ms', 'linear', '/Audio_Effect_Builder_Reverb/Reverb_Pre_Delay'),
+      parameter('decay', 'Decay', 0.2, 12, 2, 0.1, 's', 'log', '/Audio_Effect_Builder_Reverb/Reverb_Decay'),
+      parameter('size', 'Size', 0, 100, 50, 1, '%', 'linear', '/Audio_Effect_Builder_Reverb/Reverb_Size'),
+      parameter('damping', 'Damping', 0, 100, 35, 1, '%', 'linear', '/Audio_Effect_Builder_Reverb/Reverb_Damping'),
+      parameter('mix', 'Mix', 0, 100, 20, 1, '%', 'linear', '/Audio_Effect_Builder_Reverb/Reverb_Mix'),
+      parameter('output', 'Output', -24, 12, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Reverb/Reverb_Output'),
+    ],
+  },
 };
 
 export const MODULE_TYPES = Object.keys(MODULE_CATALOG) as ModuleType[];
-export const ENGINE_PROVENANCE: EngineProvenance = {
+export const PRE_PAIR1_ENGINE_PROVENANCE = Object.freeze({
   effectDefinition: 'audio-effect-builder-faust', definitionVersion: '0.1.0', faustWasmVersion: '0.16.6', faustCompilerVersion: '2.85.9',
   libraries: { basics: '1.22.0', filters: '1.7.1', maths: '2.9.0', platform: '1.3.0', signals: '1.6.0' },
+  moduleSourceSha256: {
+    gain: 'caca77ad2ac86cf0ef26f62a22d1d0c62a7d4b7f86c6c4e3fef77e9d19fbd35d',
+    filter: '873e26b2ca7ac309783f154f4becd1fc479d046cd295d0ae732aa81cfbc931eb',
+    saturation: 'f8a7bbe451c3abd30e4c61fd6210ea3b6a2fef2ae5b67fda2c49c2890969bbf1',
+  },
+});
+const PRE_CANONICAL_COMPILER_ENGINE_PROVENANCE = Object.freeze({
+  ...PRE_PAIR1_ENGINE_PROVENANCE,
+  faustCompilerVersion: '2.86.2',
+  libraries: { ...PRE_PAIR1_ENGINE_PROVENANCE.libraries, basics: '1.23.0' },
+});
+const PRE_SATURATION_V2_ENGINE_PROVENANCE = Object.freeze({
+  ...PRE_PAIR1_ENGINE_PROVENANCE,
+  moduleSourceSha256: {
+    ...PRE_PAIR1_ENGINE_PROVENANCE.moduleSourceSha256,
+    saturation: '238cd373e164ba480c6367ae7ef1c071205346361c7f597d6c1dc3878af0a75b',
+  },
+});
+export const ENGINE_PROVENANCE: EngineProvenance = {
+  effectDefinition: 'audio-effect-builder-faust', definitionVersion: '0.1.0', faustWasmVersion: '0.16.6', faustCompilerVersion: '2.85.9',
+  libraries: { analyzers: '1.3.0', basics: '1.22.0', delays: '1.2.0', filters: '1.7.1', maths: '2.9.0', misceffects: '2.5.2', oscillators: '1.7.0', platform: '1.3.0', reverbs: '1.5.1', signals: '1.6.0' },
   moduleSourceSha256: Object.fromEntries(MODULE_TYPES.map((type) => [type, MODULE_CATALOG[type].sourceSha256])) as Record<ModuleType, string>,
 };
 
@@ -281,6 +344,8 @@ export function formatParameter(definition: ParameterDefinition, value: number) 
   if (definition.unit === 'Hz') return value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 1 : 2)} kHz` : `${Math.round(value)} Hz`;
   if (definition.unit === '%') return `${Math.round(value)}%`;
   if (definition.unit === 'Q') return value.toFixed(2);
+  if (definition.unit === 'ms') return `${Math.round(value)} ms`;
+  if (definition.unit === 's') return `${value.toFixed(1)} s`;
   return `${value.toFixed(1)} dB`;
 }
 
@@ -617,28 +682,23 @@ export function parseProject(value: unknown): ProjectV2 {
   return validateProject(value);
 }
 
-/** Upgrades saved v0.1 Saturation nodes without changing their audible Soft Clip settings. */
+/** Migrates only named, exact historical v0.1 engines into the current engine. */
 export function upgradeSaturationProject(value: unknown): ProjectV2 {
   if (!isRecord(value) || value.schemaVersion !== 2 || !isRecord(value.nodes)) return validateProject(value);
   const project = structuredClone(value) as Record<string, unknown>;
-  let upgraded = false;
-  if (isRecord(project.engine) && project.engine.faustCompilerVersion === '2.86.2') {
-    const previousEngine = structuredClone(ENGINE_PROVENANCE) as unknown as Record<string, unknown>;
-    previousEngine.faustCompilerVersion = '2.86.2';
-    (previousEngine.libraries as Record<string, unknown>).basics = '1.23.0';
-    if (sameJson(project.engine, previousEngine)) {
-      project.engine = structuredClone(ENGINE_PROVENANCE);
-      upgraded = true;
+  const isPrePair1 = sameJson(project.engine, PRE_PAIR1_ENGINE_PROVENANCE);
+  const isPreCanonicalCompiler = sameJson(project.engine, PRE_CANONICAL_COMPILER_ENGINE_PROVENANCE);
+  const isPreSaturationV2 = sameJson(project.engine, PRE_SATURATION_V2_ENGINE_PROVENANCE);
+  if (!isPrePair1 && !isPreCanonicalCompiler && !isPreSaturationV2) return validateProject(project);
+  if (isPreSaturationV2) {
+    for (const node of Object.values(project.nodes as Record<string, unknown>)) {
+      if (!isRecord(node) || node.type !== 'saturation' || !isRecord(node.params)) continue;
+      const keys = Object.keys(node.params).sort();
+      if (keys.join(',') !== 'drive,mix,tone') throw new Error('The historical Saturation project has an unsupported parameter set.');
+      node.params = { ...createNode('saturation', String(node.id)).params, ...node.params };
     }
   }
-  for (const node of Object.values(project.nodes as Record<string, unknown>)) {
-    if (!isRecord(node) || node.type !== 'saturation' || !isRecord(node.params)) continue;
-    const keys = Object.keys(node.params).sort();
-    if (keys.join(',') !== 'drive,mix,tone') continue;
-    node.params = { ...createNode('saturation', String(node.id)).params, ...node.params };
-    upgraded = true;
-  }
-  if (upgraded) project.engine = structuredClone(ENGINE_PROVENANCE);
+  project.engine = structuredClone(ENGINE_PROVENANCE);
   return validateProject(project);
 }
 

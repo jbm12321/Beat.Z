@@ -20,11 +20,15 @@ Whole-chain dry/processed switching and loudness matching use short ramps. Local
 ## Modules
 
 - Gain: `−24…+24 dB`; level smoothing occurs in dB before conversion, so 0 dB initializes at unity rather than fading from silence.
-- Filter: one stable node runs resonant HP and LP branches with smoothed cutoff/Q and a smoothed mode crossfade.
+- Filter: one stable node preserves resonant High Pass and Low Pass modes and adds Band Pass plus a resonance-derived Notch width.
 - Saturation: soft clipping, tone low-pass, and continuous dry/wet interpolation live inside Faust.
+- Delay: one stereo `de.sdelay` feedback structure provides Digital, cross-feedback Ping-Pong, and darker saturated/modulated Tape modes. Time is converted from milliseconds at the active sample rate and the feedback ceiling is 0.90.
+- Reverb: one stereo `re.jpverb` core provides Beat.Z Room, Hall, and Plate voicings, with `de.sdelay` pre-delay on the wet path.
 
 ## Offline rendering and analysis
 
 Offline comparison uses `FaustMonoDspGenerator.createOfflineProcessor` with the same committed factories. It reports peak and RMS/average dBFS, stereo activity, clipping at absolute sample `>= 1`, invalid non-finite samples, and silence below `−80 dBFS`. Loudness matching calculates a bounded comparison-only gain and never mutates the project.
 
-Tests render the actual processors at 44.1, 48, and 96 kHz. They verify source/metadata fingerprints, stereo I/O, Gain unity/linking, Filter mode behavior, Saturation dry equivalence, finite extremes, and non-silent output.
+Tests render the actual processors at 44.1, 48, and 96 kHz. They verify source/metadata fingerprints, stereo I/O, dry endpoints, all Filter/Delay/Reverb modes, timed and cross-channel repeats, decaying stereo reverb tails, finite extremes, and existing Gain/Saturation behavior.
+
+The compiler is pinned to Faust 2.85.9 with `-single -ftz 2`; native DSP compilation additionally uses `-ffp-contract=off`. Pair 1 records `delays.lib` 1.2.0, `reverbs.lib` 1.5.1, and `filters.lib` 1.7.1 from the bundled Faust release. Their upstream license declarations remain in the installed libraries; distribution licensing still requires human release review.

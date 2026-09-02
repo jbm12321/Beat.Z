@@ -81,12 +81,14 @@ export function createParityScenarios(parameters) {
   const defaults = parameters.map((parameter) => parameter.value);
   return [
     { id: 'defaults', values: defaults, parameterIndex: null, normalizedValue: null },
-    ...parameters.flatMap((parameter, parameterIndex) => (parameter.definition.choices ? [0, 1] : [0, 0.5, 1]).map((normalized) => {
+    ...parameters.flatMap((parameter, parameterIndex) => (parameter.definition.choices
+      ? parameter.definition.choices.map((value, index, choices) => ({ value, normalized: choices.length === 1 ? 0 : index / (choices.length - 1) }))
+      : [0, 0.5, 1].map((normalized) => ({ value: null, normalized }))).map(({ value, normalized }) => {
       const values = [...defaults];
-      values[parameterIndex] = parameter.definition.scale === 'log'
+      values[parameterIndex] = value ?? (parameter.definition.scale === 'log'
         ? parameter.definition.min * ((parameter.definition.max / parameter.definition.min) ** normalized)
-        : parameter.definition.min + ((parameter.definition.max - parameter.definition.min) * normalized);
-      return { id: `parameter-${parameterIndex}-${String(normalized).replace('.', '_')}`, values, parameterIndex, normalizedValue: normalized };
+        : parameter.definition.min + ((parameter.definition.max - parameter.definition.min) * normalized));
+      return { id: `parameter-${parameterIndex}-${String(value ?? normalized).replace('.', '_')}`, values, parameterIndex, normalizedValue: normalized };
     })),
   ];
 }

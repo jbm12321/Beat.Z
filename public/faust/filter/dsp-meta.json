@@ -17,8 +17,8 @@
     "/Users/builder/Projects/Beat.Z/faust",
     "/Users/builder/Projects/Beat.Z/faust"
   ],
-  "size": 80,
-  "code": "aW1wb3J0KCJzdGRmYXVzdC5saWIiKTsKCmRlY2xhcmUgbmFtZSAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIgRmlsdGVyIjsKZGVjbGFyZSB2ZXJzaW9uICIwLjEuMCI7CmRlY2xhcmUgYXV0aG9yICJBdWRpbyBFZmZlY3QgQnVpbGRlciI7CmRlY2xhcmUgbGljZW5zZSAiTUlUIjsKCm1vZGUgPSBoc2xpZGVyKCJGaWx0ZXIvTW9kZVtzdHlsZTptZW51eydIaWdoIFBhc3MnOjA7J0xvdyBQYXNzJzoxfV0iLCAwLCAwLCAxLCAxKSA6IHNpLnNtb287CmN1dG9mZiA9IGhzbGlkZXIoIkZpbHRlci9DdXRvZmZbdW5pdDpIel1bc2NhbGU6bG9nXVtzdHlsZTprbm9iXSIsIDgwLjAsIDIwLjAsIDIwMDAwLjAsIDEuMCkgOiBzaS5zbW9vOwpyZXNvbmFuY2UgPSBoc2xpZGVyKCJGaWx0ZXIvUmVzb25hbmNlW3VuaXQ6UV1bc2NhbGU6bG9nXVtzdHlsZTprbm9iXSIsIDAuNywgMC4xLCAyMC4wLCAwLjEpIDogc2kuc21vbzsKCmZpbHRlckNoYW5uZWwoc2lnbmFsKSA9IHNpZ25hbCA8OiBmaS5yZXNvbmhwKGN1dG9mZiwgcmVzb25hbmNlLCAxLjApLCBmaS5yZXNvbmxwKGN1dG9mZiwgcmVzb25hbmNlLCAxLjApIDogc2kuaW50ZXJwb2xhdGUobW9kZSk7Cgpwcm9jZXNzID0gZmlsdGVyQ2hhbm5lbCwgZmlsdGVyQ2hhbm5lbDsK",
+  "size": 112,
+  "code": "aW1wb3J0KCJzdGRmYXVzdC5saWIiKTsKCmRlY2xhcmUgbmFtZSAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIgRmlsdGVyIjsKZGVjbGFyZSB2ZXJzaW9uICIwLjEuMCI7CmRlY2xhcmUgYXV0aG9yICJBdWRpbyBFZmZlY3QgQnVpbGRlciI7CmRlY2xhcmUgbGljZW5zZSAiTUlUIjsKCm1vZGUgPSBoc2xpZGVyKCJGaWx0ZXIvTW9kZVtzdHlsZTptZW51eydIaWdoIFBhc3MnOjA7J0xvdyBQYXNzJzoxOydCYW5kIFBhc3MnOjI7J05vdGNoJzozfV0iLCAwLCAwLCAzLCAxKSA6IHNpLnNtb287CmN1dG9mZiA9IGhzbGlkZXIoIkZpbHRlci9DdXRvZmZbdW5pdDpIel1bc2NhbGU6bG9nXVtzdHlsZTprbm9iXSIsIDgwLjAsIDIwLjAsIDIwMDAwLjAsIDEuMCkgOiBzaS5zbW9vOwpyZXNvbmFuY2UgPSBoc2xpZGVyKCJGaWx0ZXIvUmVzb25hbmNlW3VuaXQ6UV1bc2NhbGU6bG9nXVtzdHlsZTprbm9iXSIsIDAuNywgMC4xLCAyMC4wLCAwLjEpIDogc2kuc21vbzsKbm90Y2hXaWR0aCA9IG1pbigxMDAwMC4wLCBtYXgoMS4wLCBjdXRvZmYgLyBtYXgocmVzb25hbmNlLCAwLjEpKSk7CgpmaWx0ZXJDaGFubmVsKHNpZ25hbCkgPSBzZWxlY3QyKAogIG1vZGUgPj0gMC41LAogIGZpLnJlc29uaHAoY3V0b2ZmLCByZXNvbmFuY2UsIDEuMCwgc2lnbmFsKSwKICBzZWxlY3QyKAogICAgbW9kZSA+PSAxLjUsCiAgICBmaS5yZXNvbmxwKGN1dG9mZiwgcmVzb25hbmNlLCAxLjAsIHNpZ25hbCksCiAgICBzZWxlY3QyKG1vZGUgPj0gMi41LCBmaS5yZXNvbmJwKGN1dG9mZiwgcmVzb25hbmNlLCAxLjAsIHNpZ25hbCksIGZpLm5vdGNodyhub3RjaFdpZHRoLCBjdXRvZmYsIHNpZ25hbCkpCiAgKQopOwoKcHJvY2VzcyA9IGZpbHRlckNoYW5uZWwsIGZpbHRlckNoYW5uZWw7Cg==",
   "inputs": 2,
   "outputs": 2,
   "meta": [
@@ -54,6 +54,24 @@
     },
     {
       "filters.lib/name": "Faust Filters Library"
+    },
+    {
+      "filters.lib/notchw:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/notchw:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/notchw:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/resonbp:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/resonbp:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/resonbp:license": "MIT-style STK-4.3 license"
     },
     {
       "filters.lib/resonhp:author": "Julius O. Smith III"
@@ -168,12 +186,12 @@
           "index": 12,
           "meta": [
             {
-              "style": "menu{-High Pass-:0;-Low Pass-:1}"
+              "style": "menu{-High Pass-:0;-Low Pass-:1;-Band Pass-:2;-Notch-:3}"
             }
           ],
           "init": 0,
           "min": 0,
-          "max": 1,
+          "max": 3,
           "step": 1
         },
         {
