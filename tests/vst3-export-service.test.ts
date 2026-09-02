@@ -8,7 +8,7 @@ import { STALE_BUILD_TIMEOUT_MS, MemoryBuildRepository } from '../src/features/v
 import { Vst3ExportError, createVst3ExportService } from '../src/features/vst3-export/server/service.ts';
 
 const publicArtifactUrl = 'https://example.supabase.co/storage/v1/object/public/vst3-builds';
-const createService = (repository: MemoryBuildRepository, enabled = true) => createVst3ExportService({ repository, enabled, workerToken: 'test-worker-token-that-is-long-enough', artifactPublicUrl: publicArtifactUrl });
+const createService = (repository: MemoryBuildRepository) => createVst3ExportService({ repository, workerToken: 'test-worker-token-that-is-long-enough', artifactPublicUrl: publicArtifactUrl });
 
 function healthyAnalysis(): AudioAnalysis {
   const signal = Float32Array.from({ length: 4096 }, (_, index) => Math.sin(index * 0.1) * 0.2);
@@ -20,11 +20,11 @@ async function approvedSnapshot() {
   return freezeProjectRevision(project, validateProjectForBuild(project, healthyAnalysis()));
 }
 
-test('the backend switch blocks new work without exposing a UI toggle', async () => {
-  const service = createService(new MemoryBuildRepository(), false);
-  assert.deepEqual(service.capability(), { enabled: false });
+test('the site always accepts build requests and leaves execution to the worker', async () => {
+  const service = createService(new MemoryBuildRepository());
   const frozen = await approvedSnapshot();
-  await assert.rejects(() => service.submit(frozen), (error: unknown) => error instanceof Vst3ExportError && error.code === 'export_disabled');
+  const submitted = await service.submit(frozen);
+  assert.equal(submitted.status, 'queued');
 });
 
 test('one worker claims one queued job and reports an honest terminal result', async () => {
@@ -66,15 +66,14 @@ test('an abandoned building job expires so the next queued job can be claimed', 
   assert.equal(recovered?.error, 'Failed.');
 });
 
-test('a job already building may report after the switch is turned off', async () => {
+test('a job already building may report while the site remains available', async () => {
   const repository = new MemoryBuildRepository();
-  const on = createService(repository);
-  const submitted = await on.submit(await approvedSnapshot());
-  await on.claim('test-worker-token-that-is-long-enough');
-  const off = createService(repository, false);
-  await off.report('test-worker-token-that-is-long-enough', submitted.id, { status: 'failed', error: 'Compiler failed.' });
-  assert.equal((await off.status(submitted.id)).status, 'failed');
-  assert.equal(await off.claim('test-worker-token-that-is-long-enough'), null);
+  const service = createService(repository);
+  const submitted = await service.submit(await approvedSnapshot());
+  await service.claim('test-worker-token-that-is-long-enough');
+  await service.report('test-worker-token-that-is-long-enough', submitted.id, { status: 'failed', error: 'Compiler failed.' });
+  assert.equal((await service.status(submitted.id)).status, 'failed');
+  assert.equal(await service.claim('test-worker-token-that-is-long-enough'), null);
 });
 
 test('ready is rejected unless validator, state restore, parity, and artifact identity all pass', async () => {

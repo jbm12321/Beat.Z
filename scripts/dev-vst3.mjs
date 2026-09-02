@@ -9,7 +9,6 @@ if (token.length < 24 || token.startsWith('REPLACE_')) {
 const liveEndpoint = 'https://audio-effect-builder-bm26.jbm111.chatgpt.site';
 const environment = {
   ...process.env,
-  VST3_EXPORT_ENABLED: 'true',
   VST3_WORKER_TOKEN: token,
   // Native builds always service the published Beat.Z queue.
   VST3_EXPORT_ENDPOINT: liveEndpoint,

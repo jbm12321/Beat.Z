@@ -16,7 +16,6 @@ const localBindingConfig = {
   main: 'vinext/server/app-router-entry',
   compatibility_flags: ['nodejs_compat'],
   vars: {
-    VST3_EXPORT_ENABLED: process.env.VST3_EXPORT_ENABLED ?? 'false',
     VST3_WORKER_TOKEN: process.env.VST3_WORKER_TOKEN ?? '',
     VST3_ARTIFACT_PUBLIC_URL: process.env.VST3_ARTIFACT_PUBLIC_URL ?? '',
   },

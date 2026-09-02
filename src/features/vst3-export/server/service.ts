@@ -3,7 +3,7 @@ import { createNativeBuildRequest } from '../contract.ts';
 import type { BuildRepository, Vst3BuildOutcome, Vst3BuildRecord } from './repository.ts';
 
 export class Vst3ExportError extends Error {
-  readonly code: 'export_disabled' | 'unauthorized_worker' | 'job_not_found' | 'invalid_result';
+  readonly code: 'unauthorized_worker' | 'job_not_found' | 'invalid_result';
   readonly httpStatus: number;
 
   constructor(code: Vst3ExportError['code'], message: string, httpStatus: number) {
@@ -45,14 +45,12 @@ function validateOutcome(record: Vst3BuildRecord, outcome: Vst3BuildOutcome, art
   }
 }
 
-export function createVst3ExportService({ repository, enabled, workerToken, artifactPublicUrl }: { repository: BuildRepository; enabled: boolean; workerToken: string; artifactPublicUrl: string }) {
+export function createVst3ExportService({ repository, workerToken, artifactPublicUrl }: { repository: BuildRepository; workerToken: string; artifactPublicUrl: string }) {
   const authorizeWorker = (token: string) => {
     if (workerToken.length < 24 || token !== workerToken) throw new Vst3ExportError('unauthorized_worker', 'The Mac worker token is invalid.', 401);
   };
   return {
-    capability: () => ({ enabled }),
     async submit(frozen: FrozenProjectRevision) {
-      if (!enabled) throw new Vst3ExportError('export_disabled', 'VST3 export is currently turned off.', 503);
       const request = await createNativeBuildRequest(frozen);
       const now = new Date().toISOString();
       const record: Vst3BuildRecord = { id: crypto.randomUUID(), status: 'queued', request, createdAt: now };
@@ -66,7 +64,6 @@ export function createVst3ExportService({ repository, enabled, workerToken, arti
     },
     async claim(token: string) {
       authorizeWorker(token);
-      if (!enabled) return null;
       return repository.claimOldest(new Date().toISOString());
     },
     async report(token: string, id: string, outcome: Vst3BuildOutcome) {

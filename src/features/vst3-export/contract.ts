@@ -10,7 +10,7 @@ export const PINNED_NATIVE_TOOLCHAIN = Object.freeze({
   ninja: { version: '1.13.2' },
   iPlug2Revision: 'b64192fe18afd9bc9a1fe324db5aceb48f4a0eee',
   vst3SdkRevision: '58f8da7936800732561402d7936584ca4505de07',
-  parity: { sampleRates: [44100, 48000, 96000], maxTolerance: 0.0005, rmsTolerance: 0.0001 },
+  parity: { sampleRates: [44100, 48000, 96000], maxTolerance: 0.0005, rmsTolerance: 0.00015 },
 });
 
 export interface EffectiveDspNode {

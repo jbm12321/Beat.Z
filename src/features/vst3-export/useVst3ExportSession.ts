@@ -2,22 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { FrozenProjectRevision } from '../audio-builder/domain/build.ts';
-import { getVst3Build, getVst3Capability, submitVst3Build, type PublicVst3Build } from './client.ts';
+import { getVst3Build, submitVst3Build, type PublicVst3Build } from './client.ts';
 
-export function useVst3ExportSession(open: boolean) {
-  const [enabled, setEnabled] = useState<boolean | null>(null);
+export function useVst3ExportSession() {
   const [job, setJob] = useState<PublicVst3Build | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    let active = true;
-    getVst3Capability()
-      .then((capability) => { if (active) setEnabled(capability.enabled); })
-      .catch((cause) => { if (active) { setEnabled(false); setError(cause instanceof Error ? cause.message : 'VST3 export could not be checked.'); } });
-    return () => { active = false; };
-  }, [open]);
 
   useEffect(() => {
     if (!job || (job.status !== 'queued' && job.status !== 'building')) return;
@@ -50,5 +40,5 @@ export function useVst3ExportSession(open: boolean) {
     setError(null);
   }, []);
 
-  return { enabled, job, busy, error, submit, reset };
+  return { job, busy, error, submit, reset };
 }

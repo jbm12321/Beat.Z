@@ -44,11 +44,11 @@ export async function hashProject(project: ProjectV2) {
 export async function freezeProjectRevision(project: ProjectV2, validation: ProjectValidationResult): Promise<FrozenProjectRevision> {
   const validatedProject = validateProject(project);
   if (validation.revision !== project.revision) throw new Error(`Validation belongs to revision ${validation.revision}; current revision is ${project.revision}.`);
-  if (validation.status !== 'valid') throw new Error('Only a fully validated project revision can be frozen.');
+  if (validation.status !== 'valid') throw new Error('The current project needs a successful audio analysis before it can be prepared for download.');
   const snapshot = structuredClone(validatedProject);
   const contentHash = await hashProject(snapshot);
   const validationHash = await hashProject(validateProject(validation.projectSnapshot));
-  if (validationHash !== contentHash) throw new Error('Browser validation belongs to different project content. Validate this exact project again.');
+  if (validationHash !== contentHash) throw new Error('The project changed after analysis. Analyze the current project again before downloading.');
   deepFreeze(snapshot);
   return Object.freeze({
     id: `frozen_${contentHash.slice(0, 16)}`,

@@ -55,7 +55,7 @@ test('freezing rejects different content even when the revision number matches',
   const validation = validateProjectForBuild(project, healthyAnalysis());
   const different = structuredClone(project);
   different.nodes['gain-1'].params.level = 6;
-  await assert.rejects(() => freezeProjectRevision(different, validation), /different project content/i);
+  await assert.rejects(() => freezeProjectRevision(different, validation), /project changed after analysis/i);
 });
 
 test('native build requests stay truthfully gated and name the exact frozen revision', async () => {

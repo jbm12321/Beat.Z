@@ -19,7 +19,7 @@ export function NativeExportModal({ projectName, frozen, job, error, busy, onClo
         <h2 id="native-title">Build the plugin you desire</h2>
         <div className="readiness-list">
           <span className="is-ready">Downloaded .vst3</span>
-          <span className={frozen ? 'is-ready' : ''}>{frozen ? `Frozen: ${frozen.project.name}` : `Not Frozen: ${projectName}`}</span>
+          <span className={frozen ? 'is-ready' : ''}>{frozen ? `Prepared: ${frozen.project.name}` : `Not Prepared: ${projectName}`}</span>
           <span className="is-ready">Mac Users</span>
           <span className={job?.status === 'ready' ? 'is-ready' : building ? 'is-building' : ''} aria-live="polite" aria-busy={building}>{job ? `Builder: ${job.status}` : 'No build requested'}</span>
         </div>
@@ -28,7 +28,7 @@ export function NativeExportModal({ projectName, frozen, job, error, busy, onClo
         {job?.status === 'failed' ? <p className="build-gate-message" role="alert">{job.error ?? 'The native build failed.'}</p> : null}
         {error ? <p className="build-gate-message" role="alert">{error}</p> : null}
         <div className="modal-actions">
-          {!frozen ? <button type="button" className="export-button modal-primary-action" disabled={busy} onClick={onFreezeBuild}>{busy ? 'Freezing…' : 'Freeze Build'}</button> : null}
+          {!frozen ? <button type="button" className="export-button modal-primary-action" disabled={busy} onClick={onFreezeBuild}>{busy ? 'Preparing…' : 'Prepare Download'}</button> : null}
           {frozen && !job ? <button type="button" className="outline-button modal-primary-action" disabled={busy} onClick={onRequestBuild}>{busy ? 'Starting…' : 'Download'}</button> : null}
         </div>
         <span className="modal-brand rail-logo" aria-label="Beat.Z">Beat.Z</span>

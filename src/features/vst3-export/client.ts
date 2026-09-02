@@ -18,10 +18,6 @@ async function readJson<T>(response: Response): Promise<T> {
   return body;
 }
 
-export async function getVst3Capability() {
-  return readJson<{ enabled: boolean }>(await fetch('/api/vst3-export', { cache: 'no-store' }));
-}
-
 export async function submitVst3Build(frozen: FrozenProjectRevision) {
   return readJson<PublicVst3Build>(await fetch('/api/vst3-export', {
     method: 'POST',
