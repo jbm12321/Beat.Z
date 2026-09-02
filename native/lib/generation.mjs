@@ -177,8 +177,8 @@ function nativeParameterInit(parameter) {
   return `  GetParam(kParam${parameter.index})->InitDouble(${cppString(parameter.label)}, ${floatLiteral(parameter.value)}, ${floatLiteral(definition.min)}, ${floatLiteral(definition.max)}, ${floatLiteral(definition.step)}, ${cppString(definition.unit)}, 0, ${cppString(parameter.moduleLabel)}, ${shape});`;
 }
 
-export function deriveNativeIdentity(projectId) {
-  const hash = createHash('sha256').update(`beat-z-project:${projectId}`).digest('hex');
+export function deriveNativeIdentity(identitySeed) {
+  const hash = createHash('sha256').update(`beat-z-vst3:${identitySeed}`).digest('hex');
   return Object.freeze({
     iPlugUniqueId: `0x${hash.slice(0, 8).toUpperCase()}`,
     vst3ComponentFuid: hash.slice(0, 32).toUpperCase(),
@@ -228,7 +228,7 @@ export async function createNativeGenerationPlan(request, lock, options = {}) {
       arguments: ['-lang', 'cpp', ...lock.faust.codegenFlags, '-cn', className, '-o', outputHeader, sourcePath],
     });
   }
-  const identity = deriveNativeIdentity(request.projectId);
+  const identity = deriveNativeIdentity(request.dspHash);
   const filename = `${safeArtifactStem(request.dsp.pluginName)}-${request.dspHash.slice(0, 8)}.vst3`;
   const parameters = createAutomaticNativeParameters(request);
   const editor = createNativeEditorModel(parameters);

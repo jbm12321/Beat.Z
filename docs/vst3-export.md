@@ -25,7 +25,7 @@ The approval hash covers the complete validated project snapshot. The DSP hash c
 
 Zero macros are valid. The builder never invents a fallback control.
 
-The generated plugin identity stays stable for the Beat.Z project. The filename includes the first eight characters of the DSP hash so different sound revisions remain distinguishable.
+The generated plugin identity stays stable for the exact effective DSP build. Different frozen builds receive different VST3 and bundle identities so they can coexist in a plugin host. The filename includes the first eight characters of the DSP hash so different sound revisions remain distinguishable.
 
 ## Native acceptance gates
 

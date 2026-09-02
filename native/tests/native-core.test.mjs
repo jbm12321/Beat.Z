@@ -26,9 +26,37 @@ async function nativeRequestForModules(moduleTypes) {
   return createNativeBuildRequest(await freezeProjectRevision(project, validateProjectForBuild(project, analysis)));
 }
 
-test('native identity is stable per project while artifact hashes can change', () => {
-  assert.deepEqual(deriveNativeIdentity('project-123'), deriveNativeIdentity('project-123'));
-  assert.notDeepEqual(deriveNativeIdentity('project-123'), deriveNativeIdentity('project-456'));
+test('native identity is stable for an exact DSP build and unique for different builds', () => {
+  const first = deriveNativeIdentity('a'.repeat(64));
+  const rebuilt = deriveNativeIdentity('a'.repeat(64));
+  const different = deriveNativeIdentity('b'.repeat(64));
+
+  assert.deepEqual(first, rebuilt);
+  assert.notDeepEqual(first, different);
+  assert.match(first.iPlugUniqueId, /^0x[A-F0-9]{8}$/u);
+  assert.match(first.vst3ComponentFuid, /^[A-F0-9]{32}$/u);
+  assert.match(first.vst3ControllerFuid, /^[A-F0-9]{32}$/u);
+  assert.notEqual(first.vst3ComponentFuid, first.vst3ControllerFuid);
+  assert.match(first.bundleIdentifier, /^com\.beatz\.effects\.[a-f0-9]{24}$/u);
+});
+
+test('generation plans use the DSP hash so different builds from one project can coexist', async () => {
+  const signal = Float32Array.from({ length: 4096 }, (_, index) => Math.sin(index * 0.1) * 0.2);
+  const analysis = analyzeStereo([signal, signal], 48000);
+  const initial = createInitialProject();
+  const gainProject = applyProjectCommands(initial, [{ type: 'add_module', moduleType: 'gain', nodeId: 'gain-1' }], 'human');
+  const filterProject = applyProjectCommands(gainProject, [{ type: 'add_module', moduleType: 'filter', nodeId: 'filter-1' }], 'human');
+  const gainRequest = await createNativeBuildRequest(await freezeProjectRevision(gainProject, validateProjectForBuild(gainProject, analysis)));
+  const filterRequest = await createNativeBuildRequest(await freezeProjectRevision(filterProject, validateProjectForBuild(filterProject, analysis)));
+  const lock = await loadToolchainLock();
+  const gainPlan = await createNativeGenerationPlan(gainRequest, lock);
+  const filterPlan = await createNativeGenerationPlan(filterRequest, lock);
+
+  assert.equal(gainRequest.projectId, filterRequest.projectId);
+  assert.notEqual(gainRequest.dspHash, filterRequest.dspHash);
+  assert.deepEqual(gainPlan.identity, deriveNativeIdentity(gainRequest.dspHash));
+  assert.deepEqual(filterPlan.identity, deriveNativeIdentity(filterRequest.dspHash));
+  assert.notDeepEqual(gainPlan.identity, filterPlan.identity);
 });
 
 test('the default artifact destination is the normal Downloads folder', () => {
