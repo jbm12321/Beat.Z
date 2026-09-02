@@ -1,0 +1,387 @@
+{
+  "name": "Audio Effect Builder Reverb",
+  "filename": "reverb.dsp",
+  "version": "2.85.9",
+  "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2",
+  "library_list": [
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/stdfaust.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/misceffects.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/delays.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/maths.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/platform.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/reverbs.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/signals.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/oscillators.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/filters.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/analyzers.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/basics.lib"
+  ],
+  "include_pathnames": [
+    "/opt/homebrew/opt/faust/share/faust",
+    "/usr/local/share/faust",
+    "/usr/share/faust",
+    "/Users/baumolinari/Projects/Beat.Z/faust",
+    "/Users/baumolinari/Projects/Beat.Z/faust"
+  ],
+  "size": 4359576,
+  "code": "aW1wb3J0KCJzdGRmYXVzdC5saWIiKTsKCmRlY2xhcmUgbmFtZSAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIgUmV2ZXJiIjsKZGVjbGFyZSB2ZXJzaW9uICIwLjEuMCI7CmRlY2xhcmUgYXV0aG9yICJBdWRpbyBFZmZlY3QgQnVpbGRlciI7CmRlY2xhcmUgbGljZW5zZSAiTUlUIjsKCm1vZGUgPSBoc2xpZGVyKCJSZXZlcmIvTW9kZVtzdHlsZTptZW51eydSb29tJzowOydIYWxsJzoxOydQbGF0ZSc6Mn1dIiwgMC4wLCAwLjAsIDIuMCwgMS4wKTsKcHJlRGVsYXlNcyA9IGhzbGlkZXIoIlJldmVyYi9QcmUgRGVsYXlbdW5pdDptc11bc3R5bGU6a25vYl0iLCAyMC4wLCAwLjAsIDIwMC4wLCAxLjApOwpkZWNheSA9IGhzbGlkZXIoIlJldmVyYi9EZWNheVt1bml0OnNdW3NjYWxlOmxvZ11bc3R5bGU6a25vYl0iLCAyLjAsIDAuMiwgMTIuMCwgMC4xKSA6IHNpLnNtb287CnNpemVQZXJjZW50ID0gaHNsaWRlcigiUmV2ZXJiL1NpemVbdW5pdDolXVtzdHlsZTprbm9iXSIsIDUwLjAsIDAuMCwgMTAwLjAsIDEuMCkgLyAxMDAuMCA6IHNpLnNtb287CmRhbXBpbmcgPSBoc2xpZGVyKCJSZXZlcmIvRGFtcGluZ1t1bml0OiVdW3N0eWxlOmtub2JdIiwgMzUuMCwgMC4wLCAxMDAuMCwgMS4wKSAvIDEwMC4wIDogc2kuc21vbzsKbWl4ID0gaHNsaWRlcigiUmV2ZXJiL01peFt1bml0OiVdW3N0eWxlOmtub2JdIiwgMjAuMCwgMC4wLCAxMDAuMCwgMS4wKSAvIDEwMC4wOwpvdXRwdXREYiA9IGhzbGlkZXIoIlJldmVyYi9PdXRwdXRbdW5pdDpkQl1bc3R5bGU6a25vYl0iLCAwLjAsIC0yNC4wLCAxMi4wLCAwLjEpOwoKaXNIYWxsID0gKG1vZGUgPj0gMC41KSAmIChtb2RlIDwgMS41KTsKaXNQbGF0ZSA9IG1vZGUgPj0gMS41Owptb2RlVmFsdWUocm9vbSwgaGFsbCwgcGxhdGUpID0gc2VsZWN0Mihpc0hhbGwsIHNlbGVjdDIoaXNQbGF0ZSwgcm9vbSwgcGxhdGUpLCBoYWxsKTsKZWFybHlEaWZmID0gbW9kZVZhbHVlKDAuNzUsIDAuODUsIDAuOTUpOwptb2REZXB0aCA9IG1vZGVWYWx1ZSgwLjA1LCAwLjE4LCAwLjA4KTsKbW9kRnJlcSA9IG1vZGVWYWx1ZSgwLjE4LCAwLjI4LCAwLjU1KTsKbG93RGVjYXkgPSBtb2RlVmFsdWUoMC44NSwgMC45NSwgMC42NSk7Cm1pZERlY2F5ID0gbW9kZVZhbHVlKDAuODUsIDAuOTAsIDAuOTUpOwpoaWdoRGVjYXkgPSBtb2RlVmFsdWUoMC42MCwgMC43MiwgMC44OCk7Cmxvd0N1dG9mZiA9IG1vZGVWYWx1ZSg0MDAuMCwgMzAwLjAsIDUwMC4wKTsKaGlnaEN1dG9mZiA9IG1vZGVWYWx1ZSg2MDAwLjAsIDUwMDAuMCwgODAwMC4wKTsKcmV2ZXJiU2l6ZSA9IG1vZGVWYWx1ZSgwLjYgKyBzaXplUGVyY2VudCwgMC45ICsgMi4zICogc2l6ZVBlcmNlbnQsIDAuNyArIDEuMyAqIHNpemVQZXJjZW50KTsKcHJlRGVsYXlTYW1wbGVzID0gbWluKDAuMiAqIG1hLlNSLCBtYXgoMC4wLCBwcmVEZWxheU1zICogbWEuU1IgLyAxMDAwLjApKTsKCndldFJldmVyYiA9IChkZS5zZGVsYXkobWEuU1IsIDEwMjQsIHByZURlbGF5U2FtcGxlcyksIGRlLnNkZWxheShtYS5TUiwgMTAyNCwgcHJlRGVsYXlTYW1wbGVzKSkKICA6IHJlLmpwdmVyYihkZWNheSwgZGFtcGluZywgcmV2ZXJiU2l6ZSwgZWFybHlEaWZmLCBtb2REZXB0aCwgbW9kRnJlcSwgbG93RGVjYXksIG1pZERlY2F5LCBoaWdoRGVjYXksIGxvd0N1dG9mZiwgaGlnaEN1dG9mZik7Cgpwcm9jZXNzID0gZWYuZHJ5V2V0TWl4ZXIobWl4LCB3ZXRSZXZlcmIpIDogcGFyKGNoYW5uZWwsIDIsICooYmEuZGIybGluZWFyKG91dHB1dERiKSkpOwo=",
+  "inputs": 2,
+  "outputs": 2,
+  "meta": [
+    {
+      "analyzers.lib/name": "Faust Analyzer Library"
+    },
+    {
+      "analyzers.lib/version": "1.3.0"
+    },
+    {
+      "author": "Audio Effect Builder"
+    },
+    {
+      "basics.lib/name": "Faust Basic Element Library"
+    },
+    {
+      "basics.lib/version": "1.22.0"
+    },
+    {
+      "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2"
+    },
+    {
+      "delays.lib/fdelay1a:author": "Julius O. Smith III"
+    },
+    {
+      "delays.lib/fdelay4:author": "Julius O. Smith III"
+    },
+    {
+      "delays.lib/fdelayltv:author": "Julius O. Smith III"
+    },
+    {
+      "delays.lib/name": "Faust Delay Library"
+    },
+    {
+      "delays.lib/version": "1.2.0"
+    },
+    {
+      "filename": "reverb.dsp"
+    },
+    {
+      "filters.lib/filterbank:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/filterbank:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/filterbank:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/fir:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/fir:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/fir:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/highpass:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/highpass:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/highpass_plus_lowpass:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/highpass_plus_lowpass:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/highpass_plus_lowpass:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/iir:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/iir:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/iir:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/lowpass0_highpass1": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/lowpass0_highpass1:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/lowpass:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/lowpass:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/lowpass:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/name": "Faust Filters Library"
+    },
+    {
+      "filters.lib/nlf2:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/nlf2:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/nlf2:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/tf1:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/tf1:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/tf1:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/tf1s:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/tf1s:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/tf1s:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/tf2:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/tf2:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/tf2:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/tf2s:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/tf2s:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/tf2s:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/version": "1.7.1"
+    },
+    {
+      "license": "MIT"
+    },
+    {
+      "maths.lib/author": "GRAME"
+    },
+    {
+      "maths.lib/copyright": "GRAME"
+    },
+    {
+      "maths.lib/license": "LGPL with exception"
+    },
+    {
+      "maths.lib/name": "Faust Math Library"
+    },
+    {
+      "maths.lib/version": "2.9.0"
+    },
+    {
+      "misceffects.lib/dryWetMixer:author": "David Braun, revised by Stéphane Letz"
+    },
+    {
+      "misceffects.lib/name": "Misc Effects Library"
+    },
+    {
+      "misceffects.lib/version": "2.5.2"
+    },
+    {
+      "name": "Audio Effect Builder Reverb"
+    },
+    {
+      "oscillators.lib/name": "Faust Oscillator Library"
+    },
+    {
+      "oscillators.lib/version": "1.7.0"
+    },
+    {
+      "platform.lib/name": "Generic Platform Library"
+    },
+    {
+      "platform.lib/version": "1.3.0"
+    },
+    {
+      "reverbs.lib/jpverb:author": "Julian Parker, bug fixes and minor interface changes by Till Bovermann"
+    },
+    {
+      "reverbs.lib/jpverb:license": "MIT license"
+    },
+    {
+      "reverbs.lib/name": "Faust Reverb Library"
+    },
+    {
+      "reverbs.lib/version": "1.5.1"
+    },
+    {
+      "signals.lib/name": "Faust Routing Library"
+    },
+    {
+      "signals.lib/version": "1.6.0"
+    },
+    {
+      "version": "0.1.0"
+    }
+  ],
+  "ui": [
+    {
+      "type": "vgroup",
+      "label": "Audio Effect Builder Reverb",
+      "items": [
+        {
+          "type": "hslider",
+          "label": "Reverb/Damping",
+          "varname": "fHslider3",
+          "shortname": "Reverb_Damping",
+          "address": "/Audio_Effect_Builder_Reverb/Reverb_Damping",
+          "index": 8216,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "%"
+            }
+          ],
+          "init": 35,
+          "min": 0,
+          "max": 100,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Reverb/Decay",
+          "varname": "fHslider6",
+          "shortname": "Reverb_Decay",
+          "address": "/Audio_Effect_Builder_Reverb/Reverb_Decay",
+          "index": 2638820,
+          "meta": [
+            {
+              "scale": "log"
+            },
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "s"
+            }
+          ],
+          "init": 2,
+          "min": 0.2,
+          "max": 12,
+          "step": 0.1
+        },
+        {
+          "type": "hslider",
+          "label": "Reverb/Mix",
+          "varname": "fHslider1",
+          "shortname": "Reverb_Mix",
+          "address": "/Audio_Effect_Builder_Reverb/Reverb_Mix",
+          "index": 8196,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "%"
+            }
+          ],
+          "init": 20,
+          "min": 0,
+          "max": 100,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Reverb/Mode",
+          "varname": "fHslider2",
+          "shortname": "Reverb_Mode",
+          "address": "/Audio_Effect_Builder_Reverb/Reverb_Mode",
+          "index": 8200,
+          "meta": [
+            {
+              "style": "menu{-Room-:0;-Hall-:1;-Plate-:2}"
+            }
+          ],
+          "init": 0,
+          "min": 0,
+          "max": 2,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Reverb/Output",
+          "varname": "fHslider0",
+          "shortname": "Reverb_Output",
+          "address": "/Audio_Effect_Builder_Reverb/Reverb_Output",
+          "index": 8192,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "dB"
+            }
+          ],
+          "init": 0,
+          "min": -24,
+          "max": 12,
+          "step": 0.1
+        },
+        {
+          "type": "hslider",
+          "label": "Reverb/Pre Delay",
+          "varname": "fHslider4",
+          "shortname": "Reverb_Pre_Delay",
+          "address": "/Audio_Effect_Builder_Reverb/Reverb_Pre_Delay",
+          "index": 1056852,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "ms"
+            }
+          ],
+          "init": 20,
+          "min": 0,
+          "max": 200,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Reverb/Size",
+          "varname": "fHslider5",
+          "shortname": "Reverb_Size",
+          "address": "/Audio_Effect_Builder_Reverb/Reverb_Size",
+          "index": 1122428,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "%"
+            }
+          ],
+          "init": 50,
+          "min": 0,
+          "max": 100,
+          "step": 1
+        }
+      ]
+    }
+  ]
+}

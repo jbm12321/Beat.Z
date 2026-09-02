@@ -1,0 +1,297 @@
+{
+  "name": "Audio Effect Builder Delay",
+  "filename": "delay.dsp",
+  "version": "2.85.9",
+  "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2",
+  "library_list": [
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/stdfaust.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/misceffects.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/routes.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/delays.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/maths.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/platform.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/oscillators.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/basics.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/signals.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/filters.lib"
+  ],
+  "include_pathnames": [
+    "/opt/homebrew/opt/faust/share/faust",
+    "/usr/local/share/faust",
+    "/usr/share/faust",
+    "/Users/baumolinari/Projects/Beat.Z/faust",
+    "/Users/baumolinari/Projects/Beat.Z/faust"
+  ],
+  "size": 4456688,
+  "code": "aW1wb3J0KCJzdGRmYXVzdC5saWIiKTsKCmRlY2xhcmUgbmFtZSAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIgRGVsYXkiOwpkZWNsYXJlIHZlcnNpb24gIjAuMS4wIjsKZGVjbGFyZSBhdXRob3IgIkF1ZGlvIEVmZmVjdCBCdWlsZGVyIjsKZGVjbGFyZSBsaWNlbnNlICJNSVQiOwoKbW9kZSA9IGhzbGlkZXIoIkRlbGF5L01vZGVbc3R5bGU6bWVudXsnRGlnaXRhbCc6MDsnUGluZy1Qb25nJzoxOydUYXBlJzoyfV0iLCAwLjAsIDAuMCwgMi4wLCAxLjApOwp0aW1lTXMgPSBoc2xpZGVyKCJEZWxheS9UaW1lW3VuaXQ6bXNdW3NjYWxlOmxvZ11bc3R5bGU6a25vYl0iLCAyNTAuMCwgMjAuMCwgMjAwMC4wLCAxLjApOwpmZWVkYmFjayA9IGhzbGlkZXIoIkRlbGF5L0ZlZWRiYWNrW3VuaXQ6JV1bc3R5bGU6a25vYl0iLCAzMC4wLCAwLjAsIDkwLjAsIDEuMCkgLyAxMDAuMCA6IHNpLnNtb287CnRvbmVIeiA9IGhzbGlkZXIoIkRlbGF5L1RvbmVbdW5pdDpIel1bc2NhbGU6bG9nXVtzdHlsZTprbm9iXSIsIDgwMDAuMCwgNTAwLjAsIDE2MDAwLjAsIDEuMCkgOiBzaS5zbW9vOwptaXggPSBoc2xpZGVyKCJEZWxheS9NaXhbdW5pdDolXVtzdHlsZTprbm9iXSIsIDI1LjAsIDAuMCwgMTAwLjAsIDEuMCkgLyAxMDAuMDsKb3V0cHV0RGIgPSBoc2xpZGVyKCJEZWxheS9PdXRwdXRbdW5pdDpkQl1bc3R5bGU6a25vYl0iLCAwLjAsIC0yNC4wLCAxMi4wLCAwLjEpOwoKaXNQaW5nUG9uZyA9IChtb2RlID49IDAuNSkgJiAobW9kZSA8IDEuNSk7CmlzVGFwZSA9IG1vZGUgPj0gMS41OwpiYXNlRGVsYXlTYW1wbGVzID0gbWluKDIuMCAqIG1hLlNSIC0gMi4wLCBtYXgoMS4wLCB0aW1lTXMgKiBtYS5TUiAvIDEwMDAuMCkpOwp0YXBlTW9kTGVmdCA9IGlzVGFwZSAqIDAuMDAwNyAqIG1hLlNSICogb3Mub3NjKDAuMjMpOwp0YXBlTW9kUmlnaHQgPSBpc1RhcGUgKiAwLjAwMDcgKiBtYS5TUiAqIG9zLm9zYygwLjI5KTsKZGVsYXlMZWZ0ID0gZGUuc2RlbGF5KDIgKiBtYS5TUiwgMTAyNCwgbWluKDIuMCAqIG1hLlNSIC0gMi4wLCBtYXgoMS4wLCBiYXNlRGVsYXlTYW1wbGVzICsgdGFwZU1vZExlZnQpKSk7CmRlbGF5UmlnaHQgPSBkZS5zZGVsYXkoMiAqIG1hLlNSLCAxMDI0LCBtaW4oMi4wICogbWEuU1IgLSAyLjAsIG1heCgxLjAsIGJhc2VEZWxheVNhbXBsZXMgKyB0YXBlTW9kUmlnaHQpKSk7CgpmZWVkYmFja1RvbmUgPSBzZWxlY3QyKGlzVGFwZSwgdG9uZUh6LCBtYXgoNTAwLjAsIHRvbmVIeiAqIDAuNTUpKTsKdGFwZUNvbG9yKHNpZ25hbCkgPSBtYS50YW5oKHNpZ25hbCAqIDEuMSkgLyBtYS50YW5oKDEuMSk7CmNvbG9yRmVlZGJhY2soc2lnbmFsKSA9IHNlbGVjdDIoaXNUYXBlLCBzaWduYWwsIHRhcGVDb2xvcihzaWduYWwpKSA6IGZpLmxvd3Bhc3MoMiwgZmVlZGJhY2tUb25lKSA6ICooZmVlZGJhY2spOwpmZWVkYmFja01hdHJpeCA9IF8sXyA8OiAoKigxLjAtaXNQaW5nUG9uZyksICooaXNQaW5nUG9uZykpLCAoKihpc1BpbmdQb25nKSwgKigxLjAtaXNQaW5nUG9uZykpIDogKywrOwpzdGVyZW9EZWxheSA9IChyby5pbnRlcmxlYXZlKDIsIDIpIDogKywgKyA6IGRlbGF5TGVmdCwgZGVsYXlSaWdodCkgfiAoY29sb3JGZWVkYmFjaywgY29sb3JGZWVkYmFjayA6IGZlZWRiYWNrTWF0cml4KTsKCnByb2Nlc3MgPSBlZi5kcnlXZXRNaXhlcihtaXgsIHN0ZXJlb0RlbGF5KSA6IHBhcihjaGFubmVsLCAyLCAqKGJhLmRiMmxpbmVhcihvdXRwdXREYikpKTsK",
+  "inputs": 2,
+  "outputs": 2,
+  "meta": [
+    {
+      "author": "Audio Effect Builder"
+    },
+    {
+      "basics.lib/name": "Faust Basic Element Library"
+    },
+    {
+      "basics.lib/version": "1.22.0"
+    },
+    {
+      "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2"
+    },
+    {
+      "delays.lib/name": "Faust Delay Library"
+    },
+    {
+      "delays.lib/version": "1.2.0"
+    },
+    {
+      "filename": "delay.dsp"
+    },
+    {
+      "filters.lib/fir:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/fir:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/fir:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/iir:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/iir:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/iir:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/lowpass0_highpass1": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/lowpass0_highpass1:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/lowpass:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/lowpass:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/lowpass:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/name": "Faust Filters Library"
+    },
+    {
+      "filters.lib/tf2:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/tf2:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/tf2:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/tf2s:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/tf2s:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/tf2s:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/version": "1.7.1"
+    },
+    {
+      "license": "MIT"
+    },
+    {
+      "maths.lib/author": "GRAME"
+    },
+    {
+      "maths.lib/copyright": "GRAME"
+    },
+    {
+      "maths.lib/license": "LGPL with exception"
+    },
+    {
+      "maths.lib/name": "Faust Math Library"
+    },
+    {
+      "maths.lib/version": "2.9.0"
+    },
+    {
+      "misceffects.lib/dryWetMixer:author": "David Braun, revised by Stéphane Letz"
+    },
+    {
+      "misceffects.lib/name": "Misc Effects Library"
+    },
+    {
+      "misceffects.lib/version": "2.5.2"
+    },
+    {
+      "name": "Audio Effect Builder Delay"
+    },
+    {
+      "oscillators.lib/name": "Faust Oscillator Library"
+    },
+    {
+      "oscillators.lib/version": "1.7.0"
+    },
+    {
+      "platform.lib/name": "Generic Platform Library"
+    },
+    {
+      "platform.lib/version": "1.3.0"
+    },
+    {
+      "routes.lib/name": "Faust Signal Routing Library"
+    },
+    {
+      "routes.lib/version": "1.3.0"
+    },
+    {
+      "signals.lib/name": "Faust Routing Library"
+    },
+    {
+      "signals.lib/version": "1.6.0"
+    },
+    {
+      "version": "0.1.0"
+    }
+  ],
+  "ui": [
+    {
+      "type": "vgroup",
+      "label": "Audio Effect Builder Delay",
+      "items": [
+        {
+          "type": "hslider",
+          "label": "Delay/Feedback",
+          "varname": "fHslider2",
+          "shortname": "Delay_Feedback",
+          "address": "/Audio_Effect_Builder_Delay/Delay_Feedback",
+          "index": 262164,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "%"
+            }
+          ],
+          "init": 30,
+          "min": 0,
+          "max": 90,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Delay/Mix",
+          "varname": "fHslider1",
+          "shortname": "Delay_Mix",
+          "address": "/Audio_Effect_Builder_Delay/Delay_Mix",
+          "index": 262148,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "%"
+            }
+          ],
+          "init": 25,
+          "min": 0,
+          "max": 100,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Delay/Mode",
+          "varname": "fHslider3",
+          "shortname": "Delay_Mode",
+          "address": "/Audio_Effect_Builder_Delay/Delay_Mode",
+          "index": 262192,
+          "meta": [
+            {
+              "style": "menu{-Digital-:0;-Ping-Pong-:1;-Tape-:2}"
+            }
+          ],
+          "init": 0,
+          "min": 0,
+          "max": 2,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Delay/Output",
+          "varname": "fHslider0",
+          "shortname": "Delay_Output",
+          "address": "/Audio_Effect_Builder_Delay/Delay_Output",
+          "index": 262144,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "dB"
+            }
+          ],
+          "init": 0,
+          "min": -24,
+          "max": 12,
+          "step": 0.1
+        },
+        {
+          "type": "hslider",
+          "label": "Delay/Time",
+          "varname": "fHslider5",
+          "shortname": "Delay_Time",
+          "address": "/Audio_Effect_Builder_Delay/Delay_Time",
+          "index": 2359408,
+          "meta": [
+            {
+              "scale": "log"
+            },
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "ms"
+            }
+          ],
+          "init": 250,
+          "min": 20,
+          "max": 2000,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Delay/Tone",
+          "varname": "fHslider4",
+          "shortname": "Delay_Tone",
+          "address": "/Audio_Effect_Builder_Delay/Delay_Tone",
+          "index": 262204,
+          "meta": [
+            {
+              "scale": "log"
+            },
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "Hz"
+            }
+          ],
+          "init": 8000,
+          "min": 500,
+          "max": 16000,
+          "step": 1
+        }
+      ]
+    }
+  ]
+}

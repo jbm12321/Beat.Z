@@ -16,6 +16,7 @@ import { freezeProjectRevision } from '../../src/features/audio-builder/domain/b
 import { applyProjectCommands, createInitialProject } from '../../src/features/audio-builder/domain/project.ts';
 import { validateProjectForBuild } from '../../src/features/audio-builder/domain/validation.ts';
 import { createNativeBuildRequest } from '../../src/features/vst3-export/contract.ts';
+import { NATIVE_MODULE_CATALOG, SOURCE_FINGERPRINTS } from '../lib/catalog.mjs';
 
 async function nativeRequestForModules(moduleTypes) {
   const commands = moduleTypes.map((moduleType, index) => ({ type: 'add_module', moduleType, nodeId: `${moduleType}-${index + 1}` }));
@@ -47,15 +48,17 @@ test('each public artifact URL is a unique, predictable ZIP release URL', () => 
   });
 });
 
-test('parity scenarios cover valid endpoints for choices and 0, 0.5, 1 for continuous VST3 parameters', () => {
+test('parity scenarios cover every choice value and 0, 0.5, 1 for continuous VST3 parameters', () => {
   assert.deepEqual(createParityScenarios([]), [{ id: 'defaults', values: [], parameterIndex: null, normalizedValue: null }]);
   assert.deepEqual(createParityScenarios([
-    { value: 0, definition: { min: 0, max: 1, choices: [0, 1] } },
+    { value: 0, definition: { min: 0, max: 3, choices: [0, 1, 2, 3] } },
     { value: 0.75, definition: { min: 0, max: 100 } },
   ]), [
     { id: 'defaults', values: [0, 0.75], parameterIndex: null, normalizedValue: null },
     { id: 'parameter-0-0', values: [0, 0.75], parameterIndex: 0, normalizedValue: 0 },
-    { id: 'parameter-0-1', values: [1, 0.75], parameterIndex: 0, normalizedValue: 1 },
+    { id: 'parameter-0-1', values: [1, 0.75], parameterIndex: 0, normalizedValue: 1 / 3 },
+    { id: 'parameter-0-2', values: [2, 0.75], parameterIndex: 0, normalizedValue: 2 / 3 },
+    { id: 'parameter-0-3', values: [3, 0.75], parameterIndex: 0, normalizedValue: 1 },
     { id: 'parameter-1-0', values: [0, 0], parameterIndex: 1, normalizedValue: 0 },
     { id: 'parameter-1-0_5', values: [0, 50], parameterIndex: 1, normalizedValue: 0.5 },
     { id: 'parameter-1-1', values: [0, 100], parameterIndex: 1, normalizedValue: 1 },
@@ -236,6 +239,22 @@ test('the native editor preserves every Saturation v2 parameter in visible wrapp
   assert.equal('pages' in editor, false);
 });
 
+test('the native catalog and generic editor represent Delay and Reverb without template changes', async () => {
+  assert.deepEqual(Object.keys(NATIVE_MODULE_CATALOG), ['gain', 'filter', 'saturation', 'delay', 'reverb']);
+  assert.deepEqual(NATIVE_MODULE_CATALOG.filter.parameters.mode.choices, [0, 1, 2, 3]);
+  assert.deepEqual(NATIVE_MODULE_CATALOG.delay.parameters.mode.choiceLabels, ['Digital', 'Ping-Pong', 'Tape']);
+  assert.deepEqual(NATIVE_MODULE_CATALOG.reverb.parameters.mode.choiceLabels, ['Room', 'Hall', 'Plate']);
+  assert.equal(SOURCE_FINGERPRINTS.delay, 'ffb3c7f559aeedd613450d814c910552faca1129651f05cfc846a3511876c647');
+  assert.equal(SOURCE_FINGERPRINTS.reverb, '95310a51570124fe27680d0946cf54c8316ec96e6afa3ce0ac619c61676adda3');
+  assert.equal(NATIVE_MODULE_CATALOG.delay.wasmSha256, '8d23c0fcf45ce5565bd8a9b75307242c4a631de26705550f73f2c69deb8c3eb0');
+  assert.equal(NATIVE_MODULE_CATALOG.reverb.wasmSha256, '8eb5ea751de350fb216d55a553367afbf8454637ef78f09b1b13b7f79127c2fd');
+  const request = await nativeRequestForModules(['delay', 'reverb']);
+  const editor = createNativeEditorModel(createAutomaticNativeParameters(request));
+  assert.equal(editor.knobCount, 11);
+  assert.equal(editor.switchCount, 2);
+  assert.deepEqual(editor.rows.flatMap((row) => row.modules.map((module) => module.label)), ['Delay 1', 'Reverb 1']);
+});
+
 test('the native editor wraps complete modules into visible rows without pagination', async () => {
   const request = await nativeRequestForModules(['saturation', 'saturation', 'gain']);
   const editor = createNativeEditorModel(createAutomaticNativeParameters(request));
@@ -296,9 +315,9 @@ test('native exports expose every active effect parameter in an editable VST3 ed
   assert.match(source, /new IVTabSwitchControl\([^;]*kParam1[^;]*\{"Soft Clip", "Cubic", "Fuzz", "Tape"\}[^;]*"Character"/u);
   assert.match(source, /new IVKnobControl\([^;]*kParam2, "Drive"/u);
   assert.match(source, /new IVKnobControl\([^;]*kParam9, "Wow"/u);
-  assert.match(source, /new IVTabSwitchControl\([^;]*kParam10[^;]*\{"High Pass", "Low Pass"\}[^;]*"Mode"/u);
+  assert.match(source, /new IVTabSwitchControl\([^;]*kParam10[^;]*\{"High Pass", "Low Pass", "Band Pass", "Notch"\}[^;]*"Mode"/u);
   assert.match(source, /InitDouble\("Gain 1 Level"[^;]*"dB"[^;]*"Gain 1"/u);
-  assert.match(source, /InitEnum\("Filter 1 Mode"[^;]*\{"High Pass", "Low Pass"\}[^;]*"Filter 1"/u);
+  assert.match(source, /InitEnum\("Filter 1 Mode"[^;]*\{"High Pass", "Low Pass", "Band Pass", "Notch"\}[^;]*"Filter 1"/u);
   assert.match(source, /new IVGroupControl\([^;]*"SATURATION 1 1\/2"/u);
   assert.match(source, /new IVGroupControl\([^;]*"FILTER 1"/u);
   assert.match(source, /"3 MODULES  \/  11 KNOBS  \/  2 SWITCHES"/u);

@@ -9,12 +9,12 @@ import {
   loadFaustFactoryFromBytes,
   renderFaustModuleOffline,
 } from '../src/features/audio-builder/faust/runtime.ts';
-import { MODULE_CATALOG, createNode } from '../src/features/audio-builder/domain/project.ts';
+import { MODULE_CATALOG, MODULE_TYPES, createNode, type ModuleType } from '../src/features/audio-builder/domain/project.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const factories = new Map<string, Promise<LooseFaustDspFactory>>();
 
-function loadFactory(type: 'gain' | 'filter' | 'saturation') {
+function loadFactory(type: ModuleType) {
   let promise = factories.get(type);
   if (!promise) {
     promise = Promise.all([
@@ -37,10 +37,14 @@ function rms(samples: Float32Array, start = 0) {
 }
 
 test('committed Faust sources and metadata match the catalog fingerprints and stereo contract', async () => {
-  for (const type of ['gain', 'filter', 'saturation'] as const) {
+  const manifest = JSON.parse(await readFile(join(root, 'public', 'faust', 'manifest.json'), 'utf8'));
+  for (const type of MODULE_TYPES) {
     const source = await readFile(join(root, 'faust', `${type}.dsp`));
+    const wasm = await readFile(join(root, 'public', 'faust', type, 'dsp-module.wasm'));
     const metadata = JSON.parse(await readFile(join(root, 'public', 'faust', type, 'dsp-meta.json'), 'utf8'));
     assert.equal(createHash('sha256').update(source).digest('hex'), MODULE_CATALOG[type].sourceSha256);
+    assert.equal(createHash('sha256').update(wasm).digest('hex'), MODULE_CATALOG[type].wasmSha256);
+    assert.equal(manifest.modules[type].wasmSha256, MODULE_CATALOG[type].wasmSha256);
     assert.equal(metadata.version, '2.85.9');
     assert.match(metadata.compile_options, /-single/u);
     assert.match(metadata.compile_options, /-ftz 2/u);
@@ -48,6 +52,95 @@ test('committed Faust sources and metadata match the catalog fingerprints and st
     assert.equal(metadata.outputs, 2);
     const addresses = JSON.stringify(metadata.ui);
     MODULE_CATALOG[type].parameters.forEach((parameter) => assert.match(addresses, new RegExp(parameter.faustPath.replaceAll('/', '\\/'))));
+  }
+});
+
+test('Faust Filter adds stable Band Pass and Notch modes at supported sample rates', async () => {
+  for (const sampleRate of [44100, 48000, 96000]) {
+    const length = Math.floor(sampleRate * 0.5);
+    const atCutoff = sine(1000, sampleRate, length);
+    const distant = sine(5000, sampleRate, length);
+    const node = createNode('filter', 'filter-expanded');
+    Object.assign(node.params, { cutoff: 1000, resonance: 2, mode: 2 });
+    const bandCenter = await renderFaustModuleOffline(node, [atCutoff, atCutoff], sampleRate, await loadFactory('filter'));
+    const bandDistant = await renderFaustModuleOffline(node, [distant, distant], sampleRate, await loadFactory('filter'));
+    assert.ok(rms(bandCenter[0], Math.floor(length / 2)) > rms(bandDistant[0], Math.floor(length / 2)) * 2);
+    node.params.mode = 3;
+    const notched = await renderFaustModuleOffline(node, [atCutoff, atCutoff], sampleRate, await loadFactory('filter'));
+    assert.ok(rms(notched[0], Math.floor(length / 2)) < rms(atCutoff, Math.floor(length / 2)) * 0.25);
+    for (const resonance of [0.1, 20]) {
+      node.params.resonance = resonance;
+      const extreme = await renderFaustModuleOffline(node, [atCutoff, atCutoff], sampleRate, await loadFactory('filter'));
+      assert.ok(extreme.every((channel) => channel.every(Number.isFinite)));
+    }
+  }
+});
+
+test('Faust Delay has dry endpoints, timed repeats, feedback, ping-pong, and distinct stable modes', async () => {
+  for (const sampleRate of [44100, 48000, 96000]) {
+    const length = Math.floor(sampleRate * 0.8);
+    const impulse = new Float32Array(length);
+    impulse[0] = 0.5;
+    const silence = new Float32Array(length);
+    const node = createNode('delay', 'delay-test');
+    Object.assign(node.params, { time: 100, feedback: 0, tone: 16000, mix: 0, output: 0 });
+    const dry = await renderFaustModuleOffline(node, [impulse, silence], sampleRate, await loadFactory('delay'));
+    assert.deepEqual(dry[0], impulse);
+    assert.deepEqual(dry[1], silence);
+    node.params.mix = 100;
+    const oneRepeat = await renderFaustModuleOffline(node, [impulse, silence], sampleRate, await loadFactory('delay'));
+    const repeatFrame = Math.round(sampleRate * 0.1);
+    assert.ok(Math.max(...oneRepeat[0].slice(repeatFrame - 128, repeatFrame + 1152).map(Math.abs)) > 0.2);
+    assert.ok(rms(oneRepeat[0], Math.round(sampleRate * 0.23)) < 1e-4);
+    node.params.feedback = 70;
+    const digital = await renderFaustModuleOffline(node, [impulse, silence], sampleRate, await loadFactory('delay'));
+    assert.ok(rms(digital[0], Math.round(sampleRate * 0.23)) > rms(oneRepeat[0], Math.round(sampleRate * 0.23)) + 1e-5);
+    node.params.mode = 1;
+    const pingPong = await renderFaustModuleOffline(node, [impulse, silence], sampleRate, await loadFactory('delay'));
+    const firstLeft = Math.max(...pingPong[0].slice(repeatFrame - 128, repeatFrame + 1152).map(Math.abs));
+    const secondRight = Math.max(...pingPong[1].slice(2 * repeatFrame - 128, 2 * repeatFrame + 1152).map(Math.abs));
+    assert.ok(firstLeft > 0.2 && secondRight > 0.05);
+    node.params.mode = 2;
+    const tape = await renderFaustModuleOffline(node, [impulse, silence], sampleRate, await loadFactory('delay'));
+    assert.ok(tape.every((channel) => channel.every(Number.isFinite)));
+    let tapeDifference = 0;
+    for (let index = repeatFrame; index < length; index += 1) tapeDifference += Math.abs(tape[0][index] - digital[0][index]);
+    assert.ok(tapeDifference > 0.001);
+  }
+});
+
+test('Faust Reverb produces finite, stereo, mode-dependent decaying tails with an exact dry endpoint', async () => {
+  for (const sampleRate of [44100, 48000, 96000]) {
+    const length = Math.floor(sampleRate * 2.5);
+    const impulse = new Float32Array(length);
+    impulse[0] = 0.35;
+    const node = createNode('reverb', 'reverb-test');
+    Object.assign(node.params, { preDelay: 20, decay: 2, size: 50, damping: 35, mix: 0, output: 0 });
+    const dry = await renderFaustModuleOffline(node, [impulse, impulse], sampleRate, await loadFactory('reverb'));
+    assert.deepEqual(dry[0], impulse);
+    const modes = [];
+    node.params.mix = 100;
+    for (const mode of [0, 1, 2]) {
+      node.params.mode = mode;
+      const rendered = await renderFaustModuleOffline(node, [impulse, impulse], sampleRate, await loadFactory('reverb'));
+      assert.ok(rendered.every((channel) => channel.every(Number.isFinite)));
+      assert.ok(rms(rendered[0], Math.floor(sampleRate * 0.05)) > 1e-5);
+      modes.push(rendered);
+    }
+    for (let left = 0; left < modes.length; left += 1) {
+      for (let right = left + 1; right < modes.length; right += 1) {
+        let difference = 0;
+        for (let index = Math.floor(sampleRate * 0.05); index < length; index += 1) difference += Math.abs(modes[left][0][index] - modes[right][0][index]);
+        assert.ok(difference / length > 1e-5);
+      }
+    }
+    const hallLate = rms(modes[1][0], Math.floor(sampleRate * 1.5));
+    const roomLate = rms(modes[0][0], Math.floor(sampleRate * 1.5));
+    assert.ok(hallLate > roomLate);
+    assert.notDeepEqual(modes[1][0], modes[1][1]);
+    const early = rms(modes[1][0].slice(Math.floor(sampleRate * 0.2), Math.floor(sampleRate * 0.8)));
+    const late = rms(modes[1][0].slice(Math.floor(sampleRate * 1.7)));
+    assert.ok(late < early);
   }
 });
 

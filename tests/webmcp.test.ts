@@ -81,6 +81,12 @@ test('registered tools share revision-safe project state and cannot bypass human
     'request-audio-plugin-build',
   ]);
 
+  const primitives = await tools.get('list-audio-primitives')!.execute({});
+  const primitiveCatalog = (primitives.structuredContent as { primitives: Record<string, { parameters: Array<{ id: string; choices?: Array<{ label: string }> }> }> }).primitives;
+  assert.deepEqual(Object.keys(primitiveCatalog), ['gain', 'filter', 'saturation', 'delay', 'reverb']);
+  assert.deepEqual(primitiveCatalog.delay.parameters[0].choices?.map((choice) => choice.label), ['Digital', 'Ping-Pong', 'Tape']);
+  assert.deepEqual(primitiveCatalog.reverb.parameters[0].choices?.map((choice) => choice.label), ['Room', 'Hall', 'Plate']);
+
   const propose = await tools.get('propose-audio-project-patch')!.execute({
     expectedRevision: 0,
     summary: 'Remove rumble',
@@ -109,6 +115,34 @@ test('registered tools share revision-safe project state and cannot bypass human
   });
   assert.equal(stale.isError, true);
   assert.equal((stale.structuredContent as { currentRevision: number }).currentRevision, 1);
+
+  const pair1 = await tools.get('propose-audio-project-patch')!.execute({
+    expectedRevision: 1,
+    summary: 'Add echo and space',
+    musicalPurpose: 'Stage Tape delay and Hall reverb without applying them.',
+    commands: [
+      { type: 'add_module', moduleType: 'delay', nodeId: 'delay-1' },
+      { type: 'set_parameter', nodeId: 'delay-1', paramId: 'mode', value: 2 },
+      { type: 'set_parameter', nodeId: 'delay-1', paramId: 'time', value: 340 },
+      { type: 'add_module', moduleType: 'reverb', nodeId: 'reverb-1' },
+      { type: 'set_parameter', nodeId: 'reverb-1', paramId: 'mode', value: 1 },
+      { type: 'set_parameter', nodeId: 'reverb-1', paramId: 'decay', value: 3.8 },
+    ],
+  });
+  assert.equal(pair1.isError, undefined);
+  assert.equal((pair1.structuredContent as { requiresHumanApproval: boolean }).requiresHumanApproval, true);
+  assert.deepEqual(project.chain, ['filter-1']);
+
+  for (const commands of [
+    [{ type: 'add_module', moduleType: 'delay', nodeId: 'bad-delay' }, { type: 'set_parameter', nodeId: 'bad-delay', paramId: 'mode', value: 4 }],
+    [{ type: 'add_module', moduleType: 'reverb', nodeId: 'bad-reverb' }, { type: 'set_parameter', nodeId: 'bad-reverb', paramId: 'decay', value: 20 }],
+  ]) {
+    const invalid = await tools.get('propose-audio-project-patch')!.execute({
+      expectedRevision: 1, summary: 'Invalid Pair 1 request', musicalPurpose: 'Must be rejected atomically.', commands,
+    });
+    assert.equal(invalid.isError, true);
+    assert.deepEqual(project.chain, ['filter-1']);
+  }
   registration.unregister();
   Reflect.deleteProperty(globalThis, 'document');
 });

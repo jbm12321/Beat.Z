@@ -4,6 +4,7 @@ import {
   LAST_VALID_STORAGE_KEY,
   LEGACY_STORAGE_KEY,
   STORAGE_KEY,
+  PRE_PAIR1_ENGINE_PROVENANCE,
   applyProjectCommands,
   createInitialProject,
   type LegacyProjectV1,
@@ -62,7 +63,13 @@ test('persistence upgrades current Saturation saves to Soft Clip without alterin
   const project = applyProjectCommands(createInitialProject(), [{ type: 'add_module', moduleType: 'saturation', nodeId: 'sat-1' }], 'human');
   const old = structuredClone(project);
   old.nodes['sat-1'].params = { drive: 18, tone: 4000, mix: 65 };
-  old.engine.moduleSourceSha256.saturation = '238cd373e164ba480c6367ae7ef1c071205346361c7f597d6c1dc3878af0a75b';
+  old.engine = {
+    ...structuredClone(PRE_PAIR1_ENGINE_PROVENANCE),
+    moduleSourceSha256: {
+      ...PRE_PAIR1_ENGINE_PROVENANCE.moduleSourceSha256,
+      saturation: '238cd373e164ba480c6367ae7ef1c071205346361c7f597d6c1dc3878af0a75b',
+    },
+  } as typeof old.engine;
   storage.setItem(STORAGE_KEY, JSON.stringify(old));
   const restored = restorePersistedProject(storage);
   assert.equal(restored.source, 'current');
@@ -75,10 +82,11 @@ test('persistence moves exact Faust 2.86.2 projects to the canonical 2.85.9 comp
   const storage = new MemoryStorage();
   const project = applyProjectCommands(createInitialProject(), [{ type: 'add_module', moduleType: 'filter', nodeId: 'filter-1' }], 'human');
   const previous = structuredClone(project);
-  Object.assign(previous.engine, {
+  previous.engine = {
+    ...structuredClone(PRE_PAIR1_ENGINE_PROVENANCE),
     faustCompilerVersion: '2.86.2',
-    libraries: { ...previous.engine.libraries, basics: '1.23.0' },
-  });
+    libraries: { ...PRE_PAIR1_ENGINE_PROVENANCE.libraries, basics: '1.23.0' },
+  } as unknown as typeof previous.engine;
   storage.setItem(STORAGE_KEY, JSON.stringify(previous));
 
   const restored = restorePersistedProject(storage);
@@ -89,6 +97,36 @@ test('persistence moves exact Faust 2.86.2 projects to the canonical 2.85.9 comp
   assert.deepEqual(restored.project.nodes, project.nodes);
   assert.deepEqual(restored.project.macros, project.macros);
   assert.equal(restored.project.revision, project.revision);
+});
+
+test('persistence migrates only the exact pre-Pair-1 engine without content loss', () => {
+  const storage = new MemoryStorage();
+  const project = applyProjectCommands(createInitialProject(), [
+    { type: 'rename_project', name: 'Preserved Pair 1 migration' },
+    { type: 'add_module', moduleType: 'filter', nodeId: 'filter-1' },
+    { type: 'set_parameter', nodeId: 'filter-1', paramId: 'mode', value: 1 },
+    { type: 'create_macro', name: 'Cut', macroId: 'macro-1' },
+    { type: 'add_mapping', macroId: 'macro-1', mappingId: 'mapping-1', nodeId: 'filter-1', paramId: 'cutoff', min: 100, max: 8000 },
+  ], 'human');
+  const previous = structuredClone(project);
+  previous.engine = structuredClone(PRE_PAIR1_ENGINE_PROVENANCE) as typeof previous.engine;
+  storage.setItem(STORAGE_KEY, JSON.stringify(previous));
+
+  const restored = restorePersistedProject(storage).project;
+  assert.deepEqual({ ...restored, engine: undefined }, { ...previous, engine: undefined });
+  assert.equal(restored.nodes['filter-1'].params.mode, 1);
+});
+
+test('persistence rejects partially matching historical engine provenance', () => {
+  const storage = new MemoryStorage();
+  const project = createInitialProject();
+  const partial = structuredClone(project);
+  partial.engine = structuredClone(PRE_PAIR1_ENGINE_PROVENANCE) as typeof partial.engine;
+  partial.engine.moduleSourceSha256.filter = '0'.repeat(64);
+  storage.setItem(STORAGE_KEY, JSON.stringify(partial));
+  const restored = restorePersistedProject(storage);
+  assert.equal(restored.source, 'new');
+  assert.deepEqual(restored.project.chain, []);
 });
 
 test('undo and redo create monotonic revisions while restoring whole snapshots', () => {

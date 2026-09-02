@@ -6,6 +6,7 @@ import {
   applyProjectCommands,
   createInitialProject,
   createNode,
+  formatParameter,
   getEffectiveParameter,
   migrateLegacyProject,
   validateProject,
@@ -119,14 +120,40 @@ test('exported project JSON validates as a portable round trip', () => {
   assert.deepEqual(restored, project);
 });
 
-test('the Faust vertical slice exposes exactly Gain, Filter, and Saturation', () => {
-  assert.deepEqual(MODULE_TYPES, ['gain', 'filter', 'saturation']);
+test('the Faust primitive catalog exposes Pair 1 with exact shared contracts', () => {
+  assert.deepEqual(MODULE_TYPES, ['gain', 'filter', 'saturation', 'delay', 'reverb']);
   assert.deepEqual(MODULE_CATALOG.filter.parameters.map((parameter) => parameter.id), ['mode', 'cutoff', 'resonance']);
   assert.equal(MODULE_CATALOG.filter.parameters[0].kind, 'choice');
-  assert.deepEqual(MODULE_CATALOG.filter.parameters[0].choices?.map((choice) => choice.label), ['High Pass', 'Low Pass']);
+  assert.deepEqual(MODULE_CATALOG.filter.parameters[0].choices, [
+    { value: 0, label: 'High Pass' }, { value: 1, label: 'Low Pass' },
+    { value: 2, label: 'Band Pass' }, { value: 3, label: 'Notch' },
+  ]);
   assert.deepEqual(MODULE_CATALOG.saturation.parameters.map((parameter) => parameter.id), ['character', 'drive', 'tone', 'mix', 'output', 'bias', 'clip', 'age', 'wow']);
   assert.deepEqual(MODULE_CATALOG.saturation.parameters[0].choices?.map((choice) => choice.label), ['Soft Clip', 'Cubic', 'Fuzz', 'Tape']);
   assert.equal(MODULE_CATALOG.saturation.parameters[0].mappable, false);
+  assert.deepEqual(MODULE_CATALOG.delay.parameters.map(({ id, min, max, default: defaultValue, step, scale, unit, mappable }) => ({ id, min, max, default: defaultValue, step, scale, unit, mappable })), [
+    { id: 'mode', min: 0, max: 2, default: 0, step: 1, scale: 'linear', unit: 'mode', mappable: false },
+    { id: 'time', min: 20, max: 2000, default: 250, step: 1, scale: 'log', unit: 'ms', mappable: true },
+    { id: 'feedback', min: 0, max: 90, default: 30, step: 1, scale: 'linear', unit: '%', mappable: true },
+    { id: 'tone', min: 500, max: 16000, default: 8000, step: 1, scale: 'log', unit: 'Hz', mappable: true },
+    { id: 'mix', min: 0, max: 100, default: 25, step: 1, scale: 'linear', unit: '%', mappable: true },
+    { id: 'output', min: -24, max: 12, default: 0, step: 0.1, scale: 'linear', unit: 'dB', mappable: true },
+  ]);
+  assert.deepEqual(MODULE_CATALOG.delay.parameters[0].choices, [
+    { value: 0, label: 'Digital' }, { value: 1, label: 'Ping-Pong' }, { value: 2, label: 'Tape' },
+  ]);
+  assert.deepEqual(MODULE_CATALOG.reverb.parameters.map(({ id, min, max, default: defaultValue, step, scale, unit, mappable }) => ({ id, min, max, default: defaultValue, step, scale, unit, mappable })), [
+    { id: 'mode', min: 0, max: 2, default: 0, step: 1, scale: 'linear', unit: 'mode', mappable: false },
+    { id: 'preDelay', min: 0, max: 200, default: 20, step: 1, scale: 'linear', unit: 'ms', mappable: true },
+    { id: 'decay', min: 0.2, max: 12, default: 2, step: 0.1, scale: 'log', unit: 's', mappable: true },
+    { id: 'size', min: 0, max: 100, default: 50, step: 1, scale: 'linear', unit: '%', mappable: true },
+    { id: 'damping', min: 0, max: 100, default: 35, step: 1, scale: 'linear', unit: '%', mappable: true },
+    { id: 'mix', min: 0, max: 100, default: 20, step: 1, scale: 'linear', unit: '%', mappable: true },
+    { id: 'output', min: -24, max: 12, default: 0, step: 0.1, scale: 'linear', unit: 'dB', mappable: true },
+  ]);
+  assert.deepEqual(MODULE_CATALOG.reverb.parameters[0].choices, [
+    { value: 0, label: 'Room' }, { value: 1, label: 'Hall' }, { value: 2, label: 'Plate' },
+  ]);
   MODULE_TYPES.forEach((type) => {
     const definition = MODULE_CATALOG[type];
     assert.ok(definition.parameters.length > 0);
@@ -137,6 +164,11 @@ test('the Faust vertical slice exposes exactly Gain, Filter, and Saturation', ()
       assert.ok(parameter.default >= parameter.min && parameter.default <= parameter.max);
     });
   });
+});
+
+test('Pair 1 time units use the domain formatter without UI special cases', () => {
+  assert.equal(formatParameter(MODULE_CATALOG.delay.parameters[1], 340), '340 ms');
+  assert.equal(formatParameter(MODULE_CATALOG.reverb.parameters[2], 3.8), '3.8 s');
 });
 
 test('new saturation nodes default to Soft Clip while exposing additive character parameters', () => {
