@@ -573,8 +573,8 @@ export function AudioEffectBuilder() {
                 <div>
                   <span>{MODULE_CATALOG[selectedNode.type].shortName}</span>
                   <strong>{MODULE_CATALOG[selectedNode.type].name}</strong>
-                  {selectedNode.type === 'filter' && (() => {
-                    const mode = MODULE_CATALOG.filter.parameters.find((parameter) => parameter.id === 'mode')!;
+                  {(['filter', 'delay', 'reverb'] as const).includes(selectedNode.type as 'filter' | 'delay' | 'reverb') && (() => {
+                    const mode = MODULE_CATALOG[selectedNode.type].parameters.find((parameter) => parameter.id === 'mode')!;
                     const effective = getEffectiveParameter(project, selectedNode.id, mode.id);
                     return (
                       <label className="inspector-character">
@@ -621,7 +621,7 @@ export function AudioEffectBuilder() {
               </header>
               <div className="parameter-grid">
                 {MODULE_CATALOG[selectedNode.type].parameters.filter((parameter) => {
-                  if (selectedNode.type === 'filter' && parameter.id === 'mode') return false;
+                  if (['filter', 'delay', 'reverb'].includes(selectedNode.type) && parameter.id === 'mode') return false;
                   if (selectedNode.type !== 'saturation') return true;
                   if (parameter.id === 'character') return false;
                   if (['drive', 'tone', 'mix', 'output'].includes(parameter.id)) return true;
