@@ -198,8 +198,8 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   },
   filter: {
     type: 'filter', name: 'Filter', shortName: 'FILT', description: 'Remove lows or highs with resonant shaping.', definitionVersion: '0.1.0',
-    sourceSha256: '6918312c734213e2476c899588f4917a0d7dfc469196ce0aec718d22e03c25d6',
-    wasmSha256: '7f188b00b97a5bc3744cf07698a28455a408af1771d0828d61ccc654a1658663',
+    sourceSha256: '076d102ec4209b0a9e33d4199e302896a3951017e88a1e821ec106347c03ee7f',
+    wasmSha256: '39ac96e8aff15297cf241ee4033f160a725bfd6bae26254696a0c9fd99eed69a',
     wasmPath: '/faust/filter/dsp-module.wasm', metadataPath: '/faust/filter/dsp-meta.json',
     parameters: [
       parameter('mode', 'Mode', 0, 3, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Filter/Filter_Mode', {
@@ -211,8 +211,8 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   },
   saturation: {
     type: 'saturation', name: 'Saturation', shortName: 'SAT', description: 'Add harmonic color and weight.', definitionVersion: '0.1.0',
-    sourceSha256: 'f8a7bbe451c3abd30e4c61fd6210ea3b6a2fef2ae5b67fda2c49c2890969bbf1',
-    wasmSha256: '14c322467c0188bbc9fd901a94333e85722fea24f4e9150663cf9477555ada78',
+    sourceSha256: '9074635f03744b4b4f280eac15839585716d4a23a732ac7c59e26eb1c3bab068',
+    wasmSha256: '05cea5472644ff2ad0d19234d05a3e411e73fd0a52800b192790d1bc04adcbf1',
     wasmPath: '/faust/saturation/dsp-module.wasm', metadataPath: '/faust/saturation/dsp-meta.json',
     parameters: [
       parameter('character', 'Character', 0, 3, 0, 1, 'type', 'linear', '/Audio_Effect_Builder_Saturation/Saturation_Character', {
@@ -230,8 +230,8 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   },
   delay: {
     type: 'delay', name: 'Delay', shortName: 'DLY', description: 'Add rhythmic stereo echoes.', definitionVersion: '0.1.0',
-    sourceSha256: 'ffb3c7f559aeedd613450d814c910552faca1129651f05cfc846a3511876c647',
-    wasmSha256: '8d23c0fcf45ce5565bd8a9b75307242c4a631de26705550f73f2c69deb8c3eb0',
+    sourceSha256: 'fb9a020e31f2b4f290a17ad2a18ec5d87c6f701195af2bc95e38f2d99cef1b92',
+    wasmSha256: '6a5495bfa670ef8435cd8a2bf282f16e64e5a447ef3b5dbeabff3f4e77cba99c',
     wasmPath: '/faust/delay/dsp-module.wasm', metadataPath: '/faust/delay/dsp-meta.json',
     parameters: [
       parameter('mode', 'Mode', 0, 2, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Delay/Delay_Mode', {
@@ -246,8 +246,8 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   },
   reverb: {
     type: 'reverb', name: 'Reverb', shortName: 'VERB', description: 'Create depth with shared spatial voicings.', definitionVersion: '0.1.0',
-    sourceSha256: '95310a51570124fe27680d0946cf54c8316ec96e6afa3ce0ac619c61676adda3',
-    wasmSha256: '8eb5ea751de350fb216d55a553367afbf8454637ef78f09b1b13b7f79127c2fd',
+    sourceSha256: 'bec502b0ca2f0b01dd7c10051cd848417f24ca0eb45b73c2854a49da54abb5ff',
+    wasmSha256: 'd03ff0e330e877212436fed13d983036605d29b5aac719775abc45be402ba12a',
     wasmPath: '/faust/reverb/dsp-module.wasm', metadataPath: '/faust/reverb/dsp-meta.json',
     parameters: [
       parameter('mode', 'Mode', 0, 2, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Reverb/Reverb_Mode', {
@@ -283,6 +283,19 @@ const PRE_SATURATION_V2_ENGINE_PROVENANCE = Object.freeze({
   moduleSourceSha256: {
     ...PRE_PAIR1_ENGINE_PROVENANCE.moduleSourceSha256,
     saturation: '238cd373e164ba480c6367ae7ef1c071205346361c7f597d6c1dc3878af0a75b',
+  },
+});
+// The first Pair 1 release used these exact sources.  Its projects remain
+// valid inputs but are upgraded to the more audible, same-contract DSP set.
+export const PRE_AUDIBILITY_ENGINE_PROVENANCE = Object.freeze({
+  effectDefinition: 'audio-effect-builder-faust', definitionVersion: '0.1.0', faustWasmVersion: '0.16.6', faustCompilerVersion: '2.85.9',
+  libraries: { analyzers: '1.3.0', basics: '1.22.0', delays: '1.2.0', filters: '1.7.1', maths: '2.9.0', misceffects: '2.5.2', oscillators: '1.7.0', platform: '1.3.0', reverbs: '1.5.1', signals: '1.6.0' },
+  moduleSourceSha256: {
+    gain: 'caca77ad2ac86cf0ef26f62a22d1d0c62a7d4b7f86c6c4e3fef77e9d19fbd35d',
+    filter: '6918312c734213e2476c899588f4917a0d7dfc469196ce0aec718d22e03c25d6',
+    saturation: 'f8a7bbe451c3abd30e4c61fd6210ea3b6a2fef2ae5b67fda2c49c2890969bbf1',
+    delay: 'ffb3c7f559aeedd613450d814c910552faca1129651f05cfc846a3511876c647',
+    reverb: '95310a51570124fe27680d0946cf54c8316ec96e6afa3ce0ac619c61676adda3',
   },
 });
 export const ENGINE_PROVENANCE: EngineProvenance = {
@@ -689,7 +702,8 @@ export function upgradeSaturationProject(value: unknown): ProjectV2 {
   const isPrePair1 = sameJson(project.engine, PRE_PAIR1_ENGINE_PROVENANCE);
   const isPreCanonicalCompiler = sameJson(project.engine, PRE_CANONICAL_COMPILER_ENGINE_PROVENANCE);
   const isPreSaturationV2 = sameJson(project.engine, PRE_SATURATION_V2_ENGINE_PROVENANCE);
-  if (!isPrePair1 && !isPreCanonicalCompiler && !isPreSaturationV2) return validateProject(project);
+  const isPreAudibility = sameJson(project.engine, PRE_AUDIBILITY_ENGINE_PROVENANCE);
+  if (!isPrePair1 && !isPreCanonicalCompiler && !isPreSaturationV2 && !isPreAudibility) return validateProject(project);
   if (isPreSaturationV2) {
     for (const node of Object.values(project.nodes as Record<string, unknown>)) {
       if (!isRecord(node) || node.type !== 'saturation' || !isRecord(node.params)) continue;

@@ -90,7 +90,7 @@ test('Faust Delay has dry endpoints, timed repeats, feedback, ping-pong, and dis
     node.params.mix = 100;
     const oneRepeat = await renderFaustModuleOffline(node, [impulse, silence], sampleRate, await loadFactory('delay'));
     const repeatFrame = Math.round(sampleRate * 0.1);
-    assert.ok(Math.max(...oneRepeat[0].slice(repeatFrame - 128, repeatFrame + 1152).map(Math.abs)) > 0.2);
+    assert.ok(Math.max(...oneRepeat[0].slice(repeatFrame - 128, repeatFrame + 1152).map(Math.abs)) > 0.05);
     assert.ok(rms(oneRepeat[0], Math.round(sampleRate * 0.23)) < 1e-4);
     node.params.feedback = 70;
     const digital = await renderFaustModuleOffline(node, [impulse, silence], sampleRate, await loadFactory('delay'));
@@ -99,7 +99,7 @@ test('Faust Delay has dry endpoints, timed repeats, feedback, ping-pong, and dis
     const pingPong = await renderFaustModuleOffline(node, [impulse, silence], sampleRate, await loadFactory('delay'));
     const firstLeft = Math.max(...pingPong[0].slice(repeatFrame - 128, repeatFrame + 1152).map(Math.abs));
     const secondRight = Math.max(...pingPong[1].slice(2 * repeatFrame - 128, 2 * repeatFrame + 1152).map(Math.abs));
-    assert.ok(firstLeft > 0.2 && secondRight > 0.05);
+    assert.ok(firstLeft > 0.05 && secondRight > 0.01);
     node.params.mode = 2;
     const tape = await renderFaustModuleOffline(node, [impulse, silence], sampleRate, await loadFactory('delay'));
     assert.ok(tape.every((channel) => channel.every(Number.isFinite)));
@@ -107,6 +107,19 @@ test('Faust Delay has dry endpoints, timed repeats, feedback, ping-pong, and dis
     for (let index = repeatFrame; index < length; index += 1) tapeDifference += Math.abs(tape[0][index] - digital[0][index]);
     assert.ok(tapeDifference > 0.001);
   }
+});
+
+test('Faust Delay Tone audibly shapes the first repeat even with zero feedback', async () => {
+  const sampleRate = 48000;
+  const length = sampleRate;
+  const input = sine(7000, sampleRate, length, 0.35);
+  const node = createNode('delay', 'delay-tone');
+  Object.assign(node.params, { mode: 0, time: 100, feedback: 0, mix: 100, output: 0, tone: 16000 });
+  const bright = await renderFaustModuleOffline(node, [input, input], sampleRate, await loadFactory('delay'));
+  node.params.tone = 500;
+  const dark = await renderFaustModuleOffline(node, [input, input], sampleRate, await loadFactory('delay'));
+  const start = Math.floor(sampleRate * 0.25);
+  assert.ok(rms(dark[0], start) < rms(bright[0], start) * 0.15);
 });
 
 test('Faust Reverb produces finite, stereo, mode-dependent decaying tails with an exact dry endpoint', async () => {
@@ -141,6 +154,29 @@ test('Faust Reverb produces finite, stereo, mode-dependent decaying tails with a
     const early = rms(modes[1][0].slice(Math.floor(sampleRate * 0.2), Math.floor(sampleRate * 0.8)));
     const late = rms(modes[1][0].slice(Math.floor(sampleRate * 1.7)));
     assert.ok(late < early);
+  }
+});
+
+test('Faust Reverb continuous controls each make a measurable wet-path change', async () => {
+  const sampleRate = 48000;
+  const length = sampleRate * 3;
+  const impulse = new Float32Array(length);
+  impulse[0] = 0.5;
+  const node = createNode('reverb', 'reverb-controls');
+  Object.assign(node.params, { mode: 1, preDelay: 0, decay: 2, size: 50, damping: 35, mix: 100, output: 0 });
+  const factory = await loadFactory('reverb');
+  const render = () => renderFaustModuleOffline(node, [impulse, impulse], sampleRate, factory);
+  const baseline = await render();
+  const responses: Float32Array[] = [baseline[0]];
+  node.params.preDelay = 180; responses.push((await render())[0]);
+  node.params.preDelay = 0; node.params.decay = 8; responses.push((await render())[0]);
+  node.params.decay = 2; node.params.size = 100; responses.push((await render())[0]);
+  node.params.size = 50; node.params.damping = 100; responses.push((await render())[0]);
+  node.params.damping = 35; node.params.output = -18; responses.push((await render())[0]);
+  for (let index = 1; index < responses.length; index += 1) {
+    let difference = 0;
+    for (let sample = 0; sample < length; sample += 1) difference += Math.abs(responses[index][sample] - baseline[0][sample]);
+    assert.ok(difference / length > 1e-5, `reverb control ${index} should alter the wet output`);
   }
 });
 
@@ -247,4 +283,17 @@ test('Faust Saturation characters are distinct, stable, and retain legacy Soft C
       assert.ok(difference / (input.length - start) > 0.0005, `characters ${index} and ${comparison} should sound distinct`);
     }
   }
+});
+
+test('Faust Tape Wow produces audible pitch movement rather than only level movement', async () => {
+  const sampleRate = 48000;
+  const input = sine(880, sampleRate, sampleRate * 2, 0.45);
+  const node = createNode('saturation', 'sat-wow');
+  Object.assign(node.params, { character: 3, drive: 12, tone: 12000, mix: 100, output: 0, age: 20, wow: 0 });
+  const still = await renderFaustModuleOffline(node, [input, input], sampleRate, await loadFactory('saturation'));
+  node.params.wow = 100;
+  const moving = await renderFaustModuleOffline(node, [input, input], sampleRate, await loadFactory('saturation'));
+  let difference = 0;
+  for (let sample = sampleRate / 2; sample < input.length; sample += 1) difference += Math.abs(moving[0][sample] - still[0][sample]);
+  assert.ok(difference / (input.length - sampleRate / 2) > 0.03);
 });

@@ -6,7 +6,7 @@ export const NATIVE_MODULE_CATALOG = Object.freeze({
   }),
   filter: Object.freeze({
     source: 'faust/filter.dsp',
-    wasmSha256: '7f188b00b97a5bc3744cf07698a28455a408af1771d0828d61ccc654a1658663',
+    wasmSha256: '39ac96e8aff15297cf241ee4033f160a725bfd6bae26254696a0c9fd99eed69a',
     parameters: Object.freeze({
       mode: Object.freeze({ name: 'Mode', min: 0, max: 3, step: 1, unit: '', faustPath: '/Audio_Effect_Builder_Filter/Filter_Mode', scale: 'linear', choices: [0, 1, 2, 3], choiceLabels: ['High Pass', 'Low Pass', 'Band Pass', 'Notch'] }),
       cutoff: Object.freeze({ name: 'Cutoff', min: 20, max: 20000, step: 1, unit: 'Hz', faustPath: '/Audio_Effect_Builder_Filter/Filter_Cutoff', scale: 'log' }),
@@ -15,7 +15,7 @@ export const NATIVE_MODULE_CATALOG = Object.freeze({
   }),
   saturation: Object.freeze({
     source: 'faust/saturation.dsp',
-    wasmSha256: '14c322467c0188bbc9fd901a94333e85722fea24f4e9150663cf9477555ada78',
+    wasmSha256: '05cea5472644ff2ad0d19234d05a3e411e73fd0a52800b192790d1bc04adcbf1',
     parameters: Object.freeze({
       character: Object.freeze({ name: 'Character', min: 0, max: 3, step: 1, unit: '', faustPath: '/Audio_Effect_Builder_Saturation/Saturation_Character', scale: 'linear', choices: [0, 1, 2, 3], choiceLabels: ['Soft Clip', 'Cubic', 'Fuzz', 'Tape'] }),
       drive: Object.freeze({ name: 'Drive', min: 0, max: 24, step: 0.1, unit: 'dB', faustPath: '/Audio_Effect_Builder_Saturation/Saturation_Drive', scale: 'linear' }),
@@ -30,7 +30,7 @@ export const NATIVE_MODULE_CATALOG = Object.freeze({
   }),
   delay: Object.freeze({
     source: 'faust/delay.dsp',
-    wasmSha256: '8d23c0fcf45ce5565bd8a9b75307242c4a631de26705550f73f2c69deb8c3eb0',
+    wasmSha256: '6a5495bfa670ef8435cd8a2bf282f16e64e5a447ef3b5dbeabff3f4e77cba99c',
     parameters: Object.freeze({
       mode: Object.freeze({ name: 'Mode', min: 0, max: 2, step: 1, unit: '', faustPath: '/Audio_Effect_Builder_Delay/Delay_Mode', scale: 'linear', choices: [0, 1, 2], choiceLabels: ['Digital', 'Ping-Pong', 'Tape'] }),
       time: Object.freeze({ name: 'Time', min: 20, max: 2000, step: 1, unit: 'ms', faustPath: '/Audio_Effect_Builder_Delay/Delay_Time', scale: 'log' }),
@@ -42,7 +42,7 @@ export const NATIVE_MODULE_CATALOG = Object.freeze({
   }),
   reverb: Object.freeze({
     source: 'faust/reverb.dsp',
-    wasmSha256: '8eb5ea751de350fb216d55a553367afbf8454637ef78f09b1b13b7f79127c2fd',
+    wasmSha256: 'd03ff0e330e877212436fed13d983036605d29b5aac719775abc45be402ba12a',
     parameters: Object.freeze({
       mode: Object.freeze({ name: 'Mode', min: 0, max: 2, step: 1, unit: '', faustPath: '/Audio_Effect_Builder_Reverb/Reverb_Mode', scale: 'linear', choices: [0, 1, 2], choiceLabels: ['Room', 'Hall', 'Plate'] }),
       preDelay: Object.freeze({ name: 'Pre Delay', min: 0, max: 200, step: 1, unit: 'ms', faustPath: '/Audio_Effect_Builder_Reverb/Reverb_Pre_Delay', scale: 'linear' }),
@@ -57,8 +57,8 @@ export const NATIVE_MODULE_CATALOG = Object.freeze({
 
 export const SOURCE_FINGERPRINTS = Object.freeze({
   gain: 'caca77ad2ac86cf0ef26f62a22d1d0c62a7d4b7f86c6c4e3fef77e9d19fbd35d',
-  filter: '6918312c734213e2476c899588f4917a0d7dfc469196ce0aec718d22e03c25d6',
-  saturation: 'f8a7bbe451c3abd30e4c61fd6210ea3b6a2fef2ae5b67fda2c49c2890969bbf1',
-  delay: 'ffb3c7f559aeedd613450d814c910552faca1129651f05cfc846a3511876c647',
-  reverb: '95310a51570124fe27680d0946cf54c8316ec96e6afa3ce0ac619c61676adda3',
+  filter: '076d102ec4209b0a9e33d4199e302896a3951017e88a1e821ec106347c03ee7f',
+  saturation: '9074635f03744b4b4f280eac15839585716d4a23a732ac7c59e26eb1c3bab068',
+  delay: 'fb9a020e31f2b4f290a17ad2a18ec5d87c6f701195af2bc95e38f2d99cef1b92',
+  reverb: 'bec502b0ca2f0b01dd7c10051cd848417f24ca0eb45b73c2854a49da54abb5ff',
 });

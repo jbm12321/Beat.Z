@@ -26,8 +26,12 @@ lowCutoff = modeValue(400.0, 300.0, 500.0);
 highCutoff = modeValue(6000.0, 5000.0, 8000.0);
 reverbSize = modeValue(0.6 + sizePercent, 0.9 + 2.3 * sizePercent, 0.7 + 1.3 * sizePercent);
 preDelaySamples = min(0.2 * ma.SR, max(0.0, preDelayMs * ma.SR / 1000.0));
+// jpverb uses damping internally. This additional wet-path rolloff makes the
+// user control reliably audible on short material as well as long tails.
+wetDampingHz = 700.0 + 15300.0 * (1.0 - damping);
 
 wetReverb = (de.sdelay(ma.SR, 1024, preDelaySamples), de.sdelay(ma.SR, 1024, preDelaySamples))
-  : re.jpverb(decay, damping, reverbSize, earlyDiff, modDepth, modFreq, lowDecay, midDecay, highDecay, lowCutoff, highCutoff);
+  : re.jpverb(decay, damping, reverbSize, earlyDiff, modDepth, modFreq, lowDecay, midDecay, highDecay, lowCutoff, highCutoff)
+  : par(channel, 2, fi.lowpass(3, wetDampingHz));
 
 process = ef.dryWetMixer(mix, wetReverb) : par(channel, 2, *(ba.db2linear(outputDb)));

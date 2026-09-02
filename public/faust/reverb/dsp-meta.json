@@ -23,8 +23,8 @@
     "/Users/builder/Projects/Beat.Z/faust",
     "/Users/builder/Projects/Beat.Z/faust"
   ],
-  "size": 4359576,
-  "code": "aW1wb3J0KCJzdGRmYXVzdC5saWIiKTsKCmRlY2xhcmUgbmFtZSAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIgUmV2ZXJiIjsKZGVjbGFyZSB2ZXJzaW9uICIwLjEuMCI7CmRlY2xhcmUgYXV0aG9yICJBdWRpbyBFZmZlY3QgQnVpbGRlciI7CmRlY2xhcmUgbGljZW5zZSAiTUlUIjsKCm1vZGUgPSBoc2xpZGVyKCJSZXZlcmIvTW9kZVtzdHlsZTptZW51eydSb29tJzowOydIYWxsJzoxOydQbGF0ZSc6Mn1dIiwgMC4wLCAwLjAsIDIuMCwgMS4wKTsKcHJlRGVsYXlNcyA9IGhzbGlkZXIoIlJldmVyYi9QcmUgRGVsYXlbdW5pdDptc11bc3R5bGU6a25vYl0iLCAyMC4wLCAwLjAsIDIwMC4wLCAxLjApOwpkZWNheSA9IGhzbGlkZXIoIlJldmVyYi9EZWNheVt1bml0OnNdW3NjYWxlOmxvZ11bc3R5bGU6a25vYl0iLCAyLjAsIDAuMiwgMTIuMCwgMC4xKSA6IHNpLnNtb287CnNpemVQZXJjZW50ID0gaHNsaWRlcigiUmV2ZXJiL1NpemVbdW5pdDolXVtzdHlsZTprbm9iXSIsIDUwLjAsIDAuMCwgMTAwLjAsIDEuMCkgLyAxMDAuMCA6IHNpLnNtb287CmRhbXBpbmcgPSBoc2xpZGVyKCJSZXZlcmIvRGFtcGluZ1t1bml0OiVdW3N0eWxlOmtub2JdIiwgMzUuMCwgMC4wLCAxMDAuMCwgMS4wKSAvIDEwMC4wIDogc2kuc21vbzsKbWl4ID0gaHNsaWRlcigiUmV2ZXJiL01peFt1bml0OiVdW3N0eWxlOmtub2JdIiwgMjAuMCwgMC4wLCAxMDAuMCwgMS4wKSAvIDEwMC4wOwpvdXRwdXREYiA9IGhzbGlkZXIoIlJldmVyYi9PdXRwdXRbdW5pdDpkQl1bc3R5bGU6a25vYl0iLCAwLjAsIC0yNC4wLCAxMi4wLCAwLjEpOwoKaXNIYWxsID0gKG1vZGUgPj0gMC41KSAmIChtb2RlIDwgMS41KTsKaXNQbGF0ZSA9IG1vZGUgPj0gMS41Owptb2RlVmFsdWUocm9vbSwgaGFsbCwgcGxhdGUpID0gc2VsZWN0Mihpc0hhbGwsIHNlbGVjdDIoaXNQbGF0ZSwgcm9vbSwgcGxhdGUpLCBoYWxsKTsKZWFybHlEaWZmID0gbW9kZVZhbHVlKDAuNzUsIDAuODUsIDAuOTUpOwptb2REZXB0aCA9IG1vZGVWYWx1ZSgwLjA1LCAwLjE4LCAwLjA4KTsKbW9kRnJlcSA9IG1vZGVWYWx1ZSgwLjE4LCAwLjI4LCAwLjU1KTsKbG93RGVjYXkgPSBtb2RlVmFsdWUoMC44NSwgMC45NSwgMC42NSk7Cm1pZERlY2F5ID0gbW9kZVZhbHVlKDAuODUsIDAuOTAsIDAuOTUpOwpoaWdoRGVjYXkgPSBtb2RlVmFsdWUoMC42MCwgMC43MiwgMC44OCk7Cmxvd0N1dG9mZiA9IG1vZGVWYWx1ZSg0MDAuMCwgMzAwLjAsIDUwMC4wKTsKaGlnaEN1dG9mZiA9IG1vZGVWYWx1ZSg2MDAwLjAsIDUwMDAuMCwgODAwMC4wKTsKcmV2ZXJiU2l6ZSA9IG1vZGVWYWx1ZSgwLjYgKyBzaXplUGVyY2VudCwgMC45ICsgMi4zICogc2l6ZVBlcmNlbnQsIDAuNyArIDEuMyAqIHNpemVQZXJjZW50KTsKcHJlRGVsYXlTYW1wbGVzID0gbWluKDAuMiAqIG1hLlNSLCBtYXgoMC4wLCBwcmVEZWxheU1zICogbWEuU1IgLyAxMDAwLjApKTsKCndldFJldmVyYiA9IChkZS5zZGVsYXkobWEuU1IsIDEwMjQsIHByZURlbGF5U2FtcGxlcyksIGRlLnNkZWxheShtYS5TUiwgMTAyNCwgcHJlRGVsYXlTYW1wbGVzKSkKICA6IHJlLmpwdmVyYihkZWNheSwgZGFtcGluZywgcmV2ZXJiU2l6ZSwgZWFybHlEaWZmLCBtb2REZXB0aCwgbW9kRnJlcSwgbG93RGVjYXksIG1pZERlY2F5LCBoaWdoRGVjYXksIGxvd0N1dG9mZiwgaGlnaEN1dG9mZik7Cgpwcm9jZXNzID0gZWYuZHJ5V2V0TWl4ZXIobWl4LCB3ZXRSZXZlcmIpIDogcGFyKGNoYW5uZWwsIDIsICooYmEuZGIybGluZWFyKG91dHB1dERiKSkpOwo=",
+  "size": 4359616,
+  "code": "aW1wb3J0KCJzdGRmYXVzdC5saWIiKTsKCmRlY2xhcmUgbmFtZSAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIgUmV2ZXJiIjsKZGVjbGFyZSB2ZXJzaW9uICIwLjEuMCI7CmRlY2xhcmUgYXV0aG9yICJBdWRpbyBFZmZlY3QgQnVpbGRlciI7CmRlY2xhcmUgbGljZW5zZSAiTUlUIjsKCm1vZGUgPSBoc2xpZGVyKCJSZXZlcmIvTW9kZVtzdHlsZTptZW51eydSb29tJzowOydIYWxsJzoxOydQbGF0ZSc6Mn1dIiwgMC4wLCAwLjAsIDIuMCwgMS4wKTsKcHJlRGVsYXlNcyA9IGhzbGlkZXIoIlJldmVyYi9QcmUgRGVsYXlbdW5pdDptc11bc3R5bGU6a25vYl0iLCAyMC4wLCAwLjAsIDIwMC4wLCAxLjApOwpkZWNheSA9IGhzbGlkZXIoIlJldmVyYi9EZWNheVt1bml0OnNdW3NjYWxlOmxvZ11bc3R5bGU6a25vYl0iLCAyLjAsIDAuMiwgMTIuMCwgMC4xKSA6IHNpLnNtb287CnNpemVQZXJjZW50ID0gaHNsaWRlcigiUmV2ZXJiL1NpemVbdW5pdDolXVtzdHlsZTprbm9iXSIsIDUwLjAsIDAuMCwgMTAwLjAsIDEuMCkgLyAxMDAuMCA6IHNpLnNtb287CmRhbXBpbmcgPSBoc2xpZGVyKCJSZXZlcmIvRGFtcGluZ1t1bml0OiVdW3N0eWxlOmtub2JdIiwgMzUuMCwgMC4wLCAxMDAuMCwgMS4wKSAvIDEwMC4wIDogc2kuc21vbzsKbWl4ID0gaHNsaWRlcigiUmV2ZXJiL01peFt1bml0OiVdW3N0eWxlOmtub2JdIiwgMjAuMCwgMC4wLCAxMDAuMCwgMS4wKSAvIDEwMC4wOwpvdXRwdXREYiA9IGhzbGlkZXIoIlJldmVyYi9PdXRwdXRbdW5pdDpkQl1bc3R5bGU6a25vYl0iLCAwLjAsIC0yNC4wLCAxMi4wLCAwLjEpOwoKaXNIYWxsID0gKG1vZGUgPj0gMC41KSAmIChtb2RlIDwgMS41KTsKaXNQbGF0ZSA9IG1vZGUgPj0gMS41Owptb2RlVmFsdWUocm9vbSwgaGFsbCwgcGxhdGUpID0gc2VsZWN0Mihpc0hhbGwsIHNlbGVjdDIoaXNQbGF0ZSwgcm9vbSwgcGxhdGUpLCBoYWxsKTsKZWFybHlEaWZmID0gbW9kZVZhbHVlKDAuNzUsIDAuODUsIDAuOTUpOwptb2REZXB0aCA9IG1vZGVWYWx1ZSgwLjA1LCAwLjE4LCAwLjA4KTsKbW9kRnJlcSA9IG1vZGVWYWx1ZSgwLjE4LCAwLjI4LCAwLjU1KTsKbG93RGVjYXkgPSBtb2RlVmFsdWUoMC44NSwgMC45NSwgMC42NSk7Cm1pZERlY2F5ID0gbW9kZVZhbHVlKDAuODUsIDAuOTAsIDAuOTUpOwpoaWdoRGVjYXkgPSBtb2RlVmFsdWUoMC42MCwgMC43MiwgMC44OCk7Cmxvd0N1dG9mZiA9IG1vZGVWYWx1ZSg0MDAuMCwgMzAwLjAsIDUwMC4wKTsKaGlnaEN1dG9mZiA9IG1vZGVWYWx1ZSg2MDAwLjAsIDUwMDAuMCwgODAwMC4wKTsKcmV2ZXJiU2l6ZSA9IG1vZGVWYWx1ZSgwLjYgKyBzaXplUGVyY2VudCwgMC45ICsgMi4zICogc2l6ZVBlcmNlbnQsIDAuNyArIDEuMyAqIHNpemVQZXJjZW50KTsKcHJlRGVsYXlTYW1wbGVzID0gbWluKDAuMiAqIG1hLlNSLCBtYXgoMC4wLCBwcmVEZWxheU1zICogbWEuU1IgLyAxMDAwLjApKTsKLy8ganB2ZXJiIHVzZXMgZGFtcGluZyBpbnRlcm5hbGx5LiBUaGlzIGFkZGl0aW9uYWwgd2V0LXBhdGggcm9sbG9mZiBtYWtlcyB0aGUKLy8gdXNlciBjb250cm9sIHJlbGlhYmx5IGF1ZGlibGUgb24gc2hvcnQgbWF0ZXJpYWwgYXMgd2VsbCBhcyBsb25nIHRhaWxzLgp3ZXREYW1waW5nSHogPSA3MDAuMCArIDE1MzAwLjAgKiAoMS4wIC0gZGFtcGluZyk7Cgp3ZXRSZXZlcmIgPSAoZGUuc2RlbGF5KG1hLlNSLCAxMDI0LCBwcmVEZWxheVNhbXBsZXMpLCBkZS5zZGVsYXkobWEuU1IsIDEwMjQsIHByZURlbGF5U2FtcGxlcykpCiAgOiByZS5qcHZlcmIoZGVjYXksIGRhbXBpbmcsIHJldmVyYlNpemUsIGVhcmx5RGlmZiwgbW9kRGVwdGgsIG1vZEZyZXEsIGxvd0RlY2F5LCBtaWREZWNheSwgaGlnaERlY2F5LCBsb3dDdXRvZmYsIGhpZ2hDdXRvZmYpCiAgOiBwYXIoY2hhbm5lbCwgMiwgZmkubG93cGFzcygzLCB3ZXREYW1waW5nSHopKTsKCnByb2Nlc3MgPSBlZi5kcnlXZXRNaXhlcihtaXgsIHdldFJldmVyYikgOiBwYXIoY2hhbm5lbCwgMiwgKihiYS5kYjJsaW5lYXIob3V0cHV0RGIpKSk7Cg==",
   "inputs": 2,
   "outputs": 2,
   "meta": [
@@ -244,10 +244,10 @@
         {
           "type": "hslider",
           "label": "Reverb/Damping",
-          "varname": "fHslider3",
+          "varname": "fHslider2",
           "shortname": "Reverb_Damping",
           "address": "/Audio_Effect_Builder_Reverb/Reverb_Damping",
-          "index": 8216,
+          "index": 8224,
           "meta": [
             {
               "style": "knob"
@@ -307,10 +307,10 @@
         {
           "type": "hslider",
           "label": "Reverb/Mode",
-          "varname": "fHslider2",
+          "varname": "fHslider3",
           "shortname": "Reverb_Mode",
           "address": "/Audio_Effect_Builder_Reverb/Reverb_Mode",
-          "index": 8200,
+          "index": 8244,
           "meta": [
             {
               "style": "menu{-Room-:0;-Hall-:1;-Plate-:2}"
@@ -347,7 +347,7 @@
           "varname": "fHslider4",
           "shortname": "Reverb_Pre_Delay",
           "address": "/Audio_Effect_Builder_Reverb/Reverb_Pre_Delay",
-          "index": 1056852,
+          "index": 1056856,
           "meta": [
             {
               "style": "knob"

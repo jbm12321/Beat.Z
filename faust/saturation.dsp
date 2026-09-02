@@ -22,7 +22,10 @@ cubic(signal) = signal : ef.cubicnl_nodc(driveDb / 24.0, bias) : fi.lowpass(2, t
 clip(amount, signal) = min(amount, max(-amount, signal));
 fuzz(signal) = signal * drive : clip(clipLevel) : fi.lowpass(2, toneHz);
 tapeTone = max(700.0, toneHz * (1.0 - 0.72 * age));
-tape(signal) = signal * drive : ma.tanh : fi.lowpass(2, tapeTone) : *(1.0 + wow * 0.03 * os.osc(0.55));
+// Wow is pitch movement, not an almost inaudible level wobble.  The fixed
+// delay keeps the modulated delay positive; its maximum movement is 4 ms.
+tapeWowDelay = 0.002 * ma.SR + wow * 0.004 * ma.SR * (0.5 + 0.5 * os.osc(0.55));
+tape(signal) = signal * drive : ma.tanh : fi.lowpass(2, tapeTone) : de.fdelay(0.008 * ma.SR, tapeWowDelay);
 colored(signal) = select2(character >= 1.0, softClip(signal), select2(character >= 2.0, cubic(signal), select2(character >= 3.0, fuzz(signal), tape(signal))));
 saturateChannel(signal) = signal, colored(signal) : si.interpolate(mix) : *(ba.db2linear(outputDb));
 

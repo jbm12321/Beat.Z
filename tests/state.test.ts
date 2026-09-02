@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   LAST_VALID_STORAGE_KEY,
   LEGACY_STORAGE_KEY,
+  PRE_AUDIBILITY_ENGINE_PROVENANCE,
   STORAGE_KEY,
   PRE_PAIR1_ENGINE_PROVENANCE,
   applyProjectCommands,
@@ -115,6 +116,34 @@ test('persistence migrates only the exact pre-Pair-1 engine without content loss
   const restored = restorePersistedProject(storage).project;
   assert.deepEqual({ ...restored, engine: undefined }, { ...previous, engine: undefined });
   assert.equal(restored.nodes['filter-1'].params.mode, 1);
+});
+
+test('persistence upgrades the exact first Pair 1 DSP engine without changing project content', () => {
+  const storage = new MemoryStorage();
+  const project = applyProjectCommands(createInitialProject(), [
+    { type: 'rename_project', name: 'Audibility upgrade' },
+    { type: 'add_module', moduleType: 'filter', nodeId: 'filter-1' },
+    { type: 'set_parameter', nodeId: 'filter-1', paramId: 'mode', value: 3 },
+    { type: 'add_module', moduleType: 'saturation', nodeId: 'saturation-1' },
+    { type: 'set_parameter', nodeId: 'saturation-1', paramId: 'wow', value: 75 },
+    { type: 'add_module', moduleType: 'delay', nodeId: 'delay-1' },
+    { type: 'set_parameter', nodeId: 'delay-1', paramId: 'tone', value: 1200 },
+    { type: 'add_module', moduleType: 'reverb', nodeId: 'reverb-1' },
+    { type: 'set_parameter', nodeId: 'reverb-1', paramId: 'damping', value: 80 },
+  ], 'human');
+  const previous = structuredClone(project);
+  previous.engine = structuredClone(PRE_AUDIBILITY_ENGINE_PROVENANCE) as typeof previous.engine;
+  storage.setItem(STORAGE_KEY, JSON.stringify(previous));
+
+  const restored = restorePersistedProject(storage).project;
+
+  assert.equal(restored.id, project.id);
+  assert.equal(restored.name, project.name);
+  assert.equal(restored.revision, project.revision);
+  assert.deepEqual(restored.chain, project.chain);
+  assert.deepEqual(restored.nodes, project.nodes);
+  assert.deepEqual(restored.macros, project.macros);
+  assert.deepEqual(restored.activity, project.activity);
 });
 
 test('persistence rejects partially matching historical engine provenance', () => {
