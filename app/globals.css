@@ -382,12 +382,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, [role="button"]
   background: rgba(247, 244, 237, .98);
 }
 .inspector-title { display: flex; min-height: 52px; align-items: center; justify-content: space-between; gap: 20px; padding: 0 20px; border-bottom: 1px solid var(--line); }
-.inspector-title > div:first-child { display: flex; align-items: baseline; gap: 10px; }
+.inspector-title > div:first-child { display: flex; flex: 1; min-width: 0; align-items: center; gap: 10px; }
 .inspector-title span { color: var(--muted); font-size: 9px; font-weight: 700; }
 .inspector-title strong { font-size: 13px; font-weight: 500; }
-.inspector-character { display: flex; align-items: flex-start; flex-direction: column; gap: 5px; margin-left: 6px; }
+.inspector-character { display: flex; align-items: flex-start; flex-direction: column; gap: 4px; margin-inline: auto; }
 .inspector-character > span { font-size: 8px; letter-spacing: .08em; text-transform: uppercase; }
-.inspector-character .parameter-select { width: 112px; height: 28px; }
+.inspector-character .parameter-select { width: 80px; height: 26px; padding-inline: 6px; }
 .inspector-actions { display: flex; align-items: center; gap: 5px; }
 .inspector-actions button { min-height: 28px; padding: 0 9px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 9px; }
 .inspector-actions button:hover:not(:disabled), .inspector-actions button.is-active { border-color: var(--ink); color: var(--ink); }
@@ -647,6 +647,8 @@ input[type="range"]:disabled { opacity: .38; }
   .terminal { width: 62px; flex-basis: 62px; }
   .node-inspector { min-height: 250px; max-height: 320px; overflow-y: auto; }
   .inspector-title { align-items: flex-start; flex-direction: column; gap: 8px; padding: 12px; }
+  .inspector-title > div:first-child { width: 100%; }
+  .inspector-character { margin-left: 0; }
   .inspector-actions { width: 100%; flex-wrap: wrap; }
   .parameter-grid { grid-template-columns: 1fr 1fr; }
   .parameter-control { min-height: 92px; padding-inline: 12px; }
