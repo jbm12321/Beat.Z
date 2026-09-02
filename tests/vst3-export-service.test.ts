@@ -4,7 +4,7 @@ import { analyzeStereo, type AudioAnalysis } from '../src/features/audio-builder
 import { freezeProjectRevision } from '../src/features/audio-builder/domain/build.ts';
 import { applyProjectCommands, createInitialProject } from '../src/features/audio-builder/domain/project.ts';
 import { validateProjectForBuild } from '../src/features/audio-builder/domain/validation.ts';
-import { MemoryBuildRepository } from '../src/features/vst3-export/server/repository.ts';
+import { STALE_BUILD_TIMEOUT_MS, MemoryBuildRepository } from '../src/features/vst3-export/server/repository.ts';
 import { Vst3ExportError, createVst3ExportService } from '../src/features/vst3-export/server/service.ts';
 
 const publicArtifactUrl = 'https://example.supabase.co/storage/v1/object/public/vst3-builds';
@@ -47,6 +47,23 @@ test('one worker claims one queued job and reports an honest terminal result', a
   const completed = await service.status(submitted.id);
   assert.equal(completed.status, 'ready');
   assert.equal(completed.artifact?.filename, 'Test-01234567.vst3');
+});
+
+test('an abandoned building job expires so the next queued job can be claimed', async () => {
+  const repository = new MemoryBuildRepository();
+  const service = createService(repository);
+  const abandoned = await service.submit(await approvedSnapshot());
+  await service.claim('test-worker-token-that-is-long-enough');
+  const waiting = await service.submit(await approvedSnapshot());
+
+  const afterLeaseExpires = new Date(Date.now() + STALE_BUILD_TIMEOUT_MS + 1_000).toISOString();
+  const claimed = await repository.claimOldest(afterLeaseExpires);
+
+  assert.equal(claimed?.id, waiting.id);
+  assert.equal(claimed?.status, 'building');
+  const recovered = await repository.get(abandoned.id);
+  assert.equal(recovered?.status, 'failed');
+  assert.equal(recovered?.error, 'Failed.');
 });
 
 test('a job already building may report after the switch is turned off', async () => {

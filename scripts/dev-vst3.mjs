@@ -6,11 +6,13 @@ const token = process.env.VST3_WORKER_TOKEN ?? '';
 if (token.length < 24 || token.startsWith('REPLACE_')) {
   throw new Error('Set VST3_WORKER_TOKEN to a unique secret of at least 24 characters in .env before starting the VST3 worker.');
 }
+const liveEndpoint = 'https://audio-effect-builder-bm26.jbm111.chatgpt.site';
 const environment = {
   ...process.env,
   VST3_EXPORT_ENABLED: 'true',
   VST3_WORKER_TOKEN: token,
-  VST3_EXPORT_ENDPOINT: process.env.VST3_EXPORT_ENDPOINT ?? 'http://127.0.0.1:3000',
+  // Native builds always service the published Beat.Z queue.
+  VST3_EXPORT_ENDPOINT: liveEndpoint,
 };
 const children = [
   spawn('npm', ['run', 'dev'], { stdio: 'inherit', env: environment }),

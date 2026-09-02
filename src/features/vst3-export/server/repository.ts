@@ -2,6 +2,9 @@ import type { NativeBuildRequestV1 } from '../contract.ts';
 
 export type Vst3BuildStatus = 'queued' | 'building' | 'ready' | 'failed';
 
+export const STALE_BUILD_TIMEOUT_MS = 2 * 60 * 1_000;
+export const STALE_BUILD_ERROR = 'Failed.';
+
 export interface Vst3Artifact {
   filename: string;
   bundleSha256: string;
@@ -58,6 +61,16 @@ export class MemoryBuildRepository implements BuildRepository {
   }
 
   async claimOldest(now: string) {
+    const cutoff = Date.parse(now) - STALE_BUILD_TIMEOUT_MS;
+    const building = [...this.#records.values()].filter((record) => record.status === 'building');
+    for (const record of building) {
+      const startedAt = record.startedAt ? Date.parse(record.startedAt) : Number.NaN;
+      if (!Number.isFinite(startedAt) || startedAt < cutoff) {
+        record.status = 'failed';
+        record.error = STALE_BUILD_ERROR;
+        record.finishedAt = now;
+      }
+    }
     if ([...this.#records.values()].some((record) => record.status === 'building')) return null;
     const queued = [...this.#records.values()]
       .filter((record) => record.status === 'queued')
