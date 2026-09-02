@@ -111,6 +111,33 @@ test('parity comparison separately enforces peak and sustained-error ceilings', 
   assert.equal(compareStereoParity(browser, knownSeriousMismatch, { maxTolerance: 1e-3, rmsTolerance: 1.5e-4 }).passed, false);
 });
 
+test('parity peak comparison is scale-aware without letting the native render widen its own limit', () => {
+  const loudBrowser = [new Float32Array(100).fill(4), new Float32Array(100).fill(-4)];
+  const loudNative = [new Float32Array(loudBrowser[0]), new Float32Array(loudBrowser[1])];
+  loudNative[0][50] += 5.13e-4;
+  const loudComparison = compareStereoParity(loudBrowser, loudNative, { maxTolerance: 5e-4, rmsTolerance: 1.5e-4 });
+  assert.equal(loudComparison.passed, true);
+  assert.equal(loudComparison.browserPeak, 4);
+  assert.ok(loudComparison.nativePeak > 4);
+  assert.equal(loudComparison.allowedMaxError, 6e-4);
+  assert.ok(loudComparison.relativePeakError < 1.5e-4);
+
+  const quietBrowser = [new Float32Array(100).fill(0.1), new Float32Array(100).fill(-0.1)];
+  const quietNative = [new Float32Array(quietBrowser[0]), new Float32Array(quietBrowser[1])];
+  quietNative[0][50] += 5.13e-4;
+  const quietComparison = compareStereoParity(quietBrowser, quietNative, { maxTolerance: 5e-4, rmsTolerance: 1.5e-4 });
+  assert.equal(quietComparison.passed, false);
+  assert.equal(quietComparison.allowedMaxError, 5e-4);
+
+  const silentBrowser = [new Float32Array(100), new Float32Array(100)];
+  const brokenNative = [new Float32Array(100), new Float32Array(100)];
+  brokenNative[0][50] = 10;
+  const brokenComparison = compareStereoParity(silentBrowser, brokenNative, { maxTolerance: 5e-4, rmsTolerance: 1.5e-4 });
+  assert.equal(brokenComparison.passed, false);
+  assert.equal(brokenComparison.browserPeak, 0);
+  assert.equal(brokenComparison.allowedMaxError, 5e-4);
+});
+
 test('parity diagnostics identify the peak channel, frame, and processing region', () => {
   const browser = [new Float32Array(256), new Float32Array(256)];
   const native = [new Float32Array(256), new Float32Array(256)];
@@ -131,6 +158,10 @@ test('parity diagnostics name the scenario, module, parameter, values, time, and
     {
       maxAbsoluteError: 8.418e-4,
       maxTolerance: 5e-4,
+      allowedMaxError: 9e-4,
+      browserPeak: 6,
+      nativePeak: 6.0004,
+      relativePeakError: 1.403e-4,
       rmsError: 4.936e-5,
       rmsTolerance: 1.5e-4,
       peakChannel: 1,
@@ -150,6 +181,10 @@ test('parity diagnostics name the scenario, module, parameter, values, time, and
     normalizedValue: 1,
     maxAbsoluteError: 8.418e-4,
     maxTolerance: 5e-4,
+    allowedMaxError: 9e-4,
+    browserPeak: 6,
+    nativePeak: 6.0004,
+    relativePeakError: 1.403e-4,
     rmsError: 4.936e-5,
     rmsTolerance: 1.5e-4,
     peakChannel: 'right',
