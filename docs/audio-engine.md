@@ -21,6 +21,8 @@ Whole-chain dry/processed switching and loudness matching use short ramps. Local
 
 Faust creates its AudioWorklet module by serializing runtime classes with `Function.prototype.toString`. Production bundling must not rename the lexical bindings inside those classes. `npm run faust:compile` therefore copies the exact pinned `@grame/faustwasm` ESM runtime to `/faust/faustwasm-runtime.js`, records its SHA-256 in the generated manifest, and retains the upstream license. Browser audition and browser offline analysis lazy-load that untransformed module on first use; Node tests and native parity load the same pinned package directly. A failed AudioWorklet reports the underlying error and does not retry through a compatibility processor.
 
+Native parity keeps a strict `5e-4` peak-error floor and `1.5e-4` RMS ceiling. For sufficiently loud stress renders, only the browser peak can raise the peak-error allowance using a `1.5e-4` relative ratio; native output cannot widen its own acceptance threshold.
+
 The browser runtime fingerprint is deployment provenance, not DSP engine provenance. It does not change project identity, stored projects, Faust source fingerprints, browser WASM hashes, or the native C++ generation path.
 
 ## Modules

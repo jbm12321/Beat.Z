@@ -11,6 +11,10 @@ import { resolveWithin } from './safety.mjs';
 const execFileAsync = promisify(execFile);
 const nativeRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repositoryRoot = resolve(nativeRoot, '..');
+// Preserve the strict absolute floor at ordinary levels while allowing the
+// same small floating-point divergence when a stress scenario boosts output
+// above full scale. Only the browser reference may widen this allowance.
+const RELATIVE_PEAK_TOLERANCE = 1.5e-4;
 
 async function defaultRun(command, argumentsList) {
   try {
@@ -36,6 +40,8 @@ export function compareStereoParity(browser, native, tolerance) {
   let maximum = 0;
   let peakChannel = 0;
   let peakFrame = 0;
+  let browserPeak = 0;
+  let nativePeak = 0;
   let squaredError = 0;
   let initialSquaredError = 0;
   let initialSamples = 0;
@@ -45,7 +51,11 @@ export function compareStereoParity(browser, native, tolerance) {
   const initialBlockFrames = Math.min(128, browser[0].length);
   for (let channel = 0; channel < 2; channel += 1) {
     for (let frame = 0; frame < browser[channel].length; frame += 1) {
-      const error = Math.abs(browser[channel][frame] - native[channel][frame]);
+      const browserSample = browser[channel][frame];
+      const nativeSample = native[channel][frame];
+      browserPeak = Math.max(browserPeak, Math.abs(browserSample));
+      nativePeak = Math.max(nativePeak, Math.abs(nativeSample));
+      const error = Math.abs(browserSample - nativeSample);
       if (error > maximum) {
         maximum = error;
         peakChannel = channel;
@@ -63,9 +73,15 @@ export function compareStereoParity(browser, native, tolerance) {
     }
   }
   const rmsError = Math.sqrt(squaredError / Math.max(1, samples));
+  const allowedMaxError = Math.max(limits.maxTolerance, browserPeak * RELATIVE_PEAK_TOLERANCE);
+  const relativePeakError = browserPeak > 0 ? maximum / browserPeak : maximum === 0 ? 0 : null;
   return {
-    passed: maximum <= limits.maxTolerance && rmsError <= limits.rmsTolerance,
+    passed: maximum <= allowedMaxError && rmsError <= limits.rmsTolerance,
     maxAbsoluteError: maximum,
+    allowedMaxError,
+    browserPeak,
+    nativePeak,
+    relativePeakError,
     rmsError,
     maxTolerance: limits.maxTolerance,
     rmsTolerance: limits.rmsTolerance,
@@ -105,6 +121,10 @@ export function parityDiagnostics(sampleRate, scenario, parameters, comparison) 
     normalizedValue: scenario.normalizedValue,
     maxAbsoluteError: comparison.maxAbsoluteError,
     maxTolerance: comparison.maxTolerance,
+    allowedMaxError: comparison.allowedMaxError,
+    browserPeak: comparison.browserPeak,
+    nativePeak: comparison.nativePeak,
+    relativePeakError: comparison.relativePeakError,
     rmsError: comparison.rmsError,
     rmsTolerance: comparison.rmsTolerance,
     peakChannel: comparison.peakChannel === 0 ? 'left' : 'right',
