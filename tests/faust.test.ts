@@ -55,6 +55,26 @@ test('committed Faust sources and metadata match the catalog fingerprints and st
   }
 });
 
+test('the deployed Faust browser runtime is the exact pinned untransformed module', async () => {
+  const manifest = JSON.parse(await readFile(join(root, 'public', 'faust', 'manifest.json'), 'utf8'));
+  const packageJson = JSON.parse(await readFile(join(root, 'node_modules', '@grame', 'faustwasm', 'package.json'), 'utf8'));
+  const upstream = await readFile(join(root, 'node_modules', '@grame', 'faustwasm', 'dist', 'esm', 'index.js'));
+  const deployed = await readFile(join(root, 'public', 'faust', 'faustwasm-runtime.js'));
+  const sha256 = createHash('sha256').update(deployed).digest('hex');
+
+  assert.deepEqual(deployed, upstream);
+  assert.equal(packageJson.version, '0.16.6');
+  assert.deepEqual(manifest.browserRuntime, {
+    package: '@grame/faustwasm',
+    version: '0.16.6',
+    path: '/faust/faustwasm-runtime.js',
+    sha256,
+  });
+  const source = deployed.toString('utf8');
+  assert.match(source, /var FaustBaseWebAudioDsp = class _FaustBaseWebAudioDsp/u);
+  assert.match(source, /var FaustMonoWebAudioDsp = class extends FaustBaseWebAudioDsp/u);
+});
+
 test('Faust Filter adds stable Band Pass and Notch modes at supported sample rates', async () => {
   for (const sampleRate of [44100, 48000, 96000]) {
     const length = Math.floor(sampleRate * 0.5);

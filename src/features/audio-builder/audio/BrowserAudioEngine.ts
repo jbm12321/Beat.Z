@@ -255,22 +255,14 @@ export class BrowserAudioEngine {
     const generation = ++this.rebuildGeneration;
     void this.buildGraphPath(generation).catch((cause) => {
       if (generation !== this.rebuildGeneration) return;
-      void this.buildGraphPath(generation, true).then(() => {
-        if (generation !== this.rebuildGeneration) return;
-        this.statusListener?.({ kind: 'warning', message: 'This browser blocked the low-latency Faust worklet. Effects are running in compatibility mode.' });
-      }).catch((fallbackCause) => {
-        if (generation !== this.rebuildGeneration) return;
-        const firstFailure = cause instanceof Error ? cause.message : 'The Faust audio graph could not be built.';
-        const fallbackFailure = fallbackCause instanceof Error ? fallbackCause.message : 'The compatibility processor could not be built.';
-        this.error = `${firstFailure} Compatibility fallback failed: ${fallbackFailure}`;
-        this.statusListener?.({ kind: 'error', message: `Effects are unavailable: ${this.error}` });
-        this.bypassed = true;
-        this.applyBypassGains();
-      });
+      this.error = cause instanceof Error ? cause.message : 'The Faust AudioWorklet graph could not be built.';
+      this.statusListener?.({ kind: 'error', message: `Low-latency effects are unavailable: ${this.error}` });
+      this.bypassed = true;
+      this.applyBypassGains();
     });
   }
 
-  private async buildGraphPath(generation: number, useScriptProcessor = false) {
+  private async buildGraphPath(generation: number) {
     if (!this.context || !this.project || !this.inputAnalyser || !this.wetGain) return;
     const context = this.context;
     const snapshot = structuredClone(this.project);
@@ -283,7 +275,7 @@ export class BrowserAudioEngine {
       for (const nodeId of snapshot.chain) {
         const dspNode = snapshot.nodes[nodeId];
         if (!dspNode || dspNode.bypassed) continue;
-        const faustNode = await createFaustAudioNode(context, dspNode, snapshot, useScriptProcessor);
+        const faustNode = await createFaustAudioNode(context, dspNode, snapshot);
         if (generation !== this.rebuildGeneration) {
           faustNode.destroy();
           modules.forEach((graph) => graph.dispose());

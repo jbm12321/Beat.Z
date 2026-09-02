@@ -13,11 +13,20 @@ const execFileAsync = promisify(execFile);
 const toolchain = JSON.parse(await readFile(join(root, 'native', 'toolchain.lock.json'), 'utf8'));
 const faustCommand = toolchain.faust.nativeCommand;
 const faustCodegenFlags = toolchain.faust.codegenFlags;
+const faustWasmRoot = join(root, 'node_modules', '@grame', 'faustwasm');
+const faustWasmPackage = JSON.parse(await readFile(join(faustWasmRoot, 'package.json'), 'utf8'));
+const browserRuntimePath = join(faustWasmRoot, 'dist', 'esm', 'index.js');
+const browserRuntime = await readFile(browserRuntimePath);
+const browserRuntimeSha256 = createHash('sha256').update(browserRuntime).digest('hex');
 const modules = {};
 const libraries = {};
 let faustCompilerVersion = '';
 
 await mkdir(outputRoot, { recursive: true });
+
+if (faustWasmPackage.version !== toolchain.faust.browserPackageVersion) {
+  throw new Error(`The pinned ${toolchain.faust.browserPackage} package is ${toolchain.faust.browserPackageVersion}, but ${faustWasmPackage.version ?? 'an unknown version'} is installed.`);
+}
 
 const versionResult = await execFileAsync(faustCommand, ['--version'], { encoding: 'utf8', timeout: 20_000 });
 const installedVersion = `${versionResult.stdout}\n${versionResult.stderr}`.match(/FAUST Version\s+([^\s]+)/u)?.[1];
@@ -75,20 +84,28 @@ for (const id of definitions) {
   };
 }
 
-const packageJson = JSON.parse(await readFile(join(root, 'node_modules', '@grame', 'faustwasm', 'package.json'), 'utf8'));
 const manifest = {
   effectDefinition: 'audio-effect-builder-faust',
   definitionVersion: '0.1.0',
-  faustWasmVersion: packageJson.version,
+  faustWasmVersion: faustWasmPackage.version,
   faustCompilerVersion,
+  browserRuntime: {
+    package: toolchain.faust.browserPackage,
+    version: faustWasmPackage.version,
+    path: '/faust/faustwasm-runtime.js',
+    sha256: browserRuntimeSha256,
+  },
   libraries: Object.fromEntries(Object.entries(libraries).sort(([left], [right]) => left.localeCompare(right))),
   generatedAt: 'deterministic-build',
   modules,
 };
 
-await writeFile(join(outputRoot, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
-const license = await readFile(join(root, 'node_modules', '@grame', 'faustwasm', 'COPYING.txt'), 'utf8');
-await writeFile(
-  join(outputRoot, 'FAUSTWASM-LICENSE.txt'),
-  `${license.split('\n').map((line) => line.trimEnd()).join('\n').trimEnd()}\n`,
-);
+const license = await readFile(join(faustWasmRoot, 'COPYING.txt'), 'utf8');
+await Promise.all([
+  writeFile(join(outputRoot, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`),
+  writeFile(join(outputRoot, 'faustwasm-runtime.js'), browserRuntime),
+  writeFile(
+    join(outputRoot, 'FAUSTWASM-LICENSE.txt'),
+    `${license.split('\n').map((line) => line.trimEnd()).join('\n').trimEnd()}\n`,
+  ),
+]);

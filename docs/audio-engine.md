@@ -17,6 +17,12 @@ The looping source node is not recreated for slider changes. Each module is a pe
 
 Whole-chain dry/processed switching and loudness matching use short ramps. Local-file switching intentionally creates a new looping source because the source itself changed.
 
+## Browser runtime packaging
+
+Faust creates its AudioWorklet module by serializing runtime classes with `Function.prototype.toString`. Production bundling must not rename the lexical bindings inside those classes. `npm run faust:compile` therefore copies the exact pinned `@grame/faustwasm` ESM runtime to `/faust/faustwasm-runtime.js`, records its SHA-256 in the generated manifest, and retains the upstream license. Browser audition and browser offline analysis lazy-load that untransformed module on first use; Node tests and native parity load the same pinned package directly. A failed AudioWorklet reports the underlying error and does not retry through a compatibility processor.
+
+The browser runtime fingerprint is deployment provenance, not DSP engine provenance. It does not change project identity, stored projects, Faust source fingerprints, browser WASM hashes, or the native C++ generation path.
+
 ## Modules
 
 - Gain: `−24…+24 dB`; level smoothing occurs in dB before conversion, so 0 dB initializes at unity rather than fading from silence.
