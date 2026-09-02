@@ -12,6 +12,7 @@
   "libraries": {
     "analyzers": "1.3.0",
     "basics": "1.22.0",
+    "compressors": "1.6.0",
     "delays": "1.2.0",
     "filters": "1.7.1",
     "maths": "2.9.0",
@@ -71,6 +72,26 @@
       "wasmSha256": "d03ff0e330e877212436fed13d983036605d29b5aac719775abc45be402ba12a",
       "wasm": "/faust/reverb/dsp-module.wasm",
       "metadata": "/faust/reverb/dsp-meta.json",
+      "inputs": 2,
+      "outputs": 2
+    },
+    "chorus": {
+      "definitionVersion": "0.1.0",
+      "source": "faust/chorus.dsp",
+      "sourceSha256": "19432a2946b7711dc6f4d694e3fdc5c665df67dddbcadc59622c4052539aa419",
+      "wasmSha256": "76fe0d8e4c7245c12a21bb91e8f2bd8af5c3ca610ec48553f29939e2b9527759",
+      "wasm": "/faust/chorus/dsp-module.wasm",
+      "metadata": "/faust/chorus/dsp-meta.json",
+      "inputs": 2,
+      "outputs": 2
+    },
+    "compressor": {
+      "definitionVersion": "0.1.0",
+      "source": "faust/compressor.dsp",
+      "sourceSha256": "8440fc44c50c362eb6287707d90a9e10033db2d9a5a0a662ef22a93d90db4ff9",
+      "wasmSha256": "47913563a1382be3bd7eff04dd26a57a80ecd09c36dbb09d983b38c65b3f9e2d",
+      "wasm": "/faust/compressor/dsp-module.wasm",
+      "metadata": "/faust/compressor/dsp-meta.json",
       "inputs": 2,
       "outputs": 2
     }

@@ -317,3 +317,97 @@ test('Faust Tape Wow produces audible pitch movement rather than only level move
   for (let sample = sampleRate / 2; sample < input.length; sample += 1) difference += Math.abs(moving[0][sample] - still[0][sample]);
   assert.ok(difference / (input.length - sampleRate / 2) > 0.03);
 });
+
+test('Faust Chorus has an exact dry endpoint and finite, distinct stereo modes at every supported sample rate', async () => {
+  for (const sampleRate of [44100, 48000, 96000]) {
+    const input = sine(440, sampleRate, sampleRate, 0.3);
+    const node = createNode('chorus', 'chorus-modes');
+    node.params.mix = 0;
+    const dry = await renderFaustModuleOffline(node, [input, input], sampleRate, await loadFactory('chorus'));
+    assert.deepEqual(dry[0], input);
+    assert.deepEqual(dry[1], input);
+
+    node.params.mix = 100;
+    const modes: Float32Array[][] = [];
+    for (const mode of [0, 1, 2]) {
+      node.params.mode = mode;
+      const rendered = await renderFaustModuleOffline(node, [input, input], sampleRate, await loadFactory('chorus'));
+      assert.ok(rendered.every((channel) => channel.every(Number.isFinite)));
+      assert.ok(rms(rendered[0], Math.floor(sampleRate * 0.25)) > 0.01);
+      assert.notDeepEqual(rendered[0], rendered[1]);
+      modes.push(rendered);
+    }
+    for (let index = 0; index < modes.length; index += 1) {
+      for (let comparison = index + 1; comparison < modes.length; comparison += 1) {
+        let difference = 0;
+        for (let sample = Math.floor(sampleRate * 0.25); sample < input.length; sample += 1) difference += Math.abs(modes[index][0][sample] - modes[comparison][0][sample]);
+        assert.ok(difference / input.length > 0.001);
+      }
+    }
+  }
+});
+
+test('Faust Chorus Rate, Depth, Delay, and Output each change the wet signal', async () => {
+  const sampleRate = 48000;
+  const input = sine(700, sampleRate, sampleRate * 2, 0.3);
+  const node = createNode('chorus', 'chorus-controls');
+  Object.assign(node.params, { mode: 2, rate: 0.8, depth: 35, delay: 15, mix: 100, output: 0 });
+  const factory = await loadFactory('chorus');
+  const render = () => renderFaustModuleOffline(node, [input, input], sampleRate, factory);
+  const baseline = (await render())[0];
+  const alternatives: Float32Array[] = [];
+  node.params.rate = 4; alternatives.push((await render())[0]);
+  node.params.rate = 0.8; node.params.depth = 100; alternatives.push((await render())[0]);
+  node.params.depth = 35; node.params.delay = 30; alternatives.push((await render())[0]);
+  node.params.delay = 15; node.params.output = -12; alternatives.push((await render())[0]);
+  for (const alternative of alternatives) {
+    let difference = 0;
+    for (let sample = sampleRate / 2; sample < input.length; sample += 1) difference += Math.abs(alternative[sample] - baseline[sample]);
+    assert.ok(difference / (input.length - sampleRate / 2) > 0.001);
+  }
+});
+
+test('Faust Compressor has an exact dry endpoint and linked finite stereo gain reduction', async () => {
+  for (const sampleRate of [44100, 48000, 96000]) {
+    const length = sampleRate * 2;
+    const loud = sine(220, sampleRate, length, 0.8);
+    const quiet = sine(330, sampleRate, length, 0.08);
+    const node = createNode('compressor', 'compressor-linked');
+    Object.assign(node.params, { threshold: -24, ratio: 8, attack: 1, release: 100, makeup: 0, mix: 0 });
+    const dry = await renderFaustModuleOffline(node, [loud, quiet], sampleRate, await loadFactory('compressor'));
+    assert.deepEqual(dry[0], loud);
+    assert.deepEqual(dry[1], quiet);
+
+    node.params.mix = 100;
+    const compressed = await renderFaustModuleOffline(node, [loud, quiet], sampleRate, await loadFactory('compressor'));
+    const start = Math.floor(sampleRate * 0.75);
+    assert.ok(compressed.every((channel) => channel.every(Number.isFinite)));
+    assert.ok(rms(compressed[0], start) < rms(loud, start) * 0.65);
+    assert.ok(rms(compressed[1], start) < rms(quiet, start) * 0.65);
+  }
+});
+
+test('Faust Compressor ratio, attack, release, and makeup produce measurable dynamics changes', async () => {
+  const sampleRate = 48000;
+  const length = sampleRate * 3;
+  const input = new Float32Array(length);
+  for (let sample = 0; sample < length; sample += 1) {
+    const sectionAmplitude = sample < sampleRate ? 0.05 : sample < sampleRate * 2 ? 0.85 : 0.05;
+    input[sample] = Math.sin(2 * Math.PI * 180 * sample / sampleRate) * sectionAmplitude;
+  }
+  const node = createNode('compressor', 'compressor-controls');
+  Object.assign(node.params, { threshold: -24, ratio: 4, attack: 20, release: 250, makeup: 0, mix: 100 });
+  const factory = await loadFactory('compressor');
+  const render = () => renderFaustModuleOffline(node, [input, input], sampleRate, factory);
+  const baseline = (await render())[0];
+  const alternatives: Float32Array[] = [];
+  node.params.ratio = 20; alternatives.push((await render())[0]);
+  node.params.ratio = 4; node.params.attack = 0.1; alternatives.push((await render())[0]);
+  node.params.attack = 20; node.params.release = 2000; alternatives.push((await render())[0]);
+  node.params.release = 250; node.params.makeup = 12; alternatives.push((await render())[0]);
+  for (const alternative of alternatives) {
+    let difference = 0;
+    for (let sample = sampleRate; sample < input.length; sample += 1) difference += Math.abs(alternative[sample] - baseline[sample]);
+    assert.ok(difference / (input.length - sampleRate) > 0.0001);
+  }
+});

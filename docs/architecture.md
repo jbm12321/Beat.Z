@@ -2,7 +2,7 @@
 
 ## System boundary
 
-Audio Effect Builder is one client-side Sites application. It has no database, model API, upload service, or native compiler. React owns the editor state; a long-lived browser audio engine receives validated snapshots; optional WebMCP tools operate through the same proposal and command services as the visible editor.
+Audio Effect Builder is a browser-first Sites application. React owns the editor state; a long-lived browser audio engine receives validated snapshots; optional WebMCP tools operate through the same proposal and command services as the visible editor. Native-export API routes store queued job state in D1, while a separately configured Mac worker performs native compilation and publishes verified ZIPs to Supabase Storage. The browser contains no native compiler or elevated worker credentials.
 
 ```text
 Human controls ───────┐
@@ -19,7 +19,7 @@ Audition source ─> persistent source bus ─> Faust AudioWorklet chain ─> me
 
 ```text
 app/                              route, metadata, and visual system
-faust/                            canonical versioned Gain/Filter/Saturation/Delay/Reverb sources
+faust/                            seven canonical versioned effect sources
 public/faust/                     generated WASM, Faust metadata, manifest, runtime license
 scripts/compile-faust.mjs         deterministic build-time Faust compilation
 src/features/audio-builder/
@@ -44,7 +44,7 @@ Durable `ProjectV2` data includes IDs, name, monotonic revision, exact Faust pro
 ## Release gates represented here
 
 - Gate 1: revisioned, recoverable human/agent project edits.
-- Gate 2: real Gain, Filter, Saturation, Delay, and Reverb Faust/WASM browser processors.
+- Gate 2: real Gain, Filter, Saturation, Delay, Reverb, Chorus, and Compressor Faust/WASM browser processors.
 - Gate 3: dry/processed audition, loudness matching, offline analysis, and safety checks.
 - Gate 4: inspect/propose/approve/apply/analyze/build-request WebMCP boundary.
-- Gate 5: not implemented in a static Site; native compiler, validator, DAW, and parity proof remain external.
+- Gate 5: the Site queues frozen revisions; the controlled Mac worker performs compilation, signing, validation, state restoration, parity, packaging, and publication. DAW-specific discovery and audible host behavior remain separate proof.

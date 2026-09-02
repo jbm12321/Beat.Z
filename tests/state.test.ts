@@ -4,6 +4,7 @@ import {
   LAST_VALID_STORAGE_KEY,
   LEGACY_STORAGE_KEY,
   PRE_AUDIBILITY_ENGINE_PROVENANCE,
+  PRE_CHORUS_COMPRESSOR_ENGINE_PROVENANCE,
   STORAGE_KEY,
   PRE_PAIR1_ENGINE_PROVENANCE,
   applyProjectCommands,
@@ -144,6 +145,26 @@ test('persistence upgrades the exact first Pair 1 DSP engine without changing pr
   assert.deepEqual(restored.nodes, project.nodes);
   assert.deepEqual(restored.macros, project.macros);
   assert.deepEqual(restored.activity, project.activity);
+});
+
+test('persistence adds Chorus and Compressor provenance without changing an exact five-effect project', () => {
+  const storage = new MemoryStorage();
+  const project = applyProjectCommands(createInitialProject(), [
+    { type: 'rename_project', name: 'Preserved five-effect project' },
+    { type: 'add_module', moduleType: 'delay', nodeId: 'delay-1' },
+    { type: 'set_parameter', nodeId: 'delay-1', paramId: 'time', value: 420 },
+    { type: 'create_macro', name: 'Echo', macroId: 'macro-1' },
+    { type: 'add_mapping', macroId: 'macro-1', mappingId: 'mapping-1', nodeId: 'delay-1', paramId: 'mix', min: 5, max: 70 },
+  ], 'human');
+  const previous = structuredClone(project);
+  previous.engine = structuredClone(PRE_CHORUS_COMPRESSOR_ENGINE_PROVENANCE) as typeof previous.engine;
+  storage.setItem(STORAGE_KEY, JSON.stringify(previous));
+
+  const restored = restorePersistedProject(storage).project;
+  assert.deepEqual({ ...restored, engine: undefined }, { ...previous, engine: undefined });
+  assert.equal(restored.engine.libraries.compressors, '1.6.0');
+  assert.equal(restored.engine.moduleSourceSha256.chorus.length, 64);
+  assert.equal(restored.engine.moduleSourceSha256.compressor.length, 64);
 });
 
 test('persistence rejects partially matching historical engine provenance', () => {

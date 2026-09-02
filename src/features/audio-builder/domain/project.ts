@@ -1,4 +1,4 @@
-export type ModuleType = 'gain' | 'filter' | 'saturation' | 'delay' | 'reverb';
+export type ModuleType = 'gain' | 'filter' | 'saturation' | 'delay' | 'reverb' | 'chorus' | 'compressor';
 export type ParameterScale = 'linear' | 'log';
 export type ParameterKind = 'continuous' | 'choice';
 
@@ -14,7 +14,7 @@ export interface ParameterDefinition {
   max: number;
   default: number;
   step: number;
-  unit: 'dB' | 'Hz' | '%' | 'Q' | 'mode' | 'type' | 'ms' | 's';
+  unit: 'dB' | 'Hz' | '%' | 'Q' | 'mode' | 'type' | 'ms' | 's' | 'ratio';
   scale: ParameterScale;
   kind: ParameterKind;
   choices?: ParameterChoice[];
@@ -80,6 +80,7 @@ export interface EngineProvenance {
     oscillators: '1.7.0';
     platform: '1.3.0';
     reverbs: '1.5.1';
+    compressors: '1.6.0';
     signals: '1.6.0';
   };
   moduleSourceSha256: Record<ModuleType, string>;
@@ -261,6 +262,36 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
       parameter('output', 'Output', -24, 12, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Reverb/Reverb_Output'),
     ],
   },
+  chorus: {
+    type: 'chorus', name: 'Chorus', shortName: 'CHR', description: 'Add modulated width and ensemble movement.', definitionVersion: '0.1.0',
+    sourceSha256: '19432a2946b7711dc6f4d694e3fdc5c665df67dddbcadc59622c4052539aa419',
+    wasmSha256: '76fe0d8e4c7245c12a21bb91e8f2bd8af5c3ca610ec48553f29939e2b9527759',
+    wasmPath: '/faust/chorus/dsp-module.wasm', metadataPath: '/faust/chorus/dsp-meta.json',
+    parameters: [
+      parameter('mode', 'Mode', 0, 2, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Chorus/Chorus_Mode', {
+        kind: 'choice', choices: [{ value: 0, label: 'Classic' }, { value: 1, label: 'Wide' }, { value: 2, label: 'Ensemble' }], mappable: false,
+      }),
+      parameter('rate', 'Rate', 0.05, 8, 0.8, 0.01, 'Hz', 'log', '/Audio_Effect_Builder_Chorus/Chorus_Rate'),
+      parameter('depth', 'Depth', 0, 100, 35, 1, '%', 'linear', '/Audio_Effect_Builder_Chorus/Chorus_Depth'),
+      parameter('delay', 'Delay', 5, 30, 15, 0.1, 'ms', 'linear', '/Audio_Effect_Builder_Chorus/Chorus_Delay'),
+      parameter('mix', 'Mix', 0, 100, 30, 1, '%', 'linear', '/Audio_Effect_Builder_Chorus/Chorus_Mix'),
+      parameter('output', 'Output', -24, 12, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Chorus/Chorus_Output'),
+    ],
+  },
+  compressor: {
+    type: 'compressor', name: 'Compressor', shortName: 'COMP', description: 'Control dynamics with linked stereo compression.', definitionVersion: '0.1.0',
+    sourceSha256: '8440fc44c50c362eb6287707d90a9e10033db2d9a5a0a662ef22a93d90db4ff9',
+    wasmSha256: '47913563a1382be3bd7eff04dd26a57a80ecd09c36dbb09d983b38c65b3f9e2d',
+    wasmPath: '/faust/compressor/dsp-module.wasm', metadataPath: '/faust/compressor/dsp-meta.json',
+    parameters: [
+      parameter('threshold', 'Threshold', -48, 0, -18, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Compressor/Compressor_Threshold'),
+      parameter('ratio', 'Ratio', 1, 20, 4, 0.1, 'ratio', 'log', '/Audio_Effect_Builder_Compressor/Compressor_Ratio'),
+      parameter('attack', 'Attack', 0.1, 200, 20, 0.1, 'ms', 'log', '/Audio_Effect_Builder_Compressor/Compressor_Attack'),
+      parameter('release', 'Release', 20, 2000, 250, 1, 'ms', 'log', '/Audio_Effect_Builder_Compressor/Compressor_Release'),
+      parameter('makeup', 'Makeup', -12, 24, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Compressor/Compressor_Makeup'),
+      parameter('mix', 'Mix', 0, 100, 100, 1, '%', 'linear', '/Audio_Effect_Builder_Compressor/Compressor_Mix'),
+    ],
+  },
 };
 
 export const MODULE_TYPES = Object.keys(MODULE_CATALOG) as ModuleType[];
@@ -298,9 +329,20 @@ export const PRE_AUDIBILITY_ENGINE_PROVENANCE = Object.freeze({
     reverb: '95310a51570124fe27680d0946cf54c8316ec96e6afa3ce0ac619c61676adda3',
   },
 });
-export const ENGINE_PROVENANCE: EngineProvenance = {
+export const PRE_CHORUS_COMPRESSOR_ENGINE_PROVENANCE = Object.freeze({
   effectDefinition: 'audio-effect-builder-faust', definitionVersion: '0.1.0', faustWasmVersion: '0.16.6', faustCompilerVersion: '2.85.9',
   libraries: { analyzers: '1.3.0', basics: '1.22.0', delays: '1.2.0', filters: '1.7.1', maths: '2.9.0', misceffects: '2.5.2', oscillators: '1.7.0', platform: '1.3.0', reverbs: '1.5.1', signals: '1.6.0' },
+  moduleSourceSha256: {
+    gain: 'caca77ad2ac86cf0ef26f62a22d1d0c62a7d4b7f86c6c4e3fef77e9d19fbd35d',
+    filter: '076d102ec4209b0a9e33d4199e302896a3951017e88a1e821ec106347c03ee7f',
+    saturation: '9074635f03744b4b4f280eac15839585716d4a23a732ac7c59e26eb1c3bab068',
+    delay: 'fb9a020e31f2b4f290a17ad2a18ec5d87c6f701195af2bc95e38f2d99cef1b92',
+    reverb: 'bec502b0ca2f0b01dd7c10051cd848417f24ca0eb45b73c2854a49da54abb5ff',
+  },
+});
+export const ENGINE_PROVENANCE: EngineProvenance = {
+  effectDefinition: 'audio-effect-builder-faust', definitionVersion: '0.1.0', faustWasmVersion: '0.16.6', faustCompilerVersion: '2.85.9',
+  libraries: { analyzers: '1.3.0', basics: '1.22.0', compressors: '1.6.0', delays: '1.2.0', filters: '1.7.1', maths: '2.9.0', misceffects: '2.5.2', oscillators: '1.7.0', platform: '1.3.0', reverbs: '1.5.1', signals: '1.6.0' },
   moduleSourceSha256: Object.fromEntries(MODULE_TYPES.map((type) => [type, MODULE_CATALOG[type].sourceSha256])) as Record<ModuleType, string>,
 };
 
@@ -354,11 +396,13 @@ export function getEffectiveParameter(project: ProjectV2, nodeId: string, paramI
 
 export function formatParameter(definition: ParameterDefinition, value: number) {
   if (definition.kind === 'choice') return definition.choices?.find((choice) => choice.value === value)?.label ?? String(value);
+  if (definition.unit === 'Hz' && definition.max <= 20) return `${value.toFixed(value < 1 ? 2 : 1)} Hz`;
   if (definition.unit === 'Hz') return value >= 1000 ? `${(value / 1000).toFixed(value >= 10000 ? 1 : 2)} kHz` : `${Math.round(value)} Hz`;
   if (definition.unit === '%') return `${Math.round(value)}%`;
   if (definition.unit === 'Q') return value.toFixed(2);
   if (definition.unit === 'ms') return `${Math.round(value)} ms`;
   if (definition.unit === 's') return `${value.toFixed(1)} s`;
+  if (definition.unit === 'ratio') return `${value.toFixed(1)}:1`;
   return `${value.toFixed(1)} dB`;
 }
 
@@ -696,14 +740,15 @@ export function parseProject(value: unknown): ProjectV2 {
 }
 
 /** Migrates only named, exact historical v0.1 engines into the current engine. */
-export function upgradeSaturationProject(value: unknown): ProjectV2 {
+export function upgradeProjectEngine(value: unknown): ProjectV2 {
   if (!isRecord(value) || value.schemaVersion !== 2 || !isRecord(value.nodes)) return validateProject(value);
   const project = structuredClone(value) as Record<string, unknown>;
   const isPrePair1 = sameJson(project.engine, PRE_PAIR1_ENGINE_PROVENANCE);
   const isPreCanonicalCompiler = sameJson(project.engine, PRE_CANONICAL_COMPILER_ENGINE_PROVENANCE);
   const isPreSaturationV2 = sameJson(project.engine, PRE_SATURATION_V2_ENGINE_PROVENANCE);
   const isPreAudibility = sameJson(project.engine, PRE_AUDIBILITY_ENGINE_PROVENANCE);
-  if (!isPrePair1 && !isPreCanonicalCompiler && !isPreSaturationV2 && !isPreAudibility) return validateProject(project);
+  const isPreChorusCompressor = sameJson(project.engine, PRE_CHORUS_COMPRESSOR_ENGINE_PROVENANCE);
+  if (!isPrePair1 && !isPreCanonicalCompiler && !isPreSaturationV2 && !isPreAudibility && !isPreChorusCompressor) return validateProject(project);
   if (isPreSaturationV2) {
     for (const node of Object.values(project.nodes as Record<string, unknown>)) {
       if (!isRecord(node) || node.type !== 'saturation' || !isRecord(node.params)) continue;
