@@ -17,3 +17,4 @@ iplug_add_plugin(BeatZGeneratedPlugin
 )
 
 target_include_directories(BeatZGeneratedPlugin-vst3 PRIVATE ${FAUST_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_options(BeatZGeneratedPlugin-vst3 PRIVATE {{NATIVE_DSP_COMPILE_FLAGS}})

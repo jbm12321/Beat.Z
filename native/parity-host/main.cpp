@@ -6,7 +6,6 @@
 #include "pluginterfaces/vst/ivstaudioprocessor.h"
 #include "pluginterfaces/vst/ivstcomponent.h"
 
-#include <cmath>
 #include <cstring>
 #include <cstdint>
 #include <fstream>
@@ -30,15 +29,16 @@ int fail(const std::string& message) {
 } // namespace
 
 int main(int argc, char** argv) {
-  if (argc < 3) return fail("usage: beatz-vst3-render --state-check plugin.vst3 OR plugin.vst3 sample-rate frames output.raw [param-id=value ...]");
+  if (argc < 3) return fail("usage: beatz-vst3-render --state-check plugin.vst3 OR plugin.vst3 sample-rate frames input.raw output.raw [param-id=value ...]");
   const bool stateCheck = std::string(argv[1]) == "--state-check";
-  if (!stateCheck && argc < 5) return fail("render mode requires plugin, sample-rate, frames and output");
+  if (!stateCheck && argc < 6) return fail("render mode requires plugin, sample-rate, frames, input and output");
   const std::string pluginPath = stateCheck ? argv[2] : argv[1];
   const double sampleRate = stateCheck ? 0.0 : std::stod(argv[2]);
   const int32 frames = stateCheck ? 0 : std::stoi(argv[3]);
-  const std::string outputPath = stateCheck ? "" : argv[4];
+  const std::string inputPath = stateCheck ? "" : argv[4];
+  const std::string outputPath = stateCheck ? "" : argv[5];
   std::vector<std::pair<ParamID, ParamValue>> parameters;
-  for (int index = 5; index < argc; ++index) {
+  for (int index = 6; index < argc; ++index) {
     const std::string encoded = argv[index];
     const auto separator = encoded.find('=');
     if (separator == std::string::npos) return fail("invalid parameter argument");
@@ -94,11 +94,13 @@ int main(int argc, char** argv) {
   std::vector<Sample32> inputRight(frames);
   std::vector<Sample32> outputLeft(frames);
   std::vector<Sample32> outputRight(frames);
-  constexpr double pi = 3.1415926535897932384626433832795;
-  for (int32 frame = 0; frame < frames; ++frame) {
-    inputLeft[frame] = static_cast<Sample32>(0.18 * std::sin(2.0 * pi * 330.0 * frame / sampleRate));
-    inputRight[frame] = static_cast<Sample32>(0.13 * std::sin(2.0 * pi * 517.0 * frame / sampleRate));
-  }
+  std::ifstream input(inputPath, std::ios::binary | std::ios::ate);
+  const auto expectedInputBytes = static_cast<std::streamsize>(frames * 2 * sizeof(Sample32));
+  if (!input || input.tellg() != expectedInputBytes) return fail("input render fixture has an invalid size");
+  input.seekg(0, std::ios::beg);
+  input.read(reinterpret_cast<char*>(inputLeft.data()), static_cast<std::streamsize>(inputLeft.size() * sizeof(Sample32)));
+  input.read(reinterpret_cast<char*>(inputRight.data()), static_cast<std::streamsize>(inputRight.size() * sizeof(Sample32)));
+  if (!input) return fail("could not read render input");
 
   ParameterChanges changes(static_cast<int32>(parameters.size()));
   for (const auto& [parameterId, normalized] : parameters) {

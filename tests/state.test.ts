@@ -71,6 +71,26 @@ test('persistence upgrades current Saturation saves to Soft Clip without alterin
   });
 });
 
+test('persistence moves exact Faust 2.86.2 projects to the canonical 2.85.9 compiler without changing project content', () => {
+  const storage = new MemoryStorage();
+  const project = applyProjectCommands(createInitialProject(), [{ type: 'add_module', moduleType: 'filter', nodeId: 'filter-1' }], 'human');
+  const previous = structuredClone(project);
+  Object.assign(previous.engine, {
+    faustCompilerVersion: '2.86.2',
+    libraries: { ...previous.engine.libraries, basics: '1.23.0' },
+  });
+  storage.setItem(STORAGE_KEY, JSON.stringify(previous));
+
+  const restored = restorePersistedProject(storage);
+
+  assert.equal(restored.source, 'current');
+  assert.equal(restored.project.engine.faustCompilerVersion, '2.85.9');
+  assert.deepEqual(restored.project.chain, project.chain);
+  assert.deepEqual(restored.project.nodes, project.nodes);
+  assert.deepEqual(restored.project.macros, project.macros);
+  assert.equal(restored.project.revision, project.revision);
+});
+
 test('undo and redo create monotonic revisions while restoring whole snapshots', () => {
   const initial = createInitialProject();
   const renamed = applyProjectCommands(initial, [{ type: 'rename_project', name: 'One' }], 'human');

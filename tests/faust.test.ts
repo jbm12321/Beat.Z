@@ -41,7 +41,9 @@ test('committed Faust sources and metadata match the catalog fingerprints and st
     const source = await readFile(join(root, 'faust', `${type}.dsp`));
     const metadata = JSON.parse(await readFile(join(root, 'public', 'faust', type, 'dsp-meta.json'), 'utf8'));
     assert.equal(createHash('sha256').update(source).digest('hex'), MODULE_CATALOG[type].sourceSha256);
-    assert.equal(metadata.version, '2.86.2');
+    assert.equal(metadata.version, '2.85.9');
+    assert.match(metadata.compile_options, /-single/u);
+    assert.match(metadata.compile_options, /-ftz 2/u);
     assert.equal(metadata.inputs, 2);
     assert.equal(metadata.outputs, 2);
     const addresses = JSON.stringify(metadata.ui);

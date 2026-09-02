@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { setTimeout as delay } from 'node:timers/promises';
-import { asNativeBuildFailure } from '../native/lib/errors.mjs';
+import { asNativeBuildFailure, formatNativeBuildDiagnostics } from '../native/lib/errors.mjs';
 import { publishVerifiedVst3Bundle } from '../native/lib/publish.mjs';
 import { runNativeBuild } from '../native/lib/runner.mjs';
 import { assertHttpsEndpoint } from '../native/lib/safety.mjs';
@@ -58,6 +58,8 @@ async function build(job) {
     console.log(`Ready: ${result.artifact.path}`);
   } catch (error) {
     const failure = asNativeBuildFailure(error);
+    const diagnostics = formatNativeBuildDiagnostics(error);
+    if (diagnostics) console.error(diagnostics);
     await request(`/api/vst3-worker/${encodeURIComponent(job.id)}/result`, { status: 'failed', error: failure.message });
     console.error(`Build failed: ${failure.message}`);
   }

@@ -292,7 +292,11 @@ export async function materializeNativeTemplates(plan, options = {}) {
     BUNDLE_IDENTIFIER: plan.identity.bundleIdentifier, VST3_COMPONENT_FUID: plan.identity.vst3ComponentFuid,
     VST3_CONTROLLER_FUID: plan.identity.vst3ControllerFuid, NATIVE_SPEC_HASH: plan.request.dspHash.toUpperCase(),
   });
-  const generatedCmake = renderTemplate(cmakeTemplate, { VERSION: plan.plugin.version, BUNDLE_IDENTIFIER: plan.identity.bundleIdentifier });
+  const generatedCmake = renderTemplate(cmakeTemplate, {
+    VERSION: plan.plugin.version,
+    BUNDLE_IDENTIFIER: plan.identity.bundleIdentifier,
+    NATIVE_DSP_COMPILE_FLAGS: plan.request.toolchain.compiler.dspFlags.join(' '),
+  });
   const chain = renderTemplate(chainTemplate, {
     DSP_INCLUDES: plan.activeNodes.map((node) => `#include "dsp/${node.className}.hpp"`).join('\n'),
     NODE_COUNT: plan.activeNodes.length,

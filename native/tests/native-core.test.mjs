@@ -4,9 +4,12 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import test from 'node:test';
 import { saveVerifiedVst3Bundle } from '../lib/artifact.mjs';
+import { sha256Canonical } from '../lib/canonical.mjs';
 import { createAutomaticNativeParameters, createNativeEditorModel, createNativeGenerationPlan, deriveNativeIdentity, defaultExportRoot, materializeNativeTemplates } from '../lib/generation.mjs';
-import { compareStereoParity, createParityScenarios } from '../lib/parity.mjs';
+import { inspectNativeToolchain } from '../lib/doctor.mjs';
+import { compareStereoParity, createParityScenarios, parityDiagnostics } from '../lib/parity.mjs';
 import { publicArtifactDetails } from '../lib/publish.mjs';
+import { asNativeBuildFailure, formatNativeBuildDiagnostics, NativeBuildError } from '../lib/errors.mjs';
 import { loadToolchainLock, validateNativeBuildRequest } from '../lib/spec.mjs';
 import { analyzeStereo } from '../../src/features/audio-builder/audio/analysis.ts';
 import { freezeProjectRevision } from '../../src/features/audio-builder/domain/build.ts';
@@ -45,17 +48,17 @@ test('each public artifact URL is a unique, predictable ZIP release URL', () => 
 });
 
 test('parity scenarios cover valid endpoints for choices and 0, 0.5, 1 for continuous VST3 parameters', () => {
-  assert.deepEqual(createParityScenarios([]), [{ id: 'defaults', values: [] }]);
+  assert.deepEqual(createParityScenarios([]), [{ id: 'defaults', values: [], parameterIndex: null, normalizedValue: null }]);
   assert.deepEqual(createParityScenarios([
     { value: 0, definition: { min: 0, max: 1, choices: [0, 1] } },
     { value: 0.75, definition: { min: 0, max: 100 } },
   ]), [
-    { id: 'defaults', values: [0, 0.75] },
-    { id: 'parameter-0-0', values: [0, 0.75] },
-    { id: 'parameter-0-1', values: [1, 0.75] },
-    { id: 'parameter-1-0', values: [0, 0] },
-    { id: 'parameter-1-0_5', values: [0, 50] },
-    { id: 'parameter-1-1', values: [0, 100] },
+    { id: 'defaults', values: [0, 0.75], parameterIndex: null, normalizedValue: null },
+    { id: 'parameter-0-0', values: [0, 0.75], parameterIndex: 0, normalizedValue: 0 },
+    { id: 'parameter-0-1', values: [1, 0.75], parameterIndex: 0, normalizedValue: 1 },
+    { id: 'parameter-1-0', values: [0, 0], parameterIndex: 1, normalizedValue: 0 },
+    { id: 'parameter-1-0_5', values: [0, 50], parameterIndex: 1, normalizedValue: 0.5 },
+    { id: 'parameter-1-1', values: [0, 100], parameterIndex: 1, normalizedValue: 1 },
   ]);
 });
 
@@ -73,6 +76,88 @@ test('parity comparison separately enforces peak and sustained-error ceilings', 
   assert.equal(compareStereoParity(browser, isolatedPeak, { maxTolerance: 5e-4, rmsTolerance: 1.5e-4 }).passed, true);
   const sustainedMismatch = [new Float32Array(100).fill(1.5e-4), new Float32Array(100)];
   assert.equal(compareStereoParity(browser, sustainedMismatch, { maxTolerance: 5e-4, rmsTolerance: 1e-4 }).passed, false);
+  const knownSeriousMismatch = [new Float32Array(100).fill(9.987e-4), new Float32Array(100).fill(9.987e-4)];
+  assert.equal(compareStereoParity(browser, knownSeriousMismatch, { maxTolerance: 1e-3, rmsTolerance: 1.5e-4 }).passed, false);
+});
+
+test('parity diagnostics identify the peak channel, frame, and processing region', () => {
+  const browser = [new Float32Array(256), new Float32Array(256)];
+  const native = [new Float32Array(256), new Float32Array(256)];
+  native[1][140] = 4e-4;
+  const comparison = compareStereoParity(browser, native, { maxTolerance: 5e-4, rmsTolerance: 1.5e-4 });
+  assert.equal(comparison.peakChannel, 1);
+  assert.equal(comparison.peakFrame, 140);
+  assert.equal(comparison.peakInInitialBlock, false);
+  assert.equal(comparison.initialBlockRmsError, 0);
+  assert.ok(comparison.steadyStateRmsError > 0);
+});
+
+test('parity diagnostics name the scenario, module, parameter, values, time, and block metrics', () => {
+  const diagnostics = parityDiagnostics(
+    48000,
+    { id: 'parameter-2-1', values: [0, 80, 20], parameterIndex: 2, normalizedValue: 1 },
+    [null, null, { moduleLabel: 'Filter 1', controlLabel: 'Resonance' }],
+    {
+      maxAbsoluteError: 8.418e-4,
+      maxTolerance: 5e-4,
+      rmsError: 4.936e-5,
+      rmsTolerance: 1.5e-4,
+      peakChannel: 1,
+      peakFrame: 144,
+      peakInInitialBlock: false,
+      initialBlockRmsError: 1e-6,
+      steadyStateRmsError: 5e-5,
+    },
+  );
+  assert.deepEqual(diagnostics, {
+    sampleRate: 48000,
+    scenarioId: 'parameter-2-1',
+    module: 'Filter 1',
+    parameter: 'Resonance',
+    parameterIndex: 2,
+    testedNativeValue: 20,
+    normalizedValue: 1,
+    maxAbsoluteError: 8.418e-4,
+    maxTolerance: 5e-4,
+    rmsError: 4.936e-5,
+    rmsTolerance: 1.5e-4,
+    peakChannel: 'right',
+    peakFrame: 144,
+    peakTimeMs: 3,
+    peakInInitialBlock: false,
+    initialBlockRmsError: 1e-6,
+    steadyStateRmsError: 5e-5,
+  });
+});
+
+test('native diagnostics stay private while the public failure remains concise', () => {
+  const error = new NativeBuildError('parity_mismatch', 'Browser/VST3 parity did not match for Filter 1 Resonance at 48000 Hz.', {
+    diagnostics: { sampleRate: 48000, peakFrame: 140, internalPath: '/private/tmp/build' },
+  });
+  assert.deepEqual(asNativeBuildFailure(error), {
+    code: 'parity_mismatch',
+    message: 'Browser/VST3 parity did not match for Filter 1 Resonance at 48000 Hz.',
+    retryable: false,
+  });
+  assert.doesNotMatch(asNativeBuildFailure(error).message, /peakFrame|private\/tmp/u);
+  assert.match(formatNativeBuildDiagnostics(error), /"peakFrame":140/u);
+});
+
+test('private toolchain evidence is logged without exposing versions or paths publicly', () => {
+  const error = new NativeBuildError('native_toolchain_mismatch', 'Expected Faust 2.85.9 at /private/tool/faust.', {
+    publicMessage: 'The Mac build worker is not ready. Start it again after updating its toolchain.',
+    diagnostics: { expected: '2.85.9', actual: '2.85.5' },
+  });
+  assert.equal(asNativeBuildFailure(error).message, 'The Mac build worker is not ready. Start it again after updating its toolchain.');
+  assert.doesNotMatch(asNativeBuildFailure(error).message, /2\.85|private/u);
+  assert.match(formatNativeBuildDiagnostics(error), /Expected Faust 2\.85\.9/u);
+});
+
+test('compiler output and filesystem paths never enter the public build failure', () => {
+  const error = new NativeBuildError('native_compile_failed', 'clang failed at /private/tmp/job with an internal stack trace');
+  assert.equal(asNativeBuildFailure(error).message, 'The VST3 could not be built by the Mac worker.');
+  assert.doesNotMatch(asNativeBuildFailure(error).message, /clang|private|stack/u);
+  assert.match(formatNativeBuildDiagnostics(error), /clang failed/u);
 });
 
 test('the Mac independently validates the Site request hashes and allowlist', async () => {
@@ -87,10 +172,54 @@ test('the Mac independently validates the Site request hashes and allowlist', as
   assert.throws(() => validateNativeBuildRequest(changed, lock), /DSP hash/i);
 });
 
+test('the native request hash includes DSP-affecting Faust code-generation flags', async () => {
+  const request = await nativeRequestForModules(['filter']);
+  const changed = structuredClone(request);
+  changed.toolchain.faust.codegenFlags = ['-single'];
+  assert.equal(request.dspHash, sha256Canonical({ dsp: request.dsp, toolchain: request.toolchain }));
+  assert.notEqual(request.dspHash, sha256Canonical({ dsp: changed.dsp, toolchain: changed.toolchain }));
+});
+
+test('the native request hash changes with the Faust compiler version', async () => {
+  const request = await nativeRequestForModules(['filter']);
+  const changed = structuredClone(request);
+  changed.toolchain.faust.version = '2.85.5';
+  assert.notEqual(request.dspHash, sha256Canonical({ dsp: changed.dsp, toolchain: changed.toolchain }));
+});
+
+test('the native request hash includes DSP floating-point compiler flags', async () => {
+  const request = await nativeRequestForModules(['saturation']);
+  const changed = structuredClone(request);
+  changed.toolchain.compiler.dspFlags = [];
+  assert.notEqual(request.dspHash, sha256Canonical({ dsp: changed.dsp, toolchain: changed.toolchain }));
+});
+
+test('Faust engine and toolchain version mismatches are rejected before generation', async () => {
+  const request = await nativeRequestForModules(['gain']);
+  const lock = await loadToolchainLock();
+  const changed = structuredClone(request);
+  changed.dsp.engine.faustCompilerVersion = '2.85.5';
+  changed.dspHash = sha256Canonical({ dsp: changed.dsp, toolchain: changed.toolchain });
+  assert.throws(() => validateNativeBuildRequest(changed, lock), /Faust compiler version mismatch/u);
+});
+
+test('the native doctor verifies the real pinned Faust executable and matching headers', async () => {
+  const doctor = await inspectNativeToolchain({ lock: await loadToolchainLock() });
+  assert.deepEqual(doctor.versions, { faust: '2.85.9', faustHeaders: '2.85.9' });
+  assert.equal(doctor.paths.faustIncludeRoot, '/opt/homebrew/opt/faust/include');
+});
+
 test('the generated audio callback never resizes its buffers', async () => {
   const template = await readFile(new URL('../templates/BeatZStaticChain.hpp.tpl', import.meta.url), 'utf8');
   const processBody = template.slice(template.indexOf('void process'));
   assert.doesNotMatch(processBody, /\.resize\s*\(/u);
+});
+
+test('the parity host consumes the browser fixture instead of synthesizing a second input', async () => {
+  const source = await readFile(new URL('../parity-host/main.cpp', import.meta.url), 'utf8');
+  assert.match(source, /inputPath/u);
+  assert.match(source, /inputLeft\.data\(\)/u);
+  assert.doesNotMatch(source, /std::sin|constexpr double pi/u);
 });
 
 test('the native editor preserves every Saturation v2 parameter in visible wrapped rows', async () => {
@@ -158,6 +287,7 @@ test('native exports expose every active effect parameter in an editable VST3 ed
   assert.match(config, /ROBOTO_FN "Roboto-Regular\.ttf"/u);
   assert.doesNotMatch(cmake, /UI NONE|NO_IGRAPHICS/u);
   assert.match(cmake, /RESOURCES \$\{IPLUG2_DIR\}\/Examples\/IPlugEffect\/resources\/fonts\/Roboto-Regular\.ttf/u);
+  assert.match(cmake, /target_compile_options\(BeatZGeneratedPlugin-vst3 PRIVATE -ffp-contract=off\)/u);
   assert.match(source, /LoadFont\("Roboto-Regular", ROBOTO_FN\)/u);
   assert.match(source, /#undef BUNDLE_ID\s+#define BUNDLE_ID BUNDLE_IDENTIFIER/u);
   assert.match(source, /LoadFont\("Roboto-Regular", "Helvetica", ETextStyle::Normal\)/u);

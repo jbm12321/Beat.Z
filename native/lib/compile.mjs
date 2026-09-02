@@ -61,7 +61,7 @@ export async function compileNativeVst3Sources(prepared, options = {}) {
   }
   const buildRoot = resolveWithin(plan.paths.workspaceRoot, 'build');
   await mkdir(buildRoot, { recursive: true, mode: 0o700 });
-  const faustIncludeRoot = resolve(options.faustIncludeRoot ?? '/opt/homebrew/include');
+  const faustIncludeRoot = resolve(options.faustIncludeRoot ?? doctor.paths.faustIncludeRoot);
   const run = options.run ?? defaultRun;
   const configure = await run('cmake', [
     '--fresh',
