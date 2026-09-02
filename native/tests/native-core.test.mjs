@@ -275,24 +275,29 @@ test('the native editor preserves every Saturation v2 parameter in visible wrapp
   assert.equal('pages' in editor, false);
 });
 
-test('the native catalog and generic editor represent Delay, Reverb, Chorus, and Compressor without template changes', async () => {
-  assert.deepEqual(Object.keys(NATIVE_MODULE_CATALOG), ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor']);
+test('the native catalog and generic editor represent Delay, Reverb, Chorus, Compressor, and Phaser without template changes', async () => {
+  assert.deepEqual(Object.keys(NATIVE_MODULE_CATALOG), ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor', 'phaser']);
   assert.deepEqual(NATIVE_MODULE_CATALOG.filter.parameters.mode.choices, [0, 1, 2, 3]);
   assert.deepEqual(NATIVE_MODULE_CATALOG.delay.parameters.mode.choiceLabels, ['Digital', 'Ping-Pong', 'Tape']);
   assert.deepEqual(NATIVE_MODULE_CATALOG.reverb.parameters.mode.choiceLabels, ['Room', 'Hall', 'Plate']);
   assert.deepEqual(NATIVE_MODULE_CATALOG.chorus.parameters.mode.choiceLabels, ['Classic', 'Wide', 'Ensemble']);
-  assert.deepEqual(Object.keys(NATIVE_MODULE_CATALOG.compressor.parameters), ['threshold', 'ratio', 'attack', 'release', 'makeup', 'mix']);
+  assert.deepEqual(NATIVE_MODULE_CATALOG.compressor.parameters.mode.choiceLabels, ['Clean', 'Punch', 'Glue']);
+  assert.deepEqual(Object.keys(NATIVE_MODULE_CATALOG.compressor.parameters), ['mode', 'threshold', 'ratio', 'attack', 'release', 'makeup', 'mix']);
+  assert.deepEqual(NATIVE_MODULE_CATALOG.phaser.parameters.mode.choiceLabels, ['Classic', 'Wide', 'Deep']);
   assert.equal(SOURCE_FINGERPRINTS.delay, 'fb9a020e31f2b4f290a17ad2a18ec5d87c6f701195af2bc95e38f2d99cef1b92');
   assert.equal(SOURCE_FINGERPRINTS.reverb, 'bec502b0ca2f0b01dd7c10051cd848417f24ca0eb45b73c2854a49da54abb5ff');
   assert.equal(NATIVE_MODULE_CATALOG.delay.wasmSha256, '6a5495bfa670ef8435cd8a2bf282f16e64e5a447ef3b5dbeabff3f4e77cba99c');
   assert.equal(NATIVE_MODULE_CATALOG.reverb.wasmSha256, 'd03ff0e330e877212436fed13d983036605d29b5aac719775abc45be402ba12a');
   assert.equal(SOURCE_FINGERPRINTS.chorus, '19432a2946b7711dc6f4d694e3fdc5c665df67dddbcadc59622c4052539aa419');
-  assert.equal(SOURCE_FINGERPRINTS.compressor, '8440fc44c50c362eb6287707d90a9e10033db2d9a5a0a662ef22a93d90db4ff9');
-  const request = await nativeRequestForModules(['delay', 'reverb', 'chorus', 'compressor']);
+  assert.equal(SOURCE_FINGERPRINTS.compressor, '5c63fd9f14183aae0c1b3b1cd4a22cf674623bb39a6508218d1857599b8232d6');
+  assert.equal(SOURCE_FINGERPRINTS.phaser, 'b812485b365ccf92ba7fb8680feced1b3ce27b86a568c8634ca6ce949c827c04');
+  assert.equal(NATIVE_MODULE_CATALOG.compressor.wasmSha256, '5b8c083fea87784b1005ad39ca9b37be255d8852b6d96e4e6e2abb6447d14631');
+  assert.equal(NATIVE_MODULE_CATALOG.phaser.wasmSha256, 'efb34fc50e334da4c1b2c3886a35906f359881ddba8aabd52f123cd4f525741c');
+  const request = await nativeRequestForModules(['delay', 'reverb', 'chorus', 'compressor', 'phaser']);
   const editor = createNativeEditorModel(createAutomaticNativeParameters(request));
-  assert.equal(editor.knobCount, 22);
-  assert.equal(editor.switchCount, 3);
-  assert.deepEqual(editor.rows.flatMap((row) => row.modules.map((module) => module.label)), ['Delay 1', 'Reverb 1', 'Chorus 1', 'Compressor 1']);
+  assert.equal(editor.knobCount, 28);
+  assert.equal(editor.switchCount, 5);
+  assert.deepEqual(editor.rows.flatMap((row) => row.modules.map((module) => module.label)), ['Delay 1', 'Reverb 1', 'Chorus 1', 'Compressor 1', 'Phaser 1']);
 });
 
 test('the native editor wraps complete modules into visible rows without pagination', async () => {

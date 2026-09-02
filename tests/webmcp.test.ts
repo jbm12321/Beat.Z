@@ -83,11 +83,13 @@ test('registered tools share revision-safe project state and cannot bypass human
 
   const primitives = await tools.get('list-audio-primitives')!.execute({});
   const primitiveCatalog = (primitives.structuredContent as { primitives: Record<string, { parameters: Array<{ id: string; choices?: Array<{ label: string }> }> }> }).primitives;
-  assert.deepEqual(Object.keys(primitiveCatalog), ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor']);
+  assert.deepEqual(Object.keys(primitiveCatalog), ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor', 'phaser']);
   assert.deepEqual(primitiveCatalog.delay.parameters[0].choices?.map((choice) => choice.label), ['Digital', 'Ping-Pong', 'Tape']);
   assert.deepEqual(primitiveCatalog.reverb.parameters[0].choices?.map((choice) => choice.label), ['Room', 'Hall', 'Plate']);
   assert.deepEqual(primitiveCatalog.chorus.parameters[0].choices?.map((choice) => choice.label), ['Classic', 'Wide', 'Ensemble']);
-  assert.deepEqual(primitiveCatalog.compressor.parameters.map((parameter) => parameter.id), ['threshold', 'ratio', 'attack', 'release', 'makeup', 'mix']);
+  assert.deepEqual(primitiveCatalog.compressor.parameters[0].choices?.map((choice) => choice.label), ['Clean', 'Punch', 'Glue']);
+  assert.deepEqual(primitiveCatalog.compressor.parameters.map((parameter) => parameter.id), ['mode', 'threshold', 'ratio', 'attack', 'release', 'makeup', 'mix']);
+  assert.deepEqual(primitiveCatalog.phaser.parameters[0].choices?.map((choice) => choice.label), ['Classic', 'Wide', 'Deep']);
 
   const propose = await tools.get('propose-audio-project-patch')!.execute({
     expectedRevision: 0,

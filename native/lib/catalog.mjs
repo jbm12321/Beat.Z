@@ -67,14 +67,28 @@ export const NATIVE_MODULE_CATALOG = Object.freeze({
   }),
   compressor: Object.freeze({
     source: 'faust/compressor.dsp',
-    wasmSha256: '47913563a1382be3bd7eff04dd26a57a80ecd09c36dbb09d983b38c65b3f9e2d',
+    wasmSha256: '5b8c083fea87784b1005ad39ca9b37be255d8852b6d96e4e6e2abb6447d14631',
     parameters: Object.freeze({
+      mode: Object.freeze({ name: 'Mode', min: 0, max: 2, step: 1, unit: '', faustPath: '/Audio_Effect_Builder_Compressor/Compressor_Mode', scale: 'linear', choices: [0, 1, 2], choiceLabels: ['Clean', 'Punch', 'Glue'] }),
       threshold: Object.freeze({ name: 'Threshold', min: -48, max: 0, step: 0.1, unit: 'dB', faustPath: '/Audio_Effect_Builder_Compressor/Compressor_Threshold', scale: 'linear' }),
       ratio: Object.freeze({ name: 'Ratio', min: 1, max: 20, step: 0.1, unit: ':1', faustPath: '/Audio_Effect_Builder_Compressor/Compressor_Ratio', scale: 'log' }),
       attack: Object.freeze({ name: 'Attack', min: 0.1, max: 200, step: 0.1, unit: 'ms', faustPath: '/Audio_Effect_Builder_Compressor/Compressor_Attack', scale: 'log' }),
       release: Object.freeze({ name: 'Release', min: 20, max: 2000, step: 1, unit: 'ms', faustPath: '/Audio_Effect_Builder_Compressor/Compressor_Release', scale: 'log' }),
       makeup: Object.freeze({ name: 'Makeup', min: -12, max: 24, step: 0.1, unit: 'dB', faustPath: '/Audio_Effect_Builder_Compressor/Compressor_Makeup', scale: 'linear' }),
       mix: Object.freeze({ name: 'Mix', min: 0, max: 100, step: 1, unit: '%', faustPath: '/Audio_Effect_Builder_Compressor/Compressor_Mix', scale: 'linear' }),
+    }),
+  }),
+  phaser: Object.freeze({
+    source: 'faust/phaser.dsp',
+    wasmSha256: 'efb34fc50e334da4c1b2c3886a35906f359881ddba8aabd52f123cd4f525741c',
+    parameters: Object.freeze({
+      mode: Object.freeze({ name: 'Mode', min: 0, max: 2, step: 1, unit: '', faustPath: '/Audio_Effect_Builder_Phaser/Phaser_Mode', scale: 'linear', choices: [0, 1, 2], choiceLabels: ['Classic', 'Wide', 'Deep'] }),
+      rate: Object.freeze({ name: 'Rate', min: 0.05, max: 5, step: 0.01, unit: 'Hz', faustPath: '/Audio_Effect_Builder_Phaser/Phaser_Rate', scale: 'log' }),
+      depth: Object.freeze({ name: 'Depth', min: 0, max: 100, step: 1, unit: '%', faustPath: '/Audio_Effect_Builder_Phaser/Phaser_Depth', scale: 'linear' }),
+      center: Object.freeze({ name: 'Center', min: 100, max: 2000, step: 1, unit: 'Hz', faustPath: '/Audio_Effect_Builder_Phaser/Phaser_Center', scale: 'log' }),
+      feedback: Object.freeze({ name: 'Feedback', min: -85, max: 85, step: 1, unit: '%', faustPath: '/Audio_Effect_Builder_Phaser/Phaser_Feedback', scale: 'linear' }),
+      mix: Object.freeze({ name: 'Mix', min: 0, max: 100, step: 1, unit: '%', faustPath: '/Audio_Effect_Builder_Phaser/Phaser_Mix', scale: 'linear' }),
+      output: Object.freeze({ name: 'Output', min: -24, max: 12, step: 0.1, unit: 'dB', faustPath: '/Audio_Effect_Builder_Phaser/Phaser_Output', scale: 'linear' }),
     }),
   }),
 });
@@ -86,5 +100,6 @@ export const SOURCE_FINGERPRINTS = Object.freeze({
   delay: 'fb9a020e31f2b4f290a17ad2a18ec5d87c6f701195af2bc95e38f2d99cef1b92',
   reverb: 'bec502b0ca2f0b01dd7c10051cd848417f24ca0eb45b73c2854a49da54abb5ff',
   chorus: '19432a2946b7711dc6f4d694e3fdc5c665df67dddbcadc59622c4052539aa419',
-  compressor: '8440fc44c50c362eb6287707d90a9e10033db2d9a5a0a662ef22a93d90db4ff9',
+  compressor: '5c63fd9f14183aae0c1b3b1cd4a22cf674623bb39a6508218d1857599b8232d6',
+  phaser: 'b812485b365ccf92ba7fb8680feced1b3ce27b86a568c8634ca6ce949c827c04',
 });

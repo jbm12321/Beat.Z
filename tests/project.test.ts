@@ -120,8 +120,8 @@ test('exported project JSON validates as a portable round trip', () => {
   assert.deepEqual(restored, project);
 });
 
-test('the Faust primitive catalog exposes the seven exact shared contracts', () => {
-  assert.deepEqual(MODULE_TYPES, ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor']);
+test('the Faust primitive catalog exposes the eight exact shared contracts', () => {
+  assert.deepEqual(MODULE_TYPES, ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor', 'phaser']);
   assert.deepEqual(MODULE_CATALOG.filter.parameters.map((parameter) => parameter.id), ['mode', 'cutoff', 'resonance']);
   assert.equal(MODULE_CATALOG.filter.parameters[0].kind, 'choice');
   assert.deepEqual(MODULE_CATALOG.filter.parameters[0].choices, [
@@ -159,8 +159,17 @@ test('the Faust primitive catalog exposes the seven exact shared contracts', () 
     { value: 0, label: 'Classic' }, { value: 1, label: 'Wide' }, { value: 2, label: 'Ensemble' },
   ]);
   assert.equal(MODULE_CATALOG.chorus.parameters[0].mappable, false);
-  assert.deepEqual(MODULE_CATALOG.compressor.parameters.map((parameter) => parameter.id), ['threshold', 'ratio', 'attack', 'release', 'makeup', 'mix']);
+  assert.deepEqual(MODULE_CATALOG.compressor.parameters.map((parameter) => parameter.id), ['mode', 'threshold', 'ratio', 'attack', 'release', 'makeup', 'mix']);
+  assert.deepEqual(MODULE_CATALOG.compressor.parameters[0].choices, [
+    { value: 0, label: 'Clean' }, { value: 1, label: 'Punch' }, { value: 2, label: 'Glue' },
+  ]);
+  assert.equal(MODULE_CATALOG.compressor.parameters[0].mappable, false);
   assert.equal(MODULE_CATALOG.compressor.parameters.find((parameter) => parameter.id === 'ratio')?.unit, 'ratio');
+  assert.deepEqual(MODULE_CATALOG.phaser.parameters.map((parameter) => parameter.id), ['mode', 'rate', 'depth', 'center', 'feedback', 'mix', 'output']);
+  assert.deepEqual(MODULE_CATALOG.phaser.parameters[0].choices, [
+    { value: 0, label: 'Classic' }, { value: 1, label: 'Wide' }, { value: 2, label: 'Deep' },
+  ]);
+  assert.equal(MODULE_CATALOG.phaser.parameters[0].mappable, false);
   MODULE_TYPES.forEach((type) => {
     const definition = MODULE_CATALOG[type];
     assert.ok(definition.parameters.length > 0);
@@ -179,7 +188,7 @@ test('Pair 1 time units use the domain formatter without UI special cases', () =
 });
 
 test('Compressor ratios use a native-style ratio label without changing existing unit formatting', () => {
-  assert.equal(formatParameter(MODULE_CATALOG.compressor.parameters[1], 4), '4.0:1');
+  assert.equal(formatParameter(MODULE_CATALOG.compressor.parameters[2], 4), '4.0:1');
   assert.equal(formatParameter(MODULE_CATALOG.chorus.parameters[1], 0.8), '0.80 Hz');
 });
 

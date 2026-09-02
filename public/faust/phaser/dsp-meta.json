@@ -1,0 +1,298 @@
+{
+  "name": "Audio Effect Builder Phaser",
+  "filename": "phaser.dsp",
+  "version": "2.85.9",
+  "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2",
+  "library_list": [
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/stdfaust.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/misceffects.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/signals.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/phaflangers.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/maths.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/platform.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/oscillators.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/filters.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/basics.lib"
+  ],
+  "include_pathnames": [
+    "/opt/homebrew/opt/faust/share/faust",
+    "/usr/local/share/faust",
+    "/usr/share/faust",
+    "/Users/baumolinari/Projects/Beat.Z/faust",
+    "/Users/baumolinari/Projects/Beat.Z/faust"
+  ],
+  "size": 288,
+  "code": "aW1wb3J0KCJzdGRmYXVzdC5saWIiKTsKCmRlY2xhcmUgbmFtZSAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIgUGhhc2VyIjsKZGVjbGFyZSB2ZXJzaW9uICIwLjEuMCI7CmRlY2xhcmUgYXV0aG9yICJBdWRpbyBFZmZlY3QgQnVpbGRlciI7CmRlY2xhcmUgbGljZW5zZSAiTUlUIjsKCm1vZGUgPSBoc2xpZGVyKCJQaGFzZXIvTW9kZVtzdHlsZTptZW51eydDbGFzc2ljJzowOydXaWRlJzoxOydEZWVwJzoyfV0iLCAwLjAsIDAuMCwgMi4wLCAxLjApOwpyYXRlSHogPSBoc2xpZGVyKCJQaGFzZXIvUmF0ZVt1bml0Okh6XVtzY2FsZTpsb2ddW3N0eWxlOmtub2JdIiwgMC41LCAwLjA1LCA1LjAsIDAuMDEpIDogc2kuc21vbzsKZGVwdGggPSBoc2xpZGVyKCJQaGFzZXIvRGVwdGhbdW5pdDolXVtzdHlsZTprbm9iXSIsIDYwLjAsIDAuMCwgMTAwLjAsIDEuMCkgLyAxMDAuMCA6IHNpLnNtb287CmNlbnRlckh6ID0gaHNsaWRlcigiUGhhc2VyL0NlbnRlclt1bml0Okh6XVtzY2FsZTpsb2ddW3N0eWxlOmtub2JdIiwgNzAwLjAsIDEwMC4wLCAyMDAwLjAsIDEuMCkgOiBzaS5zbW9vOwpmZWVkYmFjayA9IGhzbGlkZXIoIlBoYXNlci9GZWVkYmFja1t1bml0OiVdW3N0eWxlOmtub2JdIiwgMTUuMCwgLTg1LjAsIDg1LjAsIDEuMCkgLyAxMDAuMCA6IHNpLnNtb287Cm1peCA9IGhzbGlkZXIoIlBoYXNlci9NaXhbdW5pdDolXVtzdHlsZTprbm9iXSIsIDUwLjAsIDAuMCwgMTAwLjAsIDEuMCkgLyAxMDAuMDsKb3V0cHV0RGIgPSBoc2xpZGVyKCJQaGFzZXIvT3V0cHV0W3VuaXQ6ZEJdW3N0eWxlOmtub2JdIiwgMC4wLCAtMjQuMCwgMTIuMCwgMC4xKSA6IHNpLnNtb287Cgppc1dpZGUgPSAobW9kZSA+PSAwLjUpICYgKG1vZGUgPCAxLjUpOwppc0RlZXAgPSBtb2RlID49IDEuNTsKbW9kZVZhbHVlKGNsYXNzaWMsIHdpZGUsIGRlZXApID0gc2VsZWN0Mihpc1dpZGUsIHNlbGVjdDIoaXNEZWVwLCBjbGFzc2ljLCBkZWVwKSwgd2lkZSk7Cgpzd2VlcFNjYWxlID0gbW9kZVZhbHVlKDAuNjUsIDEuMCwgMS4yNSk7CnN3ZWVwUmF0aW8gPSBwb3coMi4wLCBkZXB0aCAqIDEuNSAqIHN3ZWVwU2NhbGUpOwpzd2VlcE1pbmltdW0gPSBtYXgoMjAuMCwgY2VudGVySHogLyBzd2VlcFJhdGlvKTsKbm90Y2hSYXRpbyA9IG1vZGVWYWx1ZSgxLjUwLCAxLjMyLCAxLjIyKTsKc3dlZXBNYXhpbXVtID0gbWluKGNlbnRlckh6ICogc3dlZXBSYXRpbywgKDAuNDUgKiBtYS5TUikgLyBwb3cobm90Y2hSYXRpbywgNikpOwpub3RjaFdpZHRoID0gNTAuMCArIG1vZGVWYWx1ZSgwLjY1LCAwLjg1LCAxLjApICogZGVwdGggKiAxNTAuMDsKYm91bmRlZEZlZWRiYWNrID0gbWluKDAuODUsIG1heCgtMC44NSwgZmVlZGJhY2sgKiBtb2RlVmFsdWUoMC43MCwgMS4wLCAxLjEwKSkpOwpyaWdodFBoYXNlID0gbW9kZVZhbHVlKDAuMCwgMS4wLCAxLjApOwppbnZlcnRXZXQgPSBtb2RlVmFsdWUoMCwgMCwgMSk7CgovLyBwaGFzZXIyIGRlcHRoIDEgaXMgaXRzIGNhbm9uaWNhbCBlcXVhbCBkaXJlY3QvYWxsLXBhc3MgcGhhc2VyIG91dHB1dC4gQmVhdC5aCi8vIGFwcGxpZXMgaXRzIHNpbmdsZSBkcnkvd2V0IG1peGVyIGFmdGVyIG9uZSBzaGFyZWQgc2l4LXN0YWdlIGNvcmUuIFRoZSBtb2RlcyByZW1haW4KLy8gZGlzdGluY3QgdGhyb3VnaCBzd2VlcCBnZW9tZXRyeSwgc3RlcmVvIHBoYXNlLCBmZWVkYmFjaywgYW5kIHdldCBwb2xhcml0eQovLyB3aXRob3V0IGNhbGN1bGF0aW5nIHRocmVlIGNvbXBsZXRlIHBoYXNlcnMgZm9yIGV2ZXJ5IHNhbXBsZS4KcGhhc2VyTGVmdChzaWduYWwpID0gc2lnbmFsIDogcGYucGhhc2VyMl9tb25vKDYsIDAsIG5vdGNoV2lkdGgsIHN3ZWVwTWluaW11bSwgbm90Y2hSYXRpbywgc3dlZXBNYXhpbXVtLCByYXRlSHosIDEuMCwgYm91bmRlZEZlZWRiYWNrLCBpbnZlcnRXZXQpOwpwaGFzZXJSaWdodChzaWduYWwpID0gc2lnbmFsIDogcGYucGhhc2VyMl9tb25vKDYsIHJpZ2h0UGhhc2UsIG5vdGNoV2lkdGgsIHN3ZWVwTWluaW11bSwgbm90Y2hSYXRpbywgc3dlZXBNYXhpbXVtLCByYXRlSHosIDEuMCwgYm91bmRlZEZlZWRiYWNrLCBpbnZlcnRXZXQpOwoKcGhhc2VyKGxlZnQsIHJpZ2h0KSA9IHBoYXNlckxlZnQobGVmdCksIHBoYXNlclJpZ2h0KHJpZ2h0KTsKCnByb2Nlc3MgPSBlZi5kcnlXZXRNaXhlcihtaXgsIHBoYXNlcikgOiBwYXIoY2hhbm5lbCwgMiwgKihiYS5kYjJsaW5lYXIob3V0cHV0RGIpKSk7Cg==",
+  "inputs": 2,
+  "outputs": 2,
+  "meta": [
+    {
+      "author": "Audio Effect Builder"
+    },
+    {
+      "basics.lib/name": "Faust Basic Element Library"
+    },
+    {
+      "basics.lib/version": "1.22.0"
+    },
+    {
+      "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2"
+    },
+    {
+      "filename": "phaser.dsp"
+    },
+    {
+      "filters.lib/fir:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/fir:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/fir:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/iir:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/iir:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/iir:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/lowpass0_highpass1": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/name": "Faust Filters Library"
+    },
+    {
+      "filters.lib/nlf2:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/nlf2:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/nlf2:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/tf2:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/tf2:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/tf2:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/version": "1.7.1"
+    },
+    {
+      "license": "MIT"
+    },
+    {
+      "maths.lib/author": "GRAME"
+    },
+    {
+      "maths.lib/copyright": "GRAME"
+    },
+    {
+      "maths.lib/license": "LGPL with exception"
+    },
+    {
+      "maths.lib/name": "Faust Math Library"
+    },
+    {
+      "maths.lib/version": "2.9.0"
+    },
+    {
+      "misceffects.lib/dryWetMixer:author": "David Braun, revised by Stéphane Letz"
+    },
+    {
+      "misceffects.lib/name": "Misc Effects Library"
+    },
+    {
+      "misceffects.lib/version": "2.5.2"
+    },
+    {
+      "name": "Audio Effect Builder Phaser"
+    },
+    {
+      "oscillators.lib/name": "Faust Oscillator Library"
+    },
+    {
+      "oscillators.lib/version": "1.7.0"
+    },
+    {
+      "phaflangers.lib/name": "Faust Phaser and Flanger Library"
+    },
+    {
+      "phaflangers.lib/version": "1.1.0"
+    },
+    {
+      "platform.lib/name": "Generic Platform Library"
+    },
+    {
+      "platform.lib/version": "1.3.0"
+    },
+    {
+      "signals.lib/name": "Faust Routing Library"
+    },
+    {
+      "signals.lib/version": "1.6.0"
+    },
+    {
+      "version": "0.1.0"
+    }
+  ],
+  "ui": [
+    {
+      "type": "vgroup",
+      "label": "Audio Effect Builder Phaser",
+      "items": [
+        {
+          "type": "hslider",
+          "label": "Phaser/Center",
+          "varname": "fHslider4",
+          "shortname": "Phaser_Center",
+          "address": "/Audio_Effect_Builder_Phaser/Phaser_Center",
+          "index": 68,
+          "meta": [
+            {
+              "scale": "log"
+            },
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "Hz"
+            }
+          ],
+          "init": 700,
+          "min": 100,
+          "max": 2000,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Phaser/Depth",
+          "varname": "fHslider3",
+          "shortname": "Phaser_Depth",
+          "address": "/Audio_Effect_Builder_Phaser/Phaser_Depth",
+          "index": 52,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "%"
+            }
+          ],
+          "init": 60,
+          "min": 0,
+          "max": 100,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Phaser/Feedback",
+          "varname": "fHslider2",
+          "shortname": "Phaser_Feedback",
+          "address": "/Audio_Effect_Builder_Phaser/Phaser_Feedback",
+          "index": 28,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "%"
+            }
+          ],
+          "init": 15,
+          "min": -85,
+          "max": 85,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Phaser/Mix",
+          "varname": "fHslider0",
+          "shortname": "Phaser_Mix",
+          "address": "/Audio_Effect_Builder_Phaser/Phaser_Mix",
+          "index": 0,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "%"
+            }
+          ],
+          "init": 50,
+          "min": 0,
+          "max": 100,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Phaser/Mode",
+          "varname": "fHslider1",
+          "shortname": "Phaser_Mode",
+          "address": "/Audio_Effect_Builder_Phaser/Phaser_Mode",
+          "index": 4,
+          "meta": [
+            {
+              "style": "menu{-Classic-:0;-Wide-:1;-Deep-:2}"
+            }
+          ],
+          "init": 0,
+          "min": 0,
+          "max": 2,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Phaser/Output",
+          "varname": "fHslider6",
+          "shortname": "Phaser_Output",
+          "address": "/Audio_Effect_Builder_Phaser/Phaser_Output",
+          "index": 196,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "dB"
+            }
+          ],
+          "init": 0,
+          "min": -24,
+          "max": 12,
+          "step": 0.1
+        },
+        {
+          "type": "hslider",
+          "label": "Phaser/Rate",
+          "varname": "fHslider5",
+          "shortname": "Phaser_Rate",
+          "address": "/Audio_Effect_Builder_Phaser/Phaser_Rate",
+          "index": 88,
+          "meta": [
+            {
+              "scale": "log"
+            },
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "Hz"
+            }
+          ],
+          "init": 0.5,
+          "min": 0.05,
+          "max": 5,
+          "step": 0.01
+        }
+      ]
+    }
+  ]
+}

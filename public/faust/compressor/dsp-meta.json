@@ -6,12 +6,14 @@
   "library_list": [
     "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/stdfaust.lib",
     "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/misceffects.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/compressors.lib",
     "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/signals.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/compressors.lib",
     "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/maths.lib",
     "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/platform.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/filters.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/analyzers.lib",
     "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/basics.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/analyzers.lib"
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/routes.lib"
   ],
   "include_pathnames": [
     "/opt/homebrew/opt/faust/share/faust",
@@ -20,8 +22,8 @@
     "/Users/baumolinari/Projects/Beat.Z/faust",
     "/Users/baumolinari/Projects/Beat.Z/faust"
   ],
-  "size": 100,
-  "code": "aW1wb3J0KCJzdGRmYXVzdC5saWIiKTsKCmRlY2xhcmUgbmFtZSAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIgQ29tcHJlc3NvciI7CmRlY2xhcmUgdmVyc2lvbiAiMC4xLjAiOwpkZWNsYXJlIGF1dGhvciAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIiOwpkZWNsYXJlIGxpY2Vuc2UgIk1JVCI7Cgp0aHJlc2hvbGREYiA9IGhzbGlkZXIoIkNvbXByZXNzb3IvVGhyZXNob2xkW3VuaXQ6ZEJdW3N0eWxlOmtub2JdIiwgLTE4LjAsIC00OC4wLCAwLjAsIDAuMSkgOiBzaS5zbW9vOwpyYXRpbyA9IGhzbGlkZXIoIkNvbXByZXNzb3IvUmF0aW9bc3R5bGU6a25vYl0iLCA0LjAsIDEuMCwgMjAuMCwgMC4xKSA6IHNpLnNtb287CmF0dGFja01zID0gaHNsaWRlcigiQ29tcHJlc3Nvci9BdHRhY2tbdW5pdDptc11bc2NhbGU6bG9nXVtzdHlsZTprbm9iXSIsIDIwLjAsIDAuMSwgMjAwLjAsIDAuMSkgOiBzaS5zbW9vOwpyZWxlYXNlTXMgPSBoc2xpZGVyKCJDb21wcmVzc29yL1JlbGVhc2VbdW5pdDptc11bc2NhbGU6bG9nXVtzdHlsZTprbm9iXSIsIDI1MC4wLCAyMC4wLCAyMDAwLjAsIDEuMCkgOiBzaS5zbW9vOwptYWtldXBEYiA9IGhzbGlkZXIoIkNvbXByZXNzb3IvTWFrZXVwW3VuaXQ6ZEJdW3N0eWxlOmtub2JdIiwgMC4wLCAtMTIuMCwgMjQuMCwgMC4xKSA6IHNpLnNtb287Cm1peCA9IGhzbGlkZXIoIkNvbXByZXNzb3IvTWl4W3VuaXQ6JV1bc3R5bGU6a25vYl0iLCAxMDAuMCwgMC4wLCAxMDAuMCwgMS4wKSAvIDEwMC4wOwoKY29tcHJlc3NlZCA9IGNvLmNvbXByZXNzb3Jfc3RlcmVvKHJhdGlvLCB0aHJlc2hvbGREYiwgYXR0YWNrTXMgLyAxMDAwLjAsIHJlbGVhc2VNcyAvIDEwMDAuMCkKICA6IHBhcihjaGFubmVsLCAyLCAqKGJhLmRiMmxpbmVhcihtYWtldXBEYikpKTsKCnByb2Nlc3MgPSBlZi5kcnlXZXRNaXhlcihtaXgsIGNvbXByZXNzZWQpOwo=",
+  "size": 208,
+  "code": "aW1wb3J0KCJzdGRmYXVzdC5saWIiKTsKCmRlY2xhcmUgbmFtZSAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIgQ29tcHJlc3NvciI7CmRlY2xhcmUgdmVyc2lvbiAiMC4xLjAiOwpkZWNsYXJlIGF1dGhvciAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIiOwpkZWNsYXJlIGxpY2Vuc2UgIk1JVCI7Cgptb2RlID0gaHNsaWRlcigiQ29tcHJlc3Nvci9Nb2RlW3N0eWxlOm1lbnV7J0NsZWFuJzowOydQdW5jaCc6MTsnR2x1ZSc6Mn1dIiwgMC4wLCAwLjAsIDIuMCwgMS4wKTsKdGhyZXNob2xkRGIgPSBoc2xpZGVyKCJDb21wcmVzc29yL1RocmVzaG9sZFt1bml0OmRCXVtzdHlsZTprbm9iXSIsIC0xOC4wLCAtNDguMCwgMC4wLCAwLjEpIDogc2kuc21vbzsKcmF0aW8gPSBoc2xpZGVyKCJDb21wcmVzc29yL1JhdGlvW3N0eWxlOmtub2JdIiwgNC4wLCAxLjAsIDIwLjAsIDAuMSkgOiBzaS5zbW9vOwphdHRhY2tNcyA9IGhzbGlkZXIoIkNvbXByZXNzb3IvQXR0YWNrW3VuaXQ6bXNdW3NjYWxlOmxvZ11bc3R5bGU6a25vYl0iLCAyMC4wLCAwLjEsIDIwMC4wLCAwLjEpIDogc2kuc21vbzsKcmVsZWFzZU1zID0gaHNsaWRlcigiQ29tcHJlc3Nvci9SZWxlYXNlW3VuaXQ6bXNdW3NjYWxlOmxvZ11bc3R5bGU6a25vYl0iLCAyNTAuMCwgMjAuMCwgMjAwMC4wLCAxLjApIDogc2kuc21vbzsKbWFrZXVwRGIgPSBoc2xpZGVyKCJDb21wcmVzc29yL01ha2V1cFt1bml0OmRCXVtzdHlsZTprbm9iXSIsIDAuMCwgLTEyLjAsIDI0LjAsIDAuMSkgOiBzaS5zbW9vOwptaXggPSBoc2xpZGVyKCJDb21wcmVzc29yL01peFt1bml0OiVdW3N0eWxlOmtub2JdIiwgMTAwLjAsIDAuMCwgMTAwLjAsIDEuMCkgLyAxMDAuMDsKCmF0dGFja1NlY29uZHMgPSBhdHRhY2tNcyAvIDEwMDAuMDsKcmVsZWFzZVNlY29uZHMgPSByZWxlYXNlTXMgLyAxMDAwLjA7CgovLyBDbGVhbiBpcyB0aGUgZXhhY3QgcHJlLW1vZGUgY29tcHJlc3NvciBwYXRoLgpjbGVhbiA9IGNvLmNvbXByZXNzb3Jfc3RlcmVvKHJhdGlvLCB0aHJlc2hvbGREYiwgYXR0YWNrTXMgLyAxMDAwLjAsIHJlbGVhc2VNcyAvIDEwMDAuMCk7CgovLyBQdW5jaCBpZ25vcmVzIHN1Yi1oZWF2eSBkZXRlY3RvciBlbmVyZ3kgYW5kIHByZXNlcnZlcyBtb3JlIG9mIHRoZSBhdHRhY2suCnB1bmNoRGV0ZWN0b3IgPSBwYXIoY2hhbm5lbCwgMiwgZmkuaGlnaHBhc3MoMiwgOTAuMCkgOiBhYnMpIDogbWF4OwpwdW5jaEdhaW4gPSBwdW5jaERldGVjdG9yCiAgOiBjby5jb21wcmVzc2lvbl9nYWluX21vbm8ocmF0aW8sIHRocmVzaG9sZERiLCBhdHRhY2tTZWNvbmRzICogMS41LCByZWxlYXNlU2Vjb25kcyAqIDAuNzUpOwpwdW5jaCA9IHNpLmJ1cygyKSA8OiAocHVuY2hHYWluIDw6IHNpLmJ1cygyKSksIHNpLmJ1cygyKQogIDogcm8uaW50ZXJsZWF2ZSgyLCAyKQogIDogcGFyKGNoYW5uZWwsIDIsICopOwoKLy8gR2x1ZSBmb2xsb3dzIGxpbmtlZCBzdGVyZW8gUk1TIGVuZXJneSBiZWZvcmUgYXBwbHlpbmcgYSBzbG93ZXIgZ2FpbiBlbnZlbG9wZS4Kc3F1YXJlID0gXyA8OiBfLF8gOiAqOwpnbHVlRGV0ZWN0b3IgPSBwYXIoY2hhbm5lbCwgMiwgc3F1YXJlKSA6ICsgOiAqKDAuNSkgOiBtYXgobWEuRVBTSUxPTikgOiBzcXJ0CiAgOiBhbi5ybXNfZW52ZWxvcGVfdGF1KDAuMDI1KTsKZ2x1ZUdhaW4gPSBnbHVlRGV0ZWN0b3IKICA6IGNvLmNvbXByZXNzaW9uX2dhaW5fbW9ubyhyYXRpbywgdGhyZXNob2xkRGIsIGF0dGFja1NlY29uZHMgKiAxLjI1LCByZWxlYXNlU2Vjb25kcyAqIDEuNSk7CmdsdWUgPSBzaS5idXMoMikgPDogKGdsdWVHYWluIDw6IHNpLmJ1cygyKSksIHNpLmJ1cygyKQogIDogcm8uaW50ZXJsZWF2ZSgyLCAyKQogIDogcGFyKGNoYW5uZWwsIDIsICopOwoKY29tcHJlc3Nvck1vZGVzID0gc2kuYnVzKDIpIDw6IGNsZWFuLCBwdW5jaCwgZ2x1ZSA6IGJhLnNlbGVjdGJ1cygyLCAzLCBpbnQobW9kZSkpOwoKY29tcHJlc3NlZCA9IGNvbXByZXNzb3JNb2RlcyA6IHBhcihjaGFubmVsLCAyLCAqKGJhLmRiMmxpbmVhcihtYWtldXBEYikpKTsKCnByb2Nlc3MgPSBlZi5kcnlXZXRNaXhlcihtaXgsIGNvbXByZXNzZWQpOwo=",
   "inputs": 2,
   "outputs": 2,
   "meta": [
@@ -29,7 +31,25 @@
       "analyzers.lib/amp_follower_ar:author": "Jonatan Liljedahl, revised by Romain Michon"
     },
     {
+      "analyzers.lib/ms_envelope_tau:author": "Dario Sanfilippo and Julius O. Smith III"
+    },
+    {
+      "analyzers.lib/ms_envelope_tau:copyright": "Copyright (C) 2020 Dario Sanfilippo        <sanfilippo.dario@gmail.com> and         2003-2020 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "analyzers.lib/ms_envelope_tau:license": "MIT-style STK-4.3 license"
+    },
+    {
       "analyzers.lib/name": "Faust Analyzer Library"
+    },
+    {
+      "analyzers.lib/rms_envelope_tau:author": "Dario Sanfilippo and Julius O. Smith III"
+    },
+    {
+      "analyzers.lib/rms_envelope_tau:copyright": "Copyright (C) 2020 Dario Sanfilippo        <sanfilippo.dario@gmail.com> and         2003-2020 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "analyzers.lib/rms_envelope_tau:license": "MIT-style STK-4.3 license"
     },
     {
       "analyzers.lib/version": "1.3.0"
@@ -39,6 +59,12 @@
     },
     {
       "basics.lib/name": "Faust Basic Element Library"
+    },
+    {
+      "basics.lib/selectbus:author": "David Braun"
+    },
+    {
+      "basics.lib/selectbus:license": "MIT"
     },
     {
       "basics.lib/version": "1.22.0"
@@ -72,6 +98,78 @@
     },
     {
       "filename": "compressor.dsp"
+    },
+    {
+      "filters.lib/avg_tau:author": "Dario Sanfilippo and Julius O. Smith III"
+    },
+    {
+      "filters.lib/avg_tau:copyright": "Copyright (C) 2020 Dario Sanfilippo       <sanfilippo.dario@gmail.com> and        2003-2020 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/avg_tau:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/fir:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/fir:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/fir:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/highpass:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/highpass:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/iir:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/iir:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/iir:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/lowpass0_highpass1": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/lowpass0_highpass1:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/lptN:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/lptN:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/lptN:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/name": "Faust Filters Library"
+    },
+    {
+      "filters.lib/tf2:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/tf2:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/tf2:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/tf2s:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/tf2s:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/tf2s:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/version": "1.7.1"
     },
     {
       "license": "MIT"
@@ -110,6 +208,12 @@
       "platform.lib/version": "1.3.0"
     },
     {
+      "routes.lib/name": "Faust Signal Routing Library"
+    },
+    {
+      "routes.lib/version": "1.3.0"
+    },
+    {
       "signals.lib/name": "Faust Routing Library"
     },
     {
@@ -133,10 +237,10 @@
         {
           "type": "hslider",
           "label": "Compressor/Attack",
-          "varname": "fHslider2",
+          "varname": "fHslider3",
           "shortname": "Compressor_Attack",
           "address": "/Audio_Effect_Builder_Compressor/Compressor_Attack",
-          "index": 36,
+          "index": 40,
           "meta": [
             {
               "scale": "log"
@@ -156,10 +260,10 @@
         {
           "type": "hslider",
           "label": "Compressor/Makeup",
-          "varname": "fHslider5",
+          "varname": "fHslider6",
           "shortname": "Compressor_Makeup",
           "address": "/Audio_Effect_Builder_Compressor/Compressor_Makeup",
-          "index": 88,
+          "index": 196,
           "meta": [
             {
               "style": "knob"
@@ -195,11 +299,28 @@
         },
         {
           "type": "hslider",
+          "label": "Compressor/Mode",
+          "varname": "fHslider1",
+          "shortname": "Compressor_Mode",
+          "address": "/Audio_Effect_Builder_Compressor/Compressor_Mode",
+          "index": 4,
+          "meta": [
+            {
+              "style": "menu{-Clean-:0;-Punch-:1;-Glue-:2}"
+            }
+          ],
+          "init": 0,
+          "min": 0,
+          "max": 2,
+          "step": 1
+        },
+        {
+          "type": "hslider",
           "label": "Compressor/Ratio",
-          "varname": "fHslider4",
+          "varname": "fHslider5",
           "shortname": "Compressor_Ratio",
           "address": "/Audio_Effect_Builder_Compressor/Compressor_Ratio",
-          "index": 68,
+          "index": 72,
           "meta": [
             {
               "style": "knob"
@@ -213,10 +334,10 @@
         {
           "type": "hslider",
           "label": "Compressor/Release",
-          "varname": "fHslider1",
+          "varname": "fHslider2",
           "shortname": "Compressor_Release",
           "address": "/Audio_Effect_Builder_Compressor/Compressor_Release",
-          "index": 16,
+          "index": 20,
           "meta": [
             {
               "scale": "log"
@@ -236,10 +357,10 @@
         {
           "type": "hslider",
           "label": "Compressor/Threshold",
-          "varname": "fHslider3",
+          "varname": "fHslider4",
           "shortname": "Compressor_Threshold",
           "address": "/Audio_Effect_Builder_Compressor/Compressor_Threshold",
-          "index": 56,
+          "index": 60,
           "meta": [
             {
               "style": "knob"

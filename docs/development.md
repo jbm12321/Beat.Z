@@ -32,7 +32,7 @@ Do not add a browser-only DSP approximation. Do not silently migrate or delete u
 
 ## Source and licensing
 
-The Faust source written for this project is under the repository's project terms. `@grame/faustwasm` is LGPL-3.0; its unmodified license is deployed at `public/faust/FAUSTWASM-LICENSE.txt` and must remain with redistributed runtime artifacts.
+The Faust source written for this project is under the repository's project terms. `@grame/faustwasm` is LGPL-3.0; its unmodified license is deployed at `public/faust/FAUSTWASM-LICENSE.txt` and must remain with redistributed runtime artifacts. Phaser uses the Julius O. Smith section of `phaflangers.lib`; Compressor Clean uses `co.compressor_stereo`, and Glue uses the MIT-style `an.rms_envelope_tau` envelope with `co.compression_gain_mono` rather than the GPLv3 RMS compressor family. Release licensing must still be reviewed against the pinned upstream files.
 
 ## Native export boundary
 

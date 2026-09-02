@@ -5,6 +5,7 @@ import {
   LEGACY_STORAGE_KEY,
   PRE_AUDIBILITY_ENGINE_PROVENANCE,
   PRE_CHORUS_COMPRESSOR_ENGINE_PROVENANCE,
+  PRE_PHASER_COMPRESSOR_MODES_ENGINE_PROVENANCE,
   STORAGE_KEY,
   PRE_PAIR1_ENGINE_PROVENANCE,
   applyProjectCommands,
@@ -165,6 +166,34 @@ test('persistence adds Chorus and Compressor provenance without changing an exac
   assert.equal(restored.engine.libraries.compressors, '1.6.0');
   assert.equal(restored.engine.moduleSourceSha256.chorus.length, 64);
   assert.equal(restored.engine.moduleSourceSha256.compressor.length, 64);
+});
+
+test('persistence adds Phaser and defaults exact historical Compressor nodes to Clean without content loss', () => {
+  const storage = new MemoryStorage();
+  const project = applyProjectCommands(createInitialProject(), [
+    { type: 'rename_project', name: 'Preserved seven-effect project' },
+    { type: 'add_module', moduleType: 'compressor', nodeId: 'compressor-1' },
+    { type: 'set_parameter', nodeId: 'compressor-1', paramId: 'threshold', value: -26 },
+    { type: 'set_parameter', nodeId: 'compressor-1', paramId: 'ratio', value: 7 },
+    { type: 'create_macro', name: 'Pressure', macroId: 'macro-1' },
+    { type: 'add_mapping', macroId: 'macro-1', mappingId: 'mapping-1', nodeId: 'compressor-1', paramId: 'mix', min: 40, max: 100 },
+  ], 'human');
+  const previous = structuredClone(project);
+  delete previous.nodes['compressor-1'].params.mode;
+  previous.engine = structuredClone(PRE_PHASER_COMPRESSOR_MODES_ENGINE_PROVENANCE) as typeof previous.engine;
+  storage.setItem(STORAGE_KEY, JSON.stringify(previous));
+
+  const restored = restorePersistedProject(storage).project;
+  assert.equal(restored.id, previous.id);
+  assert.equal(restored.name, previous.name);
+  assert.equal(restored.revision, previous.revision);
+  assert.deepEqual(restored.chain, previous.chain);
+  assert.deepEqual(restored.macros, previous.macros);
+  assert.deepEqual(restored.activity, previous.activity);
+  assert.deepEqual(restored.nodes['compressor-1'].params, {
+    mode: 0, threshold: -26, ratio: 7, attack: 20, release: 250, makeup: 0, mix: 100,
+  });
+  assert.equal(restored.engine.moduleSourceSha256.phaser.length, 64);
 });
 
 test('persistence rejects partially matching historical engine provenance', () => {

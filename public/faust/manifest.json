@@ -18,6 +18,7 @@
     "maths": "2.9.0",
     "misceffects": "2.5.2",
     "oscillators": "1.7.0",
+    "phaflangers": "1.1.0",
     "platform": "1.3.0",
     "reverbs": "1.5.1",
     "routes": "1.3.0",
@@ -88,10 +89,20 @@
     "compressor": {
       "definitionVersion": "0.1.0",
       "source": "faust/compressor.dsp",
-      "sourceSha256": "8440fc44c50c362eb6287707d90a9e10033db2d9a5a0a662ef22a93d90db4ff9",
-      "wasmSha256": "47913563a1382be3bd7eff04dd26a57a80ecd09c36dbb09d983b38c65b3f9e2d",
+      "sourceSha256": "5c63fd9f14183aae0c1b3b1cd4a22cf674623bb39a6508218d1857599b8232d6",
+      "wasmSha256": "5b8c083fea87784b1005ad39ca9b37be255d8852b6d96e4e6e2abb6447d14631",
       "wasm": "/faust/compressor/dsp-module.wasm",
       "metadata": "/faust/compressor/dsp-meta.json",
+      "inputs": 2,
+      "outputs": 2
+    },
+    "phaser": {
+      "definitionVersion": "0.1.0",
+      "source": "faust/phaser.dsp",
+      "sourceSha256": "b812485b365ccf92ba7fb8680feced1b3ce27b86a568c8634ca6ce949c827c04",
+      "wasmSha256": "efb34fc50e334da4c1b2c3886a35906f359881ddba8aabd52f123cd4f525741c",
+      "wasm": "/faust/phaser/dsp-module.wasm",
+      "metadata": "/faust/phaser/dsp-meta.json",
       "inputs": 2,
       "outputs": 2
     }
