@@ -244,10 +244,10 @@ test('the native catalog and generic editor represent Delay and Reverb without t
   assert.deepEqual(NATIVE_MODULE_CATALOG.filter.parameters.mode.choices, [0, 1, 2, 3]);
   assert.deepEqual(NATIVE_MODULE_CATALOG.delay.parameters.mode.choiceLabels, ['Digital', 'Ping-Pong', 'Tape']);
   assert.deepEqual(NATIVE_MODULE_CATALOG.reverb.parameters.mode.choiceLabels, ['Room', 'Hall', 'Plate']);
-  assert.equal(SOURCE_FINGERPRINTS.delay, 'ffb3c7f559aeedd613450d814c910552faca1129651f05cfc846a3511876c647');
-  assert.equal(SOURCE_FINGERPRINTS.reverb, '95310a51570124fe27680d0946cf54c8316ec96e6afa3ce0ac619c61676adda3');
-  assert.equal(NATIVE_MODULE_CATALOG.delay.wasmSha256, '8d23c0fcf45ce5565bd8a9b75307242c4a631de26705550f73f2c69deb8c3eb0');
-  assert.equal(NATIVE_MODULE_CATALOG.reverb.wasmSha256, '8eb5ea751de350fb216d55a553367afbf8454637ef78f09b1b13b7f79127c2fd');
+  assert.equal(SOURCE_FINGERPRINTS.delay, 'fb9a020e31f2b4f290a17ad2a18ec5d87c6f701195af2bc95e38f2d99cef1b92');
+  assert.equal(SOURCE_FINGERPRINTS.reverb, 'bec502b0ca2f0b01dd7c10051cd848417f24ca0eb45b73c2854a49da54abb5ff');
+  assert.equal(NATIVE_MODULE_CATALOG.delay.wasmSha256, '6a5495bfa670ef8435cd8a2bf282f16e64e5a447ef3b5dbeabff3f4e77cba99c');
+  assert.equal(NATIVE_MODULE_CATALOG.reverb.wasmSha256, 'd03ff0e330e877212436fed13d983036605d29b5aac719775abc45be402ba12a');
   const request = await nativeRequestForModules(['delay', 'reverb']);
   const editor = createNativeEditorModel(createAutomaticNativeParameters(request));
   assert.equal(editor.knobCount, 11);

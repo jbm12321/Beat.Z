@@ -31,8 +31,8 @@
     "filter": {
       "definitionVersion": "0.1.0",
       "source": "faust/filter.dsp",
-      "sourceSha256": "6918312c734213e2476c899588f4917a0d7dfc469196ce0aec718d22e03c25d6",
-      "wasmSha256": "7f188b00b97a5bc3744cf07698a28455a408af1771d0828d61ccc654a1658663",
+      "sourceSha256": "076d102ec4209b0a9e33d4199e302896a3951017e88a1e821ec106347c03ee7f",
+      "wasmSha256": "39ac96e8aff15297cf241ee4033f160a725bfd6bae26254696a0c9fd99eed69a",
       "wasm": "/faust/filter/dsp-module.wasm",
       "metadata": "/faust/filter/dsp-meta.json",
       "inputs": 2,
@@ -41,8 +41,8 @@
     "saturation": {
       "definitionVersion": "0.1.0",
       "source": "faust/saturation.dsp",
-      "sourceSha256": "f8a7bbe451c3abd30e4c61fd6210ea3b6a2fef2ae5b67fda2c49c2890969bbf1",
-      "wasmSha256": "14c322467c0188bbc9fd901a94333e85722fea24f4e9150663cf9477555ada78",
+      "sourceSha256": "9074635f03744b4b4f280eac15839585716d4a23a732ac7c59e26eb1c3bab068",
+      "wasmSha256": "05cea5472644ff2ad0d19234d05a3e411e73fd0a52800b192790d1bc04adcbf1",
       "wasm": "/faust/saturation/dsp-module.wasm",
       "metadata": "/faust/saturation/dsp-meta.json",
       "inputs": 2,
@@ -51,8 +51,8 @@
     "delay": {
       "definitionVersion": "0.1.0",
       "source": "faust/delay.dsp",
-      "sourceSha256": "ffb3c7f559aeedd613450d814c910552faca1129651f05cfc846a3511876c647",
-      "wasmSha256": "8d23c0fcf45ce5565bd8a9b75307242c4a631de26705550f73f2c69deb8c3eb0",
+      "sourceSha256": "fb9a020e31f2b4f290a17ad2a18ec5d87c6f701195af2bc95e38f2d99cef1b92",
+      "wasmSha256": "6a5495bfa670ef8435cd8a2bf282f16e64e5a447ef3b5dbeabff3f4e77cba99c",
       "wasm": "/faust/delay/dsp-module.wasm",
       "metadata": "/faust/delay/dsp-meta.json",
       "inputs": 2,
@@ -61,8 +61,8 @@
     "reverb": {
       "definitionVersion": "0.1.0",
       "source": "faust/reverb.dsp",
-      "sourceSha256": "95310a51570124fe27680d0946cf54c8316ec96e6afa3ce0ac619c61676adda3",
-      "wasmSha256": "8eb5ea751de350fb216d55a553367afbf8454637ef78f09b1b13b7f79127c2fd",
+      "sourceSha256": "bec502b0ca2f0b01dd7c10051cd848417f24ca0eb45b73c2854a49da54abb5ff",
+      "wasmSha256": "d03ff0e330e877212436fed13d983036605d29b5aac719775abc45be402ba12a",
       "wasm": "/faust/reverb/dsp-module.wasm",
       "metadata": "/faust/reverb/dsp-meta.json",
       "inputs": 2,

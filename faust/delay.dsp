@@ -20,10 +20,14 @@ tapeModRight = isTape * 0.0007 * ma.SR * os.osc(0.29);
 delayLeft = de.sdelay(2 * ma.SR, 1024, min(2.0 * ma.SR - 2.0, max(1.0, baseDelaySamples + tapeModLeft)));
 delayRight = de.sdelay(2 * ma.SR, 1024, min(2.0 * ma.SR - 2.0, max(1.0, baseDelaySamples + tapeModRight)));
 
-feedbackTone = select2(isTape, toneHz, max(500.0, toneHz * 0.55));
+// Tape loses noticeably more high end on every repeat than the clean modes.
+feedbackTone = select2(isTape, toneHz, max(500.0, toneHz * 0.38));
 tapeColor(signal) = ma.tanh(signal * 1.1) / ma.tanh(1.1);
 colorFeedback(signal) = select2(isTape, signal, tapeColor(signal)) : fi.lowpass(2, feedbackTone) : *(feedback);
 feedbackMatrix = _,_ <: (*(1.0-isPingPong), *(isPingPong)), (*(isPingPong), *(1.0-isPingPong)) : +,+;
 stereoDelay = (ro.interleave(2, 2) : +, + : delayLeft, delayRight) ~ (colorFeedback, colorFeedback : feedbackMatrix);
+// Filtering the wet signal as well as the feedback loop makes Tone useful on
+// the first repeat, including when Feedback is set to zero.
+wetTone = par(channel, 2, fi.lowpass(4, toneHz));
 
-process = ef.dryWetMixer(mix, stereoDelay) : par(channel, 2, *(ba.db2linear(outputDb)));
+process = ef.dryWetMixer(mix, stereoDelay : wetTone) : par(channel, 2, *(ba.db2linear(outputDb)));

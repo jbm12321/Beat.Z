@@ -17,8 +17,8 @@
     "/Users/baumolinari/Projects/Beat.Z/faust",
     "/Users/baumolinari/Projects/Beat.Z/faust"
   ],
-  "size": 112,
-  "code": "aW1wb3J0KCJzdGRmYXVzdC5saWIiKTsKCmRlY2xhcmUgbmFtZSAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIgRmlsdGVyIjsKZGVjbGFyZSB2ZXJzaW9uICIwLjEuMCI7CmRlY2xhcmUgYXV0aG9yICJBdWRpbyBFZmZlY3QgQnVpbGRlciI7CmRlY2xhcmUgbGljZW5zZSAiTUlUIjsKCm1vZGUgPSBoc2xpZGVyKCJGaWx0ZXIvTW9kZVtzdHlsZTptZW51eydIaWdoIFBhc3MnOjA7J0xvdyBQYXNzJzoxOydCYW5kIFBhc3MnOjI7J05vdGNoJzozfV0iLCAwLCAwLCAzLCAxKSA6IHNpLnNtb287CmN1dG9mZiA9IGhzbGlkZXIoIkZpbHRlci9DdXRvZmZbdW5pdDpIel1bc2NhbGU6bG9nXVtzdHlsZTprbm9iXSIsIDgwLjAsIDIwLjAsIDIwMDAwLjAsIDEuMCkgOiBzaS5zbW9vOwpyZXNvbmFuY2UgPSBoc2xpZGVyKCJGaWx0ZXIvUmVzb25hbmNlW3VuaXQ6UV1bc2NhbGU6bG9nXVtzdHlsZTprbm9iXSIsIDAuNywgMC4xLCAyMC4wLCAwLjEpIDogc2kuc21vbzsKbm90Y2hXaWR0aCA9IG1pbigxMDAwMC4wLCBtYXgoMS4wLCBjdXRvZmYgLyBtYXgocmVzb25hbmNlLCAwLjEpKSk7CgpmaWx0ZXJDaGFubmVsKHNpZ25hbCkgPSBzZWxlY3QyKAogIG1vZGUgPj0gMC41LAogIGZpLnJlc29uaHAoY3V0b2ZmLCByZXNvbmFuY2UsIDEuMCwgc2lnbmFsKSwKICBzZWxlY3QyKAogICAgbW9kZSA+PSAxLjUsCiAgICBmaS5yZXNvbmxwKGN1dG9mZiwgcmVzb25hbmNlLCAxLjAsIHNpZ25hbCksCiAgICBzZWxlY3QyKG1vZGUgPj0gMi41LCBmaS5yZXNvbmJwKGN1dG9mZiwgcmVzb25hbmNlLCAxLjAsIHNpZ25hbCksIGZpLm5vdGNodyhub3RjaFdpZHRoLCBjdXRvZmYsIHNpZ25hbCkpCiAgKQopOwoKcHJvY2VzcyA9IGZpbHRlckNoYW5uZWwsIGZpbHRlckNoYW5uZWw7Cg==",
+  "size": 104,
+  "code": "aW1wb3J0KCJzdGRmYXVzdC5saWIiKTsKCmRlY2xhcmUgbmFtZSAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIgRmlsdGVyIjsKZGVjbGFyZSB2ZXJzaW9uICIwLjEuMCI7CmRlY2xhcmUgYXV0aG9yICJBdWRpbyBFZmZlY3QgQnVpbGRlciI7CmRlY2xhcmUgbGljZW5zZSAiTUlUIjsKCi8vIEtlZXAgdGhpcyBhcyBhbiBpbnRlZ2VyIHNlbGVjdG9yLiBTbW9vdGhpbmcgYSBkaXNjcmV0ZSBjaG9pY2UgY2FuIGxlYXZlIHRoZQovLyBmaWx0ZXIgaW4gYSB0cmFuc2llbnQgYnJhbmNoIHdoaWxlIGEgaG9zdCBjaGFuZ2VzIG1vZGVzLgptb2RlID0gaHNsaWRlcigiRmlsdGVyL01vZGVbc3R5bGU6bWVudXsnSGlnaCBQYXNzJzowOydMb3cgUGFzcyc6MTsnQmFuZCBQYXNzJzoyOydOb3RjaCc6M31dIiwgMCwgMCwgMywgMSk7CmN1dG9mZiA9IGhzbGlkZXIoIkZpbHRlci9DdXRvZmZbdW5pdDpIel1bc2NhbGU6bG9nXVtzdHlsZTprbm9iXSIsIDgwLjAsIDIwLjAsIDIwMDAwLjAsIDEuMCkgOiBzaS5zbW9vOwpyZXNvbmFuY2UgPSBoc2xpZGVyKCJGaWx0ZXIvUmVzb25hbmNlW3VuaXQ6UV1bc2NhbGU6bG9nXVtzdHlsZTprbm9iXSIsIDAuNywgMC4xLCAyMC4wLCAwLjEpIDogc2kuc21vbzsKbm90Y2hXaWR0aCA9IG1pbigxMDAwMC4wLCBtYXgoMS4wLCBjdXRvZmYgLyBtYXgocmVzb25hbmNlLCAwLjEpKSk7CgpmaWx0ZXJDaGFubmVsKHNpZ25hbCkgPSBzZWxlY3QyKAogIG1vZGUgPj0gMC41LAogIGZpLnJlc29uaHAoY3V0b2ZmLCByZXNvbmFuY2UsIDEuMCwgc2lnbmFsKSwKICBzZWxlY3QyKAogICAgbW9kZSA+PSAxLjUsCiAgICBmaS5yZXNvbmxwKGN1dG9mZiwgcmVzb25hbmNlLCAxLjAsIHNpZ25hbCksCiAgICBzZWxlY3QyKG1vZGUgPj0gMi41LCBmaS5yZXNvbmJwKGN1dG9mZiwgcmVzb25hbmNlLCAxLjAsIHNpZ25hbCksIGZpLm5vdGNodyhub3RjaFdpZHRoLCBjdXRvZmYsIHNpZ25hbCkpCiAgKQopOwoKcHJvY2VzcyA9IGZpbHRlckNoYW5uZWwsIGZpbHRlckNoYW5uZWw7Cg==",
   "inputs": 2,
   "outputs": 2,
   "meta": [
@@ -160,7 +160,7 @@
           "varname": "fHslider1",
           "shortname": "Filter_Cutoff",
           "address": "/Audio_Effect_Builder_Filter/Filter_Cutoff",
-          "index": 32,
+          "index": 20,
           "meta": [
             {
               "scale": "log"
@@ -183,7 +183,7 @@
           "varname": "fHslider0",
           "shortname": "Filter_Mode",
           "address": "/Audio_Effect_Builder_Filter/Filter_Mode",
-          "index": 12,
+          "index": 0,
           "meta": [
             {
               "style": "menu{-High Pass-:0;-Low Pass-:1;-Band Pass-:2;-Notch-:3}"
@@ -200,7 +200,7 @@
           "varname": "fHslider2",
           "shortname": "Filter_Resonance",
           "address": "/Audio_Effect_Builder_Filter/Filter_Resonance",
-          "index": 44,
+          "index": 36,
           "meta": [
             {
               "scale": "log"
