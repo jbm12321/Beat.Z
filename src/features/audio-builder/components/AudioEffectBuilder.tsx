@@ -34,7 +34,7 @@ import { AuditionBar } from './AuditionBar';
 import { MacroSidebar } from './MacroSidebar';
 import { ModuleSidebar } from './ModuleSidebar';
 import { NativeExportModal } from './NativeExportModal';
-import { moduleDragKey, nodeDragKey } from './dnd';
+import { moduleDragKey, moveIndexFromDropZone, nodeDragKey } from './dnd';
 import { useVst3ExportSession } from '../../vst3-export/useVst3ExportSession';
 
 type Notice = { kind: 'error' | 'success'; text: string } | null;
@@ -409,8 +409,9 @@ export function AudioEffectBuilder() {
     try {
       if (moduleType && MODULE_CATALOG[moduleType]) addModule(moduleType, index);
       else if (nodeId && project.nodes[nodeId]) {
-        const command: ProjectCommand = project.chain.includes(nodeId)
-          ? { type: 'move_module', nodeId, index }
+        const currentIndex = project.chain.indexOf(nodeId);
+        const command: ProjectCommand = currentIndex >= 0
+          ? { type: 'move_module', nodeId, index: moveIndexFromDropZone(currentIndex, index) }
           : { type: 'connect_module', nodeId, index };
         commitCommands([command]);
         setSelectedNodeId(nodeId);
