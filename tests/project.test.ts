@@ -120,8 +120,8 @@ test('exported project JSON validates as a portable round trip', () => {
   assert.deepEqual(restored, project);
 });
 
-test('the Faust primitive catalog exposes the ten exact shared contracts', () => {
-  assert.deepEqual(MODULE_TYPES, ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor', 'phaser', 'autowah', 'stutter']);
+test('the Faust primitive catalog exposes the thirteen exact shared contracts', () => {
+  assert.deepEqual(MODULE_TYPES, ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor', 'phaser', 'autowah', 'stutter', 'equalizer', 'limiter', 'flanger']);
   assert.deepEqual(MODULE_CATALOG.filter.parameters.map((parameter) => parameter.id), ['mode', 'cutoff', 'resonance']);
   assert.equal(MODULE_CATALOG.filter.parameters[0].kind, 'choice');
   assert.deepEqual(MODULE_CATALOG.filter.parameters[0].choices, [
@@ -183,6 +183,20 @@ test('the Faust primitive catalog exposes the ten exact shared contracts', () =>
   assert.deepEqual(MODULE_CATALOG.stutter.parameters[2].choices?.map((choice) => choice.label), ['1x', '2x', '3x', '4x', '6x', '8x']);
   assert.equal(MODULE_CATALOG.stutter.parameters[0].mappable, false);
   assert.equal(MODULE_CATALOG.stutter.parameters[2].mappable, false);
+  assert.equal(MODULE_CATALOG.equalizer.name, '3-Band EQ');
+  assert.equal(MODULE_CATALOG.equalizer.shortName, 'EQ3');
+  assert.deepEqual(MODULE_CATALOG.equalizer.parameters.map((parameter) => parameter.id), ['lowGain', 'lowFrequency', 'midGain', 'midFrequency', 'midQ', 'highGain', 'highFrequency', 'output']);
+  assert.ok(MODULE_CATALOG.equalizer.parameters.every((parameter) => parameter.kind === 'continuous' && parameter.mappable));
+  assert.deepEqual(MODULE_CATALOG.limiter.parameters.map((parameter) => parameter.id), ['mode', 'input', 'ceiling', 'lookahead', 'release', 'softness']);
+  assert.deepEqual(MODULE_CATALOG.limiter.parameters[0].choices, [
+    { value: 0, label: 'Transparent' }, { value: 1, label: 'Punch' }, { value: 2, label: 'Brickwall' }, { value: 3, label: 'Soft Clip' },
+  ]);
+  assert.equal(MODULE_CATALOG.limiter.parameters[0].mappable, false);
+  assert.deepEqual(MODULE_CATALOG.flanger.parameters.map((parameter) => parameter.id), ['mode', 'rate', 'depth', 'delay', 'feedback', 'stereo', 'mix', 'output']);
+  assert.deepEqual(MODULE_CATALOG.flanger.parameters[0].choices, [
+    { value: 0, label: 'Classic' }, { value: 1, label: 'Stereo' }, { value: 2, label: 'Jet' }, { value: 3, label: 'Through-Zero' },
+  ]);
+  assert.equal(MODULE_CATALOG.flanger.parameters[0].mappable, false);
   MODULE_TYPES.forEach((type) => {
     const definition = MODULE_CATALOG[type];
     assert.ok(definition.parameters.length > 0);
@@ -193,6 +207,18 @@ test('the Faust primitive catalog exposes the ten exact shared contracts', () =>
       assert.ok(parameter.default >= parameter.min && parameter.default <= parameter.max);
     });
   });
+});
+
+test('new discrete modes cannot be mapped while continuous expansion controls remain mappable', () => {
+  let project = applyProjectCommands(createInitialProject(), [
+    { type: 'add_module', moduleType: 'limiter', nodeId: 'limiter-1' },
+    { type: 'add_module', moduleType: 'flanger', nodeId: 'flanger-1' },
+    { type: 'create_macro', name: 'Motion', macroId: 'macro-1' },
+  ], 'human');
+  assert.throws(() => applyProjectCommands(project, [{ type: 'add_mapping', macroId: 'macro-1', nodeId: 'limiter-1', paramId: 'mode', min: 0, max: 3 }], 'human'), /cannot be assigned/i);
+  assert.throws(() => applyProjectCommands(project, [{ type: 'add_mapping', macroId: 'macro-1', nodeId: 'flanger-1', paramId: 'mode', min: 0, max: 3 }], 'human'), /cannot be assigned/i);
+  project = applyProjectCommands(project, [{ type: 'add_mapping', macroId: 'macro-1', nodeId: 'flanger-1', paramId: 'depth', min: 10, max: 90 }], 'human');
+  assert.equal(project.macros[0].mappings[0].paramId, 'depth');
 });
 
 test('Pair 1 time units use the domain formatter without UI special cases', () => {

@@ -1,4 +1,4 @@
-export type ModuleType = 'gain' | 'filter' | 'saturation' | 'delay' | 'reverb' | 'chorus' | 'compressor' | 'phaser' | 'autowah' | 'stutter';
+export type ModuleType = 'gain' | 'filter' | 'saturation' | 'delay' | 'reverb' | 'chorus' | 'compressor' | 'phaser' | 'autowah' | 'stutter' | 'equalizer' | 'limiter' | 'flanger';
 export type ParameterScale = 'linear' | 'log';
 export type ParameterKind = 'continuous' | 'choice';
 
@@ -14,7 +14,7 @@ export interface ParameterDefinition {
   max: number;
   default: number;
   step: number;
-  unit: 'dB' | 'Hz' | '%' | 'Q' | 'mode' | 'type' | 'ms' | 's' | 'ratio';
+  unit: 'dB' | 'Hz' | '%' | 'Q' | 'mode' | 'type' | 'ms' | 's' | 'ratio' | 'degrees';
   scale: ParameterScale;
   kind: ParameterKind;
   choices?: ParameterChoice[];
@@ -351,6 +351,56 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
       parameter('output', 'Output', -24, 12, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Stutter/Stutter_Output'),
     ],
   },
+  equalizer: {
+    type: 'equalizer', name: '3-Band EQ', shortName: 'EQ3', description: 'Shape lows, mids, and highs with three independent bands.', definitionVersion: '0.1.0',
+    sourceSha256: '0ee8adecb250e184c1c2f15d8630c13acb193945bc815d87110dfee1bb14c25a',
+    wasmSha256: '12fb431e7ed255a30f9a979c44fd63b72729cf377914b091f04f91285bdeca7c',
+    wasmPath: '/faust/equalizer/dsp-module.wasm', metadataPath: '/faust/equalizer/dsp-meta.json',
+    parameters: [
+      parameter('lowGain', 'Low Gain', -18, 18, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Low_Gain'),
+      parameter('lowFrequency', 'Low Frequency', 40, 500, 120, 1, 'Hz', 'log', '/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Low_Frequency'),
+      parameter('midGain', 'Mid Gain', -18, 18, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Mid_Gain'),
+      parameter('midFrequency', 'Mid Frequency', 200, 8000, 1000, 1, 'Hz', 'log', '/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Mid_Frequency'),
+      parameter('midQ', 'Mid Q', 0.2, 10, 1, 0.1, 'Q', 'log', '/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Mid_Q'),
+      parameter('highGain', 'High Gain', -18, 18, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_High_Gain'),
+      parameter('highFrequency', 'High Frequency', 2000, 16000, 8000, 1, 'Hz', 'log', '/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_High_Frequency'),
+      parameter('output', 'Output', -24, 12, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Output'),
+    ],
+  },
+  limiter: {
+    type: 'limiter', name: 'Limiter', shortName: 'LIM', description: 'Control sample peaks with linked stereo limiting.', definitionVersion: '0.1.0',
+    sourceSha256: '5564b1c1f20994bf827916a3e877f125c15ca19c70879918fe64a3e1eeda1bf6',
+    wasmSha256: '60aa6c10c035b0bffb823f3106d8d348c0fe59be57a065dd6e04bca4b04f7091',
+    wasmPath: '/faust/limiter/dsp-module.wasm', metadataPath: '/faust/limiter/dsp-meta.json',
+    parameters: [
+      parameter('mode', 'Mode', 0, 3, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Limiter/Limiter_Mode', {
+        kind: 'choice', choices: [{ value: 0, label: 'Transparent' }, { value: 1, label: 'Punch' }, { value: 2, label: 'Brickwall' }, { value: 3, label: 'Soft Clip' }], mappable: false,
+      }),
+      parameter('input', 'Input', 0, 24, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Limiter/Limiter_Input'),
+      parameter('ceiling', 'Ceiling', -12, 0, -1, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Limiter/Limiter_Ceiling'),
+      parameter('lookahead', 'Lookahead', 0, 10, 5, 0.1, 'ms', 'linear', '/Audio_Effect_Builder_Limiter/Limiter_Lookahead'),
+      parameter('release', 'Release', 10, 500, 100, 1, 'ms', 'log', '/Audio_Effect_Builder_Limiter/Limiter_Release'),
+      parameter('softness', 'Softness', 0, 100, 20, 1, '%', 'linear', '/Audio_Effect_Builder_Limiter/Limiter_Softness'),
+    ],
+  },
+  flanger: {
+    type: 'flanger', name: 'Flanger', shortName: 'FLNG', description: 'Create moving comb-filter sweeps with short modulated delays.', definitionVersion: '0.1.0',
+    sourceSha256: 'b66905707f0238d73e8230793edfeac787136aa6fa1608fbe4dc6d48e5aea9b4',
+    wasmSha256: 'ebbf4306323211a06c267dafaefb4b238b56ce538c2f1292ea5d85820f973c0e',
+    wasmPath: '/faust/flanger/dsp-module.wasm', metadataPath: '/faust/flanger/dsp-meta.json',
+    parameters: [
+      parameter('mode', 'Mode', 0, 3, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Flanger/Flanger_Mode', {
+        kind: 'choice', choices: [{ value: 0, label: 'Classic' }, { value: 1, label: 'Stereo' }, { value: 2, label: 'Jet' }, { value: 3, label: 'Through-Zero' }], mappable: false,
+      }),
+      parameter('rate', 'Rate', 0.05, 10, 0.3, 0.01, 'Hz', 'log', '/Audio_Effect_Builder_Flanger/Flanger_Rate'),
+      parameter('depth', 'Depth', 0, 100, 60, 1, '%', 'linear', '/Audio_Effect_Builder_Flanger/Flanger_Depth'),
+      parameter('delay', 'Delay', 0.1, 10, 2, 0.1, 'ms', 'log', '/Audio_Effect_Builder_Flanger/Flanger_Delay'),
+      parameter('feedback', 'Feedback', 0, 95, 35, 1, '%', 'linear', '/Audio_Effect_Builder_Flanger/Flanger_Feedback'),
+      parameter('stereo', 'Stereo', 0, 180, 90, 1, 'degrees', 'linear', '/Audio_Effect_Builder_Flanger/Flanger_Stereo'),
+      parameter('mix', 'Mix', 0, 100, 50, 1, '%', 'linear', '/Audio_Effect_Builder_Flanger/Flanger_Mix'),
+      parameter('output', 'Output', -24, 12, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Flanger/Flanger_Output'),
+    ],
+  },
 };
 
 export const MODULE_TYPES = Object.keys(MODULE_CATALOG) as ModuleType[];
@@ -426,6 +476,22 @@ export const PRE_AUTOWAH_STUTTER_ENGINE_PROVENANCE = Object.freeze({
     phaser: 'b812485b365ccf92ba7fb8680feced1b3ce27b86a568c8634ca6ce949c827c04',
   },
 });
+export const PRE_EQ_LIMITER_FLANGER_ENGINE_PROVENANCE = Object.freeze({
+  effectDefinition: 'audio-effect-builder-faust', definitionVersion: '0.1.0', faustWasmVersion: '0.16.6', faustCompilerVersion: '2.85.9',
+  libraries: { analyzers: '1.3.0', basics: '1.22.0', compressors: '1.6.0', delays: '1.2.0', filters: '1.7.1', maths: '2.9.0', misceffects: '2.5.2', oscillators: '1.7.0', phaflangers: '1.1.0', platform: '1.3.0', reverbs: '1.5.1', routes: '1.3.0', signals: '1.6.0' },
+  moduleSourceSha256: {
+    gain: 'caca77ad2ac86cf0ef26f62a22d1d0c62a7d4b7f86c6c4e3fef77e9d19fbd35d',
+    filter: '076d102ec4209b0a9e33d4199e302896a3951017e88a1e821ec106347c03ee7f',
+    saturation: '9074635f03744b4b4f280eac15839585716d4a23a732ac7c59e26eb1c3bab068',
+    delay: 'fb9a020e31f2b4f290a17ad2a18ec5d87c6f701195af2bc95e38f2d99cef1b92',
+    reverb: 'bec502b0ca2f0b01dd7c10051cd848417f24ca0eb45b73c2854a49da54abb5ff',
+    chorus: '19432a2946b7711dc6f4d694e3fdc5c665df67dddbcadc59622c4052539aa419',
+    compressor: '5c63fd9f14183aae0c1b3b1cd4a22cf674623bb39a6508218d1857599b8232d6',
+    phaser: 'b812485b365ccf92ba7fb8680feced1b3ce27b86a568c8634ca6ce949c827c04',
+    autowah: '26001c6599cf9b72c57290b26498233f076d278ec1b7bdecbe40be04c3448443',
+    stutter: 'b5f10b05476725a477d1b2df078a932b2ccb68e079b2e5dd908dba5c89b790d9',
+  },
+});
 export const ENGINE_PROVENANCE: EngineProvenance = {
   effectDefinition: 'audio-effect-builder-faust', definitionVersion: '0.1.0', faustWasmVersion: '0.16.6', faustCompilerVersion: '2.85.9',
   libraries: { analyzers: '1.3.0', basics: '1.22.0', compressors: '1.6.0', delays: '1.2.0', filters: '1.7.1', maths: '2.9.0', misceffects: '2.5.2', oscillators: '1.7.0', phaflangers: '1.1.0', platform: '1.3.0', reverbs: '1.5.1', routes: '1.3.0', signals: '1.6.0' },
@@ -489,6 +555,7 @@ export function formatParameter(definition: ParameterDefinition, value: number) 
   if (definition.unit === 'ms') return `${Math.round(value)} ms`;
   if (definition.unit === 's') return `${value.toFixed(1)} s`;
   if (definition.unit === 'ratio') return `${value.toFixed(1)}:1`;
+  if (definition.unit === 'degrees') return `${Math.round(value)}°`;
   return `${value.toFixed(1)} dB`;
 }
 
@@ -836,7 +903,8 @@ export function upgradeProjectEngine(value: unknown): ProjectV2 {
   const isPreChorusCompressor = sameJson(project.engine, PRE_CHORUS_COMPRESSOR_ENGINE_PROVENANCE);
   const isPrePhaserCompressorModes = sameJson(project.engine, PRE_PHASER_COMPRESSOR_MODES_ENGINE_PROVENANCE);
   const isPreAutoWahStutter = sameJson(project.engine, PRE_AUTOWAH_STUTTER_ENGINE_PROVENANCE);
-  if (!isPrePair1 && !isPreCanonicalCompiler && !isPreSaturationV2 && !isPreAudibility && !isPreChorusCompressor && !isPrePhaserCompressorModes && !isPreAutoWahStutter) return validateProject(project);
+  const isPreEqLimiterFlanger = sameJson(project.engine, PRE_EQ_LIMITER_FLANGER_ENGINE_PROVENANCE);
+  if (!isPrePair1 && !isPreCanonicalCompiler && !isPreSaturationV2 && !isPreAudibility && !isPreChorusCompressor && !isPrePhaserCompressorModes && !isPreAutoWahStutter && !isPreEqLimiterFlanger) return validateProject(project);
   if (isPreSaturationV2) {
     for (const node of Object.values(project.nodes as Record<string, unknown>)) {
       if (!isRecord(node) || node.type !== 'saturation' || !isRecord(node.params)) continue;

@@ -42,6 +42,32 @@ function rmsRange(samples: Float32Array, start: number, end: number) {
   return Math.sqrt(energy / Math.max(1, end - start));
 }
 
+function meanAbsoluteDifference(left: Float32Array, right: Float32Array, start = 0) {
+  let difference = 0;
+  for (let index = start; index < Math.min(left.length, right.length); index += 1) difference += Math.abs(left[index] - right[index]);
+  return difference / Math.max(1, Math.min(left.length, right.length) - start);
+}
+
+function peakAbsolute(samples: Float32Array) {
+  let peak = 0;
+  for (const sample of samples) peak = Math.max(peak, Math.abs(sample));
+  return peak;
+}
+
+function firstFrameAbove(samples: Float32Array, threshold: number) {
+  return samples.findIndex((sample) => Math.abs(sample) > threshold);
+}
+
+function fractionalDelayReference(samples: Float32Array, delay: number) {
+  const whole = Math.floor(delay);
+  const fraction = delay - whole;
+  return Float32Array.from({ length: samples.length }, (_, frame) => {
+    const recent = frame - whole >= 0 ? samples[frame - whole] : 0;
+    const older = frame - whole - 1 >= 0 ? samples[frame - whole - 1] : 0;
+    return recent * (1 - fraction) + older * fraction;
+  });
+}
+
 test('committed Faust sources and metadata match the catalog fingerprints and stereo contract', async () => {
   const manifest = JSON.parse(await readFile(join(root, 'public', 'faust', 'manifest.json'), 'utf8'));
   for (const type of MODULE_TYPES) {
@@ -629,5 +655,141 @@ test('Faust Stutter repeats, gates, reverses, and ping-pongs captured stereo sli
       assert.equal(renders[3][1][sliceLength + sample], renders[0][0][sliceLength + sample]);
     }
     assert.notDeepEqual(renders[1][0], renders[0][0]);
+  }
+});
+
+test('Faust 3-Band EQ is exactly neutral and independently shapes low, mid, and high bands', async () => {
+  for (const sampleRate of [44100, 48000, 96000]) {
+    const length = Math.floor(sampleRate * 0.6);
+    const neutralInput = sine(731, sampleRate, length, 0.2);
+    const node = createNode('equalizer', 'equalizer-test');
+    const neutral = await renderFaustModuleOffline(node, [neutralInput, neutralInput], sampleRate, await loadFactory('equalizer'));
+    assert.deepEqual(neutral[0], neutralInput);
+    assert.deepEqual(neutral[1], neutralInput);
+
+    const start = Math.floor(length * 0.5);
+    const low = sine(90, sampleRate, length, 0.1);
+    const high = sine(Math.min(9000, sampleRate * 0.2), sampleRate, length, 0.1);
+    Object.assign(node.params, { lowGain: 12, lowFrequency: 180 });
+    const lowBoost = await renderFaustModuleOffline(node, [low, low], sampleRate, await loadFactory('equalizer'));
+    const lowOnHigh = await renderFaustModuleOffline(node, [high, high], sampleRate, await loadFactory('equalizer'));
+    assert.ok(rms(lowBoost[0], start) > rms(low, start) * 2.2);
+    assert.ok(rms(lowOnHigh[0], start) < rms(high, start) * 1.15);
+
+    Object.assign(node.params, { lowGain: 0, highGain: 12, highFrequency: 6000 });
+    const highBoost = await renderFaustModuleOffline(node, [high, high], sampleRate, await loadFactory('equalizer'));
+    const highOnLow = await renderFaustModuleOffline(node, [low, low], sampleRate, await loadFactory('equalizer'));
+    assert.ok(rms(highBoost[0], start) > rms(high, start) * 2.2);
+    assert.ok(rms(highOnLow[0], start) < rms(low, start) * 1.15);
+
+    const middle = sine(1000, sampleRate, length, 0.1);
+    Object.assign(node.params, { highGain: 0, midGain: 12, midFrequency: 1000, midQ: 4 });
+    const midBoost = await renderFaustModuleOffline(node, [middle, middle], sampleRate, await loadFactory('equalizer'));
+    assert.ok(rms(midBoost[0], start) > rms(middle, start) * 2.2);
+
+    Object.assign(node.params, { lowGain: -18, lowFrequency: 500, midGain: 18, midFrequency: 8000, midQ: 10, highGain: -18, highFrequency: 16000, output: 12 });
+    const extreme = await renderFaustModuleOffline(node, [neutralInput, neutralInput], sampleRate, await loadFactory('equalizer'));
+    assert.ok(extreme.every((channel) => channel.every(Number.isFinite)));
+  }
+});
+
+test('Faust Limiter preserves quiet audio with deterministic lookahead and enforces a linked stereo ceiling', async () => {
+  for (const sampleRate of [44100, 48000, 96000]) {
+    const length = Math.floor(sampleRate * 0.5);
+    const quiet = sine(440, sampleRate, length, 0.1);
+    const node = createNode('limiter', 'limiter-test');
+    Object.assign(node.params, { mode: 0, input: 0, ceiling: -1, lookahead: 5, release: 100, softness: 20 });
+    const quietLimited = await renderFaustModuleOffline(node, [quiet, quiet], sampleRate, await loadFactory('limiter'));
+    const latency = sampleRate * 0.005;
+    const expectedQuiet = fractionalDelayReference(quiet, latency);
+    assert.ok(meanAbsoluteDifference(quietLimited[0], expectedQuiet, Math.ceil(latency)) < 1e-7);
+
+    const hotLeft = sine(997, sampleRate, length, 0.95);
+    const hotRight = sine(997, sampleRate, length, 0.25);
+    Object.assign(node.params, { mode: 2, input: 12, ceiling: -6, lookahead: 10, release: 50, softness: 0 });
+    const limited = await renderFaustModuleOffline(node, [hotLeft, hotRight], sampleRate, await loadFactory('limiter'));
+    const ceiling = 10 ** (-6 / 20);
+    assert.ok(limited.every((channel) => channel.every(Number.isFinite)));
+    assert.ok(Math.max(peakAbsolute(limited[0]), peakAbsolute(limited[1])) <= ceiling + 1e-6);
+    const linkedStart = Math.floor(sampleRate * 0.15);
+    let ratioError = 0;
+    let ratioSamples = 0;
+    for (let frame = linkedStart; frame < length; frame += 1) {
+      const sourceFrame = frame - Math.round(sampleRate * 0.010);
+      if (sourceFrame < 0 || Math.abs(hotRight[sourceFrame]) < 0.05) continue;
+      const leftGain = limited[0][frame] / hotLeft[sourceFrame];
+      const rightGain = limited[1][frame] / hotRight[sourceFrame];
+      ratioError += Math.abs(leftGain - rightGain);
+      ratioSamples += 1;
+    }
+    assert.ok(ratioError / Math.max(1, ratioSamples) < 0.03);
+  }
+});
+
+test('Faust Limiter modes are distinct and Lookahead controls deterministic render latency', async () => {
+  const sampleRate = 48000;
+  const length = sampleRate;
+  const transient = Float32Array.from({ length }, (_, index) => (index % 2400 < 240 ? 1.1 * Math.sin(2 * Math.PI * 330 * index / sampleRate) : 0));
+  const node = createNode('limiter', 'limiter-modes');
+  Object.assign(node.params, { input: 6, ceiling: -6, lookahead: 5, release: 120, softness: 55 });
+  const modes = [];
+  for (const mode of [0, 1, 2, 3]) {
+    node.params.mode = mode;
+    const rendered = await renderFaustModuleOffline(node, [transient, transient], sampleRate, await loadFactory('limiter'));
+    assert.ok(rendered.every((channel) => channel.every(Number.isFinite)));
+    assert.ok(peakAbsolute(rendered[0]) <= 10 ** (-6 / 20) + 1e-6);
+    modes.push(rendered[0]);
+  }
+  for (let left = 0; left < modes.length; left += 1) {
+    for (let right = left + 1; right < modes.length; right += 1) assert.ok(meanAbsoluteDifference(modes[left], modes[right]) > 1e-5);
+  }
+
+  const impulse = new Float32Array(length);
+  impulse[0] = 0.1;
+  Object.assign(node.params, { mode: 0, input: 0, ceiling: 0, softness: 20, lookahead: 0 });
+  const zeroLookahead = await renderFaustModuleOffline(node, [impulse, impulse], sampleRate, await loadFactory('limiter'));
+  node.params.lookahead = 10;
+  const maximumLookahead = await renderFaustModuleOffline(node, [impulse, impulse], sampleRate, await loadFactory('limiter'));
+  assert.equal(firstFrameAbove(zeroLookahead[0], 0.05), 0);
+  assert.ok(Math.abs(firstFrameAbove(maximumLookahead[0], 0.05) - sampleRate * 0.010) <= 1);
+});
+
+test('Faust Flanger has an exact dry endpoint and four finite distinct stereo modes', async () => {
+  for (const sampleRate of [44100, 48000, 96000]) {
+    const length = Math.floor(sampleRate * 0.8);
+    const left = sine(330, sampleRate, length, 0.2);
+    const right = sine(517, sampleRate, length, 0.17);
+    const node = createNode('flanger', 'flanger-test');
+    Object.assign(node.params, { rate: 0.7, depth: 80, delay: 2.5, feedback: 95, stereo: 120, mix: 0, output: 0 });
+    const dry = await renderFaustModuleOffline(node, [left, right], sampleRate, await loadFactory('flanger'));
+    assert.deepEqual(dry[0], left);
+    assert.deepEqual(dry[1], right);
+
+    node.params.mix = 100;
+    const modes = [];
+    for (const mode of [0, 1, 2, 3]) {
+      node.params.mode = mode;
+      const rendered = await renderFaustModuleOffline(node, [left, right], sampleRate, await loadFactory('flanger'));
+      assert.ok(rendered.every((channel) => channel.every(Number.isFinite)));
+      modes.push(rendered);
+    }
+    const start = Math.floor(sampleRate * 0.2);
+    for (let first = 0; first < modes.length; first += 1) {
+      for (let second = first + 1; second < modes.length; second += 1) assert.ok(meanAbsoluteDifference(modes[first][0], modes[second][0], start) > 1e-5);
+    }
+    assert.ok(meanAbsoluteDifference(modes[1][0], modes[1][1], start) > 1e-4);
+  }
+});
+
+test('Faust Flanger remains distinct from Chorus, Phaser, and Delay fixtures', async () => {
+  const sampleRate = 48000;
+  const length = sampleRate;
+  const input = sine(440, sampleRate, length, 0.2);
+  const flanger = createNode('flanger', 'flanger-distinct');
+  Object.assign(flanger.params, { mode: 2, rate: 0.45, depth: 85, delay: 2, feedback: 70, stereo: 90, mix: 70, output: 0 });
+  const flanged = await renderFaustModuleOffline(flanger, [input, input], sampleRate, await loadFactory('flanger'));
+  for (const type of ['chorus', 'phaser', 'delay'] as const) {
+    const comparison = await renderFaustModuleOffline(createNode(type, `${type}-fixture`), [input, input], sampleRate, await loadFactory(type));
+    assert.ok(meanAbsoluteDifference(flanged[0], comparison[0], Math.floor(sampleRate * 0.2)) > 1e-4);
   }
 });
