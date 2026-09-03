@@ -4,22 +4,36 @@ WebMCP is optional browser capability detection through `document.modelContext.r
 
 ## Tools
 
-- `inspect-audio-project`
-- `list-audio-primitives`
-- `propose-audio-project-patch`
-- `apply-approved-audio-project-patch`
-- `render-and-analyze-audio-project`
-- `inspect-audio-project-validation`
-- `request-audio-plugin-build`
+Beat.Z exposes exactly five task-level tools:
 
-Inspection and proposal calls do not mutate the project. A proposal includes an expected revision, concise summary, musical purpose, and a validated atomic command batch. It appears in the page for review. Applying requires explicit page approval and the same expected revision; stale or partly invalid patches fail as a unit and return the current revision.
+- `inspect-builder` reads the current project, complete fourteen-primitive catalog, Control rules, validation, and VST3 download state. It returns a `contextId` bound to the project ID, revision, and catalog.
+- `create-plugin` turns a prompt-grounded plugin recipe into one atomic proposal. It works only on an empty builder and requires a current inspection context.
+- `edit-plugin` stages a focused atomic edit using primitive and Control IDs from the current inspection. It preserves state not named by the edit.
+- `clear-plugin` stages removal of every primitive and Control.
+- `download-plugin` uses the visible Download flow to analyze and freeze the exact revision, report the queued/building/failed state, and start the verified ZIP download when ready.
 
-Agent-applied changes use `applyProjectCommands` with actor `agent`, create one revision/activity item, enter normal undo history, autosave, update the Faust engine, and highlight changed nodes.
+Inspection does not mutate the page and is registered with `readOnlyHint`. The other tools describe their state changes and never bypass visible approval.
 
-`list-audio-primitives` derives its fourteen-primitive response from the shared catalog, including 3-Band EQ, Limiter, Flanger, and Tremolo. Limiter, Flanger, and Tremolo mode values are discrete and cannot be mapped to Controls; the 3-Band EQ's eight continuous parameters and the remaining continuous expansion parameters use the existing validated one-owner mapping rules. Tremolo reports `0` Tremolo, `1` Auto-Pan, `2` Stereo Tremolo, and `3` Pulse/Chop with continuous Rate, Depth, Shape, Stereo Phase, Mix, and Output Controls.
+## Context and approval
 
-Offline analysis uses the selected in-memory source. Build requests can only refer to an approved frozen revision. With no native service, the result is `native_build_unavailable` and contains no artifact or claim of VST3 validation.
+Create, edit, clear, and download require the current `contextId` from `inspect-builder`. A project revision or catalog change invalidates the context, so an agent cannot overwrite a newer human change with stale assumptions.
 
-## Deployment boundary
+Create, edit, and clear stage a proposal in the existing Page Activity drawer. The project changes only after the user chooses **Approve & apply**. Approved actions still use `applyProjectCommands` with actor `agent`, create one revision and activity item, enter normal undo history, autosave, update the Faust engine, and highlight changed primitives.
 
-In-page tool registration is not a public MCP server and does not bypass private-site access. A browser/agent must be able to open the private page and support the experimental WebMCP API. The visible connection label alone is not proof of a hosting-level published MCP declaration.
+## Prompt-grounded Controls
+
+`create-plugin` creates the primitives, fixed settings, Controls, and mappings in the same proposal. `edit-plugin` uses the same rules when adding or replacing a Control:
+
+1. Every Control has a unique visible name, at least one mapping, and a `promptBasis` that quotes the exact phrase in the user prompt that justifies it.
+2. One Control maps to one DSP parameter by default.
+3. Multiple mappings require `combined: true` and explicit prompt language such as “one-knob,” “combined,” “linked,” “together,” or “morph.”
+4. A DSP parameter can belong to only one Control, discrete modes cannot be mapped, and a plugin exposes at most eight Controls.
+5. Unmapped parameters remain intentional fixed settings rather than being folded into a generic master Control.
+
+Because the visible Controls rail renders the project's stored Controls, an approved recipe directly determines which knobs appear without a separate UI system.
+
+## Download boundary
+
+The first `download-plugin` call opens the existing Download panel, performs the existing offline analysis when needed, and freezes the validated revision. The user must still approve **Build VST3 on Mac** in the page. Later calls report the same D1 job observed by the UI. A ready job starts the public ZIP download; queued, building, and failed states return their real status.
+
+WebMCP operates the live page; it is not the native compiler, worker, installer, or DAW. The Mac worker remains responsible for compilation, signing, validation, parity checks, packaging, and publication.

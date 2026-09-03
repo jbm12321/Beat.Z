@@ -1,16 +1,32 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { analyzeStereo } from '../src/features/audio-builder/audio/analysis.ts';
-import type { OfflineComparison } from '../src/features/audio-builder/audio/compare.ts';
 import {
   applyApprovedAgentProposal,
   authorizeAgentProposal,
   createAgentProposal,
   type AgentProposal,
 } from '../src/features/audio-builder/agent/proposals.ts';
-import { registerWebMcpTools, type WebMcpTool } from '../src/features/audio-builder/agent/registerWebMcpTools.ts';
-import { createInitialProject } from '../src/features/audio-builder/domain/project.ts';
+import { createPluginPlan, makeBuilderContextId } from '../src/features/audio-builder/agent/pluginToolPlans.ts';
+import {
+  registerWebMcpTools,
+  type WebMcpDownloadState,
+  type WebMcpTool,
+} from '../src/features/audio-builder/agent/registerWebMcpTools.ts';
+import { createInitialProject, type ProjectV2 } from '../src/features/audio-builder/domain/project.ts';
 import { validateProjectForBuild } from '../src/features/audio-builder/domain/validation.ts';
+
+function installToolRegistry() {
+  const tools = new Map<string, WebMcpTool>();
+  Object.defineProperty(globalThis, 'document', {
+    configurable: true,
+    value: { modelContext: { registerTool: async (tool: WebMcpTool) => { tools.set(tool.name, tool); } } },
+  });
+  return tools;
+}
+
+function downloadState(project: ProjectV2): WebMcpDownloadState {
+  return { status: 'not-prepared', revision: project.revision, message: 'The current revision must be prepared.' };
+}
 
 test('WebMCP degrades cleanly when the experimental browser API is absent', async () => {
   const original = Object.getOwnPropertyDescriptor(globalThis, 'document');
@@ -19,150 +35,190 @@ test('WebMCP degrades cleanly when the experimental browser API is absent', asyn
   const registration = await registerWebMcpTools({
     getProject: () => project,
     getValidation: () => validateProjectForBuild(project),
+    getDownloadState: () => downloadState(project),
     stageProposal: () => { throw new Error('unused'); },
-    applyProposal: () => { throw new Error('unused'); },
-    analyze: async () => { throw new Error('unused'); },
-    requestBuild: () => { throw new Error('unused'); },
+    downloadPlugin: () => downloadState(project),
   });
   assert.equal(registration.supported, false);
   if (original) Object.defineProperty(globalThis, 'document', original);
 });
 
-test('registered tools share revision-safe project state and cannot bypass human proposal approval', async () => {
-  const tools = new Map<string, WebMcpTool>();
-  Object.defineProperty(globalThis, 'document', {
-    configurable: true,
-    value: { modelContext: { registerTool: async (tool: WebMcpTool) => { tools.set(tool.name, tool); } } },
-  });
+test('five task-level tools create, edit, clear, inspect, and download through shared state', async () => {
+  const tools = installToolRegistry();
   let project = createInitialProject();
   let proposal: AgentProposal | null = null;
-  const signal = Float32Array.from([0.1, -0.1, 0.2, -0.2]);
-  const analysis = analyzeStereo([signal, signal], 48000);
-  const comparison: OfflineComparison = {
-    revision: project.revision,
-    sampleRate: 48000,
-    dry: analysis,
-    processed: analysis,
-    loudnessMatched: analysis,
-    loudnessMatch: { gain: 1, gainDb: 0, limited: false },
-    plainLanguageSummary: ['Dry and processed levels match.'],
-  };
-
+  let downloadCalls = 0;
   const registration = await registerWebMcpTools({
     getProject: () => project,
-    getValidation: () => validateProjectForBuild(project, analysis),
+    getValidation: () => validateProjectForBuild(project),
+    getDownloadState: () => downloadState(project),
     stageProposal: (input) => {
       proposal = createAgentProposal(project, input);
       return proposal;
     },
-    applyProposal: (proposalId, expectedRevision) => {
-      if (!proposal || proposal.id !== proposalId) throw new Error('Unknown proposal.');
-      if (expectedRevision !== project.revision) throw new Error(`Stale revision ${expectedRevision}; current revision is ${project.revision}.`);
-      const result = applyApprovedAgentProposal(project, proposal);
-      project = result.project;
-      proposal = result.proposal;
-      return project;
+    downloadPlugin: () => {
+      downloadCalls += 1;
+      return { status: 'approval-required', revision: project.revision, message: 'Approve the visible build request.' };
     },
-    analyze: async () => ({ ...comparison, revision: project.revision }),
-    requestBuild: () => ({
-      status: 'unavailable', code: 'native_build_unavailable', projectId: project.id, revision: project.revision, contentHash: 'f'.repeat(64),
-      message: 'No native service is configured.',
-    }),
   });
 
   assert.equal(registration.supported, true);
   assert.deepEqual(registration.toolNames, [
-    'inspect-audio-project',
-    'list-audio-primitives',
-    'propose-audio-project-patch',
-    'apply-approved-audio-project-patch',
-    'render-and-analyze-audio-project',
-    'inspect-audio-project-validation',
-    'request-audio-plugin-build',
+    'inspect-builder',
+    'create-plugin',
+    'edit-plugin',
+    'clear-plugin',
+    'download-plugin',
   ]);
+  assert.equal(tools.size, 5);
+  for (const tool of tools.values()) {
+    assert.ok(tool.name.length <= 30, `${tool.name} exceeds the recommended tool-name budget`);
+    assert.ok(tool.description.length <= 500, `${tool.name} exceeds the recommended description budget`);
+  }
+  assert.equal(tools.get('inspect-builder')?.annotations?.readOnlyHint, true);
+  for (const name of ['create-plugin', 'edit-plugin', 'clear-plugin', 'download-plugin']) {
+    assert.equal(tools.get(name)?.annotations?.readOnlyHint, false);
+  }
 
-  const primitives = await tools.get('list-audio-primitives')!.execute({});
-  const primitiveCatalog = (primitives.structuredContent as { primitives: Record<string, { parameters: Array<{ id: string; choices?: Array<{ label: string }> }> }> }).primitives;
-  assert.deepEqual(Object.keys(primitiveCatalog), ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor', 'phaser', 'autowah', 'stutter', 'equalizer', 'limiter', 'flanger', 'tremolo']);
-  assert.deepEqual(primitiveCatalog.delay.parameters[0].choices?.map((choice) => choice.label), ['Digital', 'Ping-Pong', 'Tape']);
-  assert.deepEqual(primitiveCatalog.reverb.parameters[0].choices?.map((choice) => choice.label), ['Room', 'Hall', 'Plate']);
-  assert.deepEqual(primitiveCatalog.chorus.parameters[0].choices?.map((choice) => choice.label), ['Classic', 'Wide', 'Ensemble']);
-  assert.deepEqual(primitiveCatalog.compressor.parameters[0].choices?.map((choice) => choice.label), ['Clean', 'Punch', 'Glue']);
-  assert.deepEqual(primitiveCatalog.compressor.parameters.map((parameter) => parameter.id), ['mode', 'threshold', 'ratio', 'attack', 'release', 'makeup', 'mix']);
-  assert.deepEqual(primitiveCatalog.phaser.parameters[0].choices?.map((choice) => choice.label), ['Classic', 'Wide', 'Deep']);
-  assert.deepEqual(primitiveCatalog.autowah.parameters[0].choices?.map((choice) => choice.label), ['Low Pass Up', 'Low Pass Down', 'High Pass Up', 'High Pass Down']);
-  assert.deepEqual(primitiveCatalog.stutter.parameters[0].choices?.map((choice) => choice.label), ['Repeat', 'Gate', 'Reverse', 'Ping-Pong']);
-  assert.deepEqual(primitiveCatalog.stutter.parameters[2].choices?.map((choice) => choice.label), ['1x', '2x', '3x', '4x', '6x', '8x']);
-  assert.deepEqual(primitiveCatalog.equalizer.parameters.map((parameter) => parameter.id), ['lowGain', 'lowFrequency', 'midGain', 'midFrequency', 'midQ', 'highGain', 'highFrequency', 'output']);
-  assert.deepEqual(primitiveCatalog.limiter.parameters[0].choices?.map((choice) => choice.label), ['Transparent', 'Punch', 'Brickwall', 'Soft Clip']);
-  assert.deepEqual(primitiveCatalog.flanger.parameters[0].choices?.map((choice) => choice.label), ['Classic', 'Stereo', 'Jet', 'Through-Zero']);
-  assert.deepEqual(primitiveCatalog.tremolo.parameters.map((parameter) => parameter.id), ['mode', 'rate', 'depth', 'shape', 'stereo', 'mix', 'output']);
-  assert.deepEqual(primitiveCatalog.tremolo.parameters[0].choices?.map((choice) => choice.label), ['Tremolo', 'Auto-Pan', 'Stereo Tremolo', 'Pulse/Chop']);
+  const inspection = await tools.get('inspect-builder')!.execute({});
+  const inspected = inspection.structuredContent as {
+    contextId: string;
+    project: ProjectV2;
+    primitives: Record<string, unknown>;
+    controlRules: { defaultMappingsPerControl: number };
+  };
+  assert.equal(inspected.contextId, makeBuilderContextId(project));
+  assert.equal(inspected.project.revision, 0);
+  assert.deepEqual(Object.keys(inspected.primitives), [
+    'gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor',
+    'phaser', 'autowah', 'stutter', 'equalizer', 'limiter', 'flanger', 'tremolo',
+  ]);
+  assert.equal(inspected.controlRules.defaultMappingsPerControl, 1);
 
-  const propose = await tools.get('propose-audio-project-patch')!.execute({
-    expectedRevision: 0,
-    summary: 'Remove rumble',
-    musicalPurpose: 'Make space below the bass.',
-    commands: [{ type: 'add_module', moduleType: 'filter', nodeId: 'filter-1' }],
+  const missingContext = await tools.get('create-plugin')!.execute({
+    prompt: 'Create a warm tape echo with adjustable time, feedback and mix.',
+    plugin: { name: 'Warm Echo', chain: [], controls: [] },
   });
-  assert.equal(propose.isError, undefined);
+  assert.equal(missingContext.isError, true);
+  assert.match(missingContext.content[0].text, /inspect-builder again/u);
+
+  const created = await tools.get('create-plugin')!.execute({
+    contextId: inspected.contextId,
+    prompt: 'Create a warm tape echo with adjustable time, feedback and mix.',
+    plugin: {
+      name: 'Warm Echo',
+      chain: [{ ref: 'echo', primitive: 'delay', settings: { mode: 'Tape', time: 340, feedback: 45, mix: 30 } }],
+      controls: [
+        { name: 'Echo Time', promptBasis: 'adjustable time', mappings: [{ primitiveRef: 'echo', parameter: 'time', min: 80, max: 650 }] },
+        { name: 'Feedback', promptBasis: 'feedback', mappings: [{ primitiveRef: 'echo', parameter: 'feedback', min: 10, max: 75 }] },
+        { name: 'Mix', promptBasis: 'mix', mappings: [{ primitiveRef: 'echo', parameter: 'mix', min: 0, max: 65 }] },
+      ],
+    },
+  });
+  assert.equal(created.isError, undefined);
   assert.equal(project.revision, 0);
   assert.deepEqual(project.chain, []);
-
-  const rejected = await tools.get('apply-approved-audio-project-patch')!.execute({ proposalId: proposal!.id, expectedRevision: 0 });
-  assert.equal(rejected.isError, true);
-  assert.equal(project.revision, 0);
+  assert.deepEqual((created.structuredContent as { controls: string[] }).controls, ['Echo Time', 'Feedback', 'Mix']);
+  assert.equal((created.structuredContent as { requiresHumanApproval: boolean }).requiresHumanApproval, true);
 
   proposal = authorizeAgentProposal(proposal!);
-  const applied = await tools.get('apply-approved-audio-project-patch')!.execute({ proposalId: proposal.id, expectedRevision: 0 });
-  assert.equal(applied.isError, undefined);
+  project = applyApprovedAgentProposal(project, proposal).project;
   assert.equal(project.revision, 1);
-  assert.deepEqual(project.chain, ['filter-1']);
+  assert.equal(project.name, 'Warm Echo');
+  assert.equal(project.chain.length, 1);
+  assert.deepEqual(project.macros.map((control) => control.name), ['Echo Time', 'Feedback', 'Mix']);
+  assert.ok(project.macros.every((control) => control.mappings.length === 1));
+  assert.equal(project.nodes[project.chain[0]].params.mode, 2);
 
-  const stale = await tools.get('propose-audio-project-patch')!.execute({
-    expectedRevision: 0,
-    summary: 'Stale change',
-    musicalPurpose: 'Should not overwrite newer work.',
-    commands: [{ type: 'add_module', moduleType: 'gain' }],
+  const staleEdit = await tools.get('edit-plugin')!.execute({
+    contextId: inspected.contextId,
+    prompt: 'Make the echo darker.',
+    changes: [{ action: 'set-parameter', primitiveId: project.chain[0], parameter: 'tone', value: 3500 }],
   });
-  assert.equal(stale.isError, true);
-  assert.equal((stale.structuredContent as { currentRevision: number }).currentRevision, 1);
+  assert.equal(staleEdit.isError, true);
+  assert.match(staleEdit.content[0].text, /stale/u);
 
-  const pair1 = await tools.get('propose-audio-project-patch')!.execute({
-    expectedRevision: 1,
-    summary: 'Add echo and space',
-    musicalPurpose: 'Stage Tape delay and Hall reverb without applying them.',
-    commands: [
-      { type: 'add_module', moduleType: 'delay', nodeId: 'delay-1' },
-      { type: 'set_parameter', nodeId: 'delay-1', paramId: 'mode', value: 2 },
-      { type: 'set_parameter', nodeId: 'delay-1', paramId: 'time', value: 340 },
-      { type: 'add_module', moduleType: 'reverb', nodeId: 'reverb-1' },
-      { type: 'set_parameter', nodeId: 'reverb-1', paramId: 'mode', value: 1 },
-      { type: 'set_parameter', nodeId: 'reverb-1', paramId: 'decay', value: 3.8 },
+  const refreshed = (await tools.get('inspect-builder')!.execute({})).structuredContent as { contextId: string };
+  const edited = await tools.get('edit-plugin')!.execute({
+    contextId: refreshed.contextId,
+    prompt: 'Make the echo darker and add a separate warmth control.',
+    changes: [
+      { action: 'set-parameter', primitiveId: project.chain[0], parameter: 'tone', value: 3500 },
+      {
+        action: 'set-control', name: 'Warmth', promptBasis: 'separate warmth control',
+        mappings: [{ primitiveRef: project.chain[0], parameter: 'tone', min: 1200, max: 12000, inverted: true }],
+      },
     ],
   });
-  assert.equal(pair1.isError, undefined);
-  assert.equal((pair1.structuredContent as { requiresHumanApproval: boolean }).requiresHumanApproval, true);
-  assert.deepEqual(project.chain, ['filter-1']);
+  assert.equal(edited.isError, undefined);
+  assert.equal(project.revision, 1);
+  proposal = authorizeAgentProposal(proposal!);
+  project = applyApprovedAgentProposal(project, proposal).project;
+  assert.equal(project.revision, 2);
+  assert.deepEqual(project.macros.map((control) => control.name), ['Echo Time', 'Feedback', 'Mix', 'Warmth']);
 
-  for (const commands of [
-    [{ type: 'add_module', moduleType: 'delay', nodeId: 'bad-delay' }, { type: 'set_parameter', nodeId: 'bad-delay', paramId: 'mode', value: 4 }],
-    [{ type: 'add_module', moduleType: 'reverb', nodeId: 'bad-reverb' }, { type: 'set_parameter', nodeId: 'bad-reverb', paramId: 'decay', value: 20 }],
-    [{ type: 'add_module', moduleType: 'chorus', nodeId: 'bad-chorus' }, { type: 'set_parameter', nodeId: 'bad-chorus', paramId: 'mode', value: 3 }],
-    [{ type: 'add_module', moduleType: 'compressor', nodeId: 'bad-compressor' }, { type: 'set_parameter', nodeId: 'bad-compressor', paramId: 'ratio', value: 40 }],
-    [{ type: 'add_module', moduleType: 'autowah', nodeId: 'bad-autowah' }, { type: 'set_parameter', nodeId: 'bad-autowah', paramId: 'mode', value: 4 }],
-    [{ type: 'add_module', moduleType: 'stutter', nodeId: 'bad-stutter' }, { type: 'set_parameter', nodeId: 'bad-stutter', paramId: 'repeats', value: 5 }],
-    [{ type: 'add_module', moduleType: 'limiter', nodeId: 'bad-limiter' }, { type: 'set_parameter', nodeId: 'bad-limiter', paramId: 'mode', value: 4 }],
-    [{ type: 'add_module', moduleType: 'flanger', nodeId: 'bad-flanger' }, { type: 'set_parameter', nodeId: 'bad-flanger', paramId: 'feedback', value: 96 }],
-    [{ type: 'add_module', moduleType: 'tremolo', nodeId: 'bad-tremolo' }, { type: 'set_parameter', nodeId: 'bad-tremolo', paramId: 'mode', value: 4 }],
-    [{ type: 'add_module', moduleType: 'equalizer', nodeId: 'bad-equalizer' }, { type: 'set_parameter', nodeId: 'bad-equalizer', paramId: 'midQ', value: Number.NaN }],
-  ]) {
-    const invalid = await tools.get('propose-audio-project-patch')!.execute({
-      expectedRevision: 1, summary: 'Invalid expansion request', musicalPurpose: 'Must be rejected atomically.', commands,
-    });
-    assert.equal(invalid.isError, true);
-    assert.deepEqual(project.chain, ['filter-1']);
-  }
+  const currentContext = makeBuilderContextId(project);
+  const download = await tools.get('download-plugin')!.execute({ contextId: currentContext });
+  assert.equal(downloadCalls, 1);
+  assert.equal((download.structuredContent as WebMcpDownloadState).status, 'approval-required');
+
+  const cleared = await tools.get('clear-plugin')!.execute({ contextId: currentContext });
+  assert.equal(cleared.isError, undefined);
+  assert.equal(project.chain.length, 1);
+  proposal = authorizeAgentProposal(proposal!);
+  project = applyApprovedAgentProposal(project, proposal).project;
+  assert.equal(project.revision, 3);
+  assert.deepEqual(project.chain, []);
+  assert.deepEqual(project.macros, []);
+
+  const alreadyEmpty = await tools.get('clear-plugin')!.execute({ contextId: makeBuilderContextId(project) });
+  assert.equal((alreadyEmpty.structuredContent as { alreadyEmpty: boolean }).alreadyEmpty, true);
   registration.unregister();
   Reflect.deleteProperty(globalThis, 'document');
+});
+
+test('plugin plans require prompt-grounded Controls and reject accidental one-knob-for-all mappings', () => {
+  const project = createInitialProject();
+  const basePlugin = {
+    name: 'Focused Delay',
+    chain: [{ ref: 'echo', primitive: 'delay' }],
+  };
+
+  assert.throws(() => createPluginPlan(project, {
+    prompt: 'Create a warm delay.',
+    plugin: {
+      ...basePlugin,
+      controls: [{ name: 'Speed', promptBasis: 'speed', mappings: [{ primitiveRef: 'echo', parameter: 'time', min: 50, max: 500 }] }],
+    },
+  }), /exact phrase/u);
+
+  assert.throws(() => createPluginPlan(project, {
+    prompt: 'Create a delay with time and feedback controls.',
+    plugin: {
+      ...basePlugin,
+      controls: [{
+        name: 'Everything', promptBasis: 'time and feedback',
+        mappings: [
+          { primitiveRef: 'echo', parameter: 'time', min: 50, max: 500 },
+          { primitiveRef: 'echo', parameter: 'feedback', min: 10, max: 70 },
+        ],
+      }],
+    },
+  }), /Multi-parameter Controls/u);
+
+  const combined = createPluginPlan(project, {
+    prompt: 'Create a delay with one-knob time and feedback movement.',
+    plugin: {
+      ...basePlugin,
+      controls: [{
+        name: 'Echo Motion', promptBasis: 'one-knob time and feedback', combined: true,
+        mappings: [
+          { primitiveRef: 'echo', parameter: 'time', min: 50, max: 500 },
+          { primitiveRef: 'echo', parameter: 'feedback', min: 10, max: 70 },
+        ],
+      }],
+    },
+  });
+  assert.deepEqual(combined.controlNames, ['Echo Motion']);
+  assert.equal(combined.proposal.commands.filter((command) => command.type === 'add_mapping').length, 2);
 });
