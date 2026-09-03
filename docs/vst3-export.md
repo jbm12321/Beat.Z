@@ -41,6 +41,8 @@ The approval hash covers the complete validated project snapshot. The DSP hash c
 
 Zero Controls are valid. The builder never invents a fallback Control.
 
+The generated custom editor keeps every native parameter available to the host while showing a compact maximum of fourteen continuous knobs. Parameters owned by project Controls are prioritized, remaining slots use chain order, and every discrete parameter receives its own dropdown without consuming the knob budget. Dropdowns have no separate UI cap and open the parameter's complete choice list. The editor manifest records total and hidden knob counts for verification; no parameter is removed from DSP processing or host automation.
+
 The generated plugin identity stays stable for the exact effective DSP build. Different frozen builds receive different VST3 and bundle identities so they can coexist in a plugin host. The filename includes the first eight characters of the DSP hash so different sound revisions remain distinguishable.
 
 ## Native acceptance gates

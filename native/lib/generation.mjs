@@ -13,7 +13,8 @@ import { validateNativeBuildRequest } from './spec.mjs';
 const execFileAsync = promisify(execFile);
 const nativeRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repositoryRoot = resolve(nativeRoot, '..');
-export const NATIVE_EDITOR_MAX_KNOBS_PER_ROW = 6;
+export const NATIVE_EDITOR_MAX_KNOBS = 14;
+export const NATIVE_EDITOR_MAX_KNOBS_PER_ROW = 7;
 
 // Faust 2.85.9 with `-ftz 2` can emit `&-temporary` for the exponent check
 // used by a few reverb feedback paths. Apple Clang correctly rejects taking
@@ -51,10 +52,13 @@ function fuidMacro(hex) {
   return hex.match(/.{8}/gu).map((part) => `0x${part}`).join(', ');
 }
 
-function effectiveParameterValue(request, node, parameterId, definition) {
-  const owner = request.dsp.macros
+function parameterOwner(request, nodeId, parameterId) {
+  return request.dsp.macros
     .flatMap((macro) => macro.mappings.map((mapping) => ({ macro, mapping })))
-    .find(({ mapping }) => mapping.nodeId === node.id && mapping.paramId === parameterId);
+    .find(({ mapping }) => mapping.nodeId === nodeId && mapping.paramId === parameterId);
+}
+
+function effectiveParameterValue(request, node, parameterId, definition, owner = parameterOwner(request, node.id, parameterId)) {
   if (!owner) return node.params[parameterId];
   const normalized = owner.mapping.inverted ? 1 - owner.macro.value : owner.macro.value;
   if (definition.scale === 'log') return definition.min * ((definition.max / definition.min) ** normalized);
@@ -70,6 +74,7 @@ export function createAutomaticNativeParameters(request) {
     const moduleName = NATIVE_MODULE_CATALOG[node.type].name ?? `${node.type[0].toUpperCase()}${node.type.slice(1)}`;
     const moduleLabel = `${moduleName} ${moduleDisplayIndex}`;
     Object.entries(NATIVE_MODULE_CATALOG[node.type].parameters).forEach(([parameterId, definition]) => {
+      const owner = parameterOwner(request, node.id, parameterId);
       parameters.push({
         index: parameters.length,
         nodeIndex: nodeIndex + 1,
@@ -82,7 +87,8 @@ export function createAutomaticNativeParameters(request) {
         controlType: definition.choices ? 'switch' : 'knob',
         controlLabel: definition.name,
         label: `${moduleLabel} ${definition.name}`,
-        value: effectiveParameterValue(request, node, parameterId, definition),
+        value: effectiveParameterValue(request, node, parameterId, definition, owner),
+        mapped: Boolean(owner),
       });
     });
   });
@@ -90,8 +96,15 @@ export function createAutomaticNativeParameters(request) {
 }
 
 export function createNativeEditorModel(parameters) {
+  const allKnobs = parameters.filter((parameter) => parameter.controlType === 'knob');
+  const visibleKnobs = [
+    ...allKnobs.filter((parameter) => parameter.mapped),
+    ...allKnobs.filter((parameter) => !parameter.mapped),
+  ].slice(0, NATIVE_EDITOR_MAX_KNOBS);
+  const visibleKnobIndexes = new Set(visibleKnobs.map((parameter) => parameter.index));
+  const visibleParameters = parameters.filter((parameter) => parameter.controlType === 'switch' || visibleKnobIndexes.has(parameter.index));
   const modules = [];
-  for (const parameter of parameters) {
+  for (const parameter of visibleParameters) {
     let moduleModel = modules.at(-1);
     if (!moduleModel || moduleModel.nodeId !== parameter.nodeId) {
       moduleModel = {
@@ -129,7 +142,7 @@ export function createNativeEditorModel(parameters) {
       label: knobChunks.length === 1 ? moduleModel.label : `${moduleModel.label} ${index + 1}/${knobChunks.length}`,
       controls: [...(index === 0 ? switches : []), ...knobControls],
       knobCount: knobControls.length,
-      unitCount: Math.max(1, knobControls.length),
+      unitCount: Math.max(1, knobControls.length, index === 0 ? switches.length * 2 : 0),
     }));
   });
 
@@ -151,15 +164,19 @@ export function createNativeEditorModel(parameters) {
   }
 
   if (rows.length === 0) rows.push({ index: 0, knobCount: 0, usedUnits: 0, modules: [] });
-  const knobCount = parameters.filter((parameter) => parameter.controlType === 'knob').length;
-  const switchCount = parameters.length - knobCount;
+  const knobCount = visibleKnobs.length;
+  const switchCount = parameters.filter((parameter) => parameter.controlType === 'switch').length;
   return {
+    maxKnobs: NATIVE_EDITOR_MAX_KNOBS,
     maxKnobsPerRow: NATIVE_EDITOR_MAX_KNOBS_PER_ROW,
     moduleCount: modules.length,
     knobCount,
+    totalKnobCount: allKnobs.length,
+    hiddenKnobCount: allKnobs.length - knobCount,
     switchCount,
+    parameterCount: parameters.length,
     rowCount: rows.length,
-    height: Math.max(520, 200 + (rows.length * 320)),
+    height: Math.max(440, 150 + (rows.length * 220)),
     rows: rows.map((row) => ({
       ...row,
       layoutUnits: Math.max(3, row.usedUnits),
@@ -261,30 +278,30 @@ function renderTemplate(source, replacements) {
 function renderNativeEditorControls(editor) {
   const lines = [];
   for (const row of editor.rows) {
-    lines.push(`    const IRECT editorRow_${row.index} = controlDeck.SubRectVertical(${editor.rowCount}, ${row.index}).GetPadded(-2.f, -6.f, -2.f, -6.f);`);
+    lines.push(`    const IRECT editorRow_${row.index} = controlDeck.SubRectVertical(${editor.rowCount}, ${row.index}).GetPadded(-1.f, -4.f, -1.f, -4.f);`);
     row.modules.forEach((moduleModel, moduleIndex) => {
       const suffix = `${row.index}_${moduleIndex}`;
       const start = moduleModel.unitStart + row.offsetUnits;
       const end = start + moduleModel.unitCount;
       lines.push(
         `    const IRECT moduleBounds_${suffix}(editorRow_${row.index}.L + editorRow_${row.index}.W() * ${floatLiteral(start)} / ${floatLiteral(row.layoutUnits)}, editorRow_${row.index}.T, editorRow_${row.index}.L + editorRow_${row.index}.W() * ${floatLiteral(end)} / ${floatLiteral(row.layoutUnits)}, editorRow_${row.index}.B);`,
-        `    pGraphics->AttachControl(new IVGroupControl(moduleBounds_${suffix}.GetPadded(-6.f), ${cppString(moduleModel.label.toUpperCase())}, 12.f, moduleStyle));`,
-        `    const IRECT moduleBody_${suffix} = moduleBounds_${suffix}.GetPadded(-18.f).GetReducedFromTop(28.f);`,
+        `    pGraphics->AttachControl(new IVGroupControl(moduleBounds_${suffix}.GetPadded(-4.f), ${cppString(moduleModel.label.toUpperCase())}, 11.f, moduleStyle));`,
+        `    const IRECT moduleBody_${suffix} = moduleBounds_${suffix}.GetPadded(-12.f).GetReducedFromTop(22.f);`,
       );
 
       const switches = moduleModel.controls.filter((control) => control.type === 'switch');
       if (switches.length > 0) {
-        lines.push(`    const IRECT switchRow_${suffix} = moduleBody_${suffix}.GetFromTop(66.f);`);
+        lines.push(`    const IRECT switchRow_${suffix} = moduleBody_${suffix}.GetFromTop(52.f);`);
         switches.forEach((control, switchIndex) => {
-          lines.push(`    pGraphics->AttachControl(new IVTabSwitchControl(switchRow_${suffix}.SubRectHorizontal(${switches.length}, ${switchIndex}).GetPadded(-4.f), kParam${control.parameterIndex}, {${control.choices.map(cppString).join(', ')}}, ${cppString(control.label)}, switchStyle, EVShape::EndsRounded, EDirection::Horizontal));`);
+          lines.push(`    pGraphics->AttachControl(new IVMenuButtonControl(switchRow_${suffix}.SubRectHorizontal(${switches.length}, ${switchIndex}).GetPadded(-3.f), kParam${control.parameterIndex}, ${cppString(control.label)}, switchStyle, EVShape::EndsRounded));`);
         });
       }
 
       const knobs = moduleModel.controls.filter((control) => control.type === 'knob');
       if (knobs.length > 0) {
-        lines.push(`    const IRECT knobRow_${suffix} = moduleBody_${suffix}.GetReducedFromTop(${switches.length > 0 ? '70.f' : '10.f'});`);
+        lines.push(`    const IRECT knobRow_${suffix} = moduleBody_${suffix}.GetReducedFromTop(${switches.length > 0 ? '56.f' : '4.f'});`);
         knobs.forEach((control, knobIndex) => {
-          lines.push(`    pGraphics->AttachControl(new IVKnobControl(knobRow_${suffix}.SubRectHorizontal(${knobs.length}, ${knobIndex}).GetCentredInside(126.f), kParam${control.parameterIndex}, ${cppString(control.label)}, knobStyle, true));`);
+          lines.push(`    pGraphics->AttachControl(new IVKnobControl(knobRow_${suffix}.SubRectHorizontal(${knobs.length}, ${knobIndex}).GetCentredInside(108.f), kParam${control.parameterIndex}, ${cppString(control.label)}, knobStyle, true));`);
         });
       }
     });
@@ -329,7 +346,6 @@ export async function materializeNativeTemplates(plan, options = {}) {
     PARAM_INIT: plan.parameters.map(nativeParameterInit).join('\n'),
     APPLY_ALL_PARAMETERS: plan.parameters.map((parameter) => `  OnParamChange(kParam${parameter.index});`).join('\n'),
     EDITOR_CONTROLS: renderNativeEditorControls(plan.editor),
-    EDITOR_SUMMARY: `${plan.editor.moduleCount} MODULE${plan.editor.moduleCount === 1 ? '' : 'S'}  /  ${plan.editor.knobCount} KNOB${plan.editor.knobCount === 1 ? '' : 'S'}  /  ${plan.editor.switchCount} SWITCH${plan.editor.switchCount === 1 ? '' : 'ES'}`,
   });
   const plist = renderTemplate(plistTemplate, { BUNDLE_IDENTIFIER: plan.identity.bundleIdentifier, PRODUCT_NAME: xml(plan.plugin.productName), VERSION: plan.plugin.version });
   const files = {

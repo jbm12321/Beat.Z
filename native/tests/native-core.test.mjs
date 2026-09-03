@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path';
 import test from 'node:test';
 import { saveVerifiedVst3Bundle } from '../lib/artifact.mjs';
 import { sha256Canonical } from '../lib/canonical.mjs';
-import { createAutomaticNativeParameters, createNativeEditorModel, createNativeGenerationPlan, deriveNativeIdentity, defaultExportRoot, materializeNativeTemplates, repairFaustFtzRvalueAddresses } from '../lib/generation.mjs';
+import { createAutomaticNativeParameters, createNativeEditorModel, createNativeGenerationPlan, deriveNativeIdentity, defaultExportRoot, materializeNativeTemplates, NATIVE_EDITOR_MAX_KNOBS, NATIVE_EDITOR_MAX_KNOBS_PER_ROW, repairFaustFtzRvalueAddresses } from '../lib/generation.mjs';
 import { inspectNativeToolchain } from '../lib/doctor.mjs';
 import { compareStereoParity, createParityScenarios, parityDiagnostics } from '../lib/parity.mjs';
 import { publicArtifactDetails } from '../lib/publish.mjs';
@@ -358,7 +358,7 @@ test('the native editor preserves every Saturation v2 parameter in visible wrapp
   assert.equal(editor.rowCount, 3);
   assert.equal(editor.knobCount, 11);
   assert.equal(editor.switchCount, 2);
-  assert.ok(editor.rows.every((row) => row.knobCount <= 6));
+  assert.ok(editor.rows.every((row) => row.knobCount <= NATIVE_EDITOR_MAX_KNOBS_PER_ROW));
   assert.deepEqual(editor.rows.flatMap((row) => row.modules.map((module) => module.label)), ['Gain 1', 'Filter 1', 'Saturation 1 1/2', 'Saturation 1 2/2']);
   assert.deepEqual(parameters.filter((parameter) => parameter.moduleType === 'saturation').map((parameter) => parameter.parameterId), ['character', 'drive', 'tone', 'mix', 'output', 'bias', 'clip', 'age', 'wow']);
   assert.equal('pages' in editor, false);
@@ -404,19 +404,23 @@ test('the native catalog and generic editor represent every expanded effect with
   assert.equal(NATIVE_MODULE_CATALOG.tremolo.wasmSha256, 'fcd740fc6d557c1768dd197f62caf119eba0072c6ba723d43f1b2ba9e74cffdd');
   const request = await nativeRequestForModules(['delay', 'reverb', 'chorus', 'compressor', 'phaser', 'autowah', 'stutter']);
   const editor = createNativeEditorModel(createAutomaticNativeParameters(request));
-  assert.equal(editor.knobCount, 40);
+  assert.equal(editor.knobCount, NATIVE_EDITOR_MAX_KNOBS);
+  assert.equal(editor.totalKnobCount, 40);
+  assert.equal(editor.hiddenKnobCount, 26);
   assert.equal(editor.switchCount, 8);
-  assert.deepEqual(editor.rows.flatMap((row) => row.modules.map((module) => module.label)), ['Delay 1', 'Reverb 1', 'Chorus 1', 'Compressor 1', 'Phaser 1', 'Auto Wah 1 1/2', 'Auto Wah 1 2/2', 'Stutter 1']);
+  assert.deepEqual([...new Set(editor.rows.flatMap((row) => row.modules.map((module) => module.moduleType)))], ['delay', 'reverb', 'chorus', 'compressor', 'phaser', 'autowah', 'stutter']);
   const expansionRequest = await nativeRequestForModules(['equalizer', 'limiter', 'flanger', 'tremolo']);
   const expansionEditor = createNativeEditorModel(createAutomaticNativeParameters(expansionRequest));
-  assert.equal(expansionEditor.knobCount, 26);
+  assert.equal(expansionEditor.knobCount, NATIVE_EDITOR_MAX_KNOBS);
+  assert.equal(expansionEditor.totalKnobCount, 26);
+  assert.equal(expansionEditor.hiddenKnobCount, 12);
   assert.equal(expansionEditor.switchCount, 3);
   assert.ok(expansionEditor.rows.flatMap((row) => row.modules.map((module) => module.label)).some((label) => label.startsWith('3-Band EQ 1')));
   assert.ok(expansionEditor.rows.flatMap((row) => row.modules.map((module) => module.label)).some((label) => label.startsWith('Limiter 1')));
   assert.ok(expansionEditor.rows.flatMap((row) => row.modules.map((module) => module.label)).some((label) => label.startsWith('Flanger 1')));
   const tremoloModules = expansionEditor.rows.flatMap((row) => row.modules).filter((module) => module.label.startsWith('Tremolo 1'));
   assert.equal(tremoloModules.length, 1);
-  assert.equal(tremoloModules[0].controls.filter((control) => control.type === 'knob').length, 6);
+  assert.equal(tremoloModules[0].controls.filter((control) => control.type === 'knob').length, 0);
   assert.equal(tremoloModules[0].controls.filter((control) => control.type === 'switch').length, 1);
 });
 
@@ -424,16 +428,54 @@ test('the native editor wraps complete modules into visible rows without paginat
   const request = await nativeRequestForModules(['saturation', 'saturation', 'gain']);
   const editor = createNativeEditorModel(createAutomaticNativeParameters(request));
 
-  assert.equal(editor.rowCount, 4);
-  assert.equal(editor.height, 1480);
+  assert.equal(editor.rowCount, 2);
+  assert.equal(editor.height, 590);
+  assert.equal(editor.knobCount, 14);
+  assert.equal(editor.totalKnobCount, 17);
+  assert.equal(editor.hiddenKnobCount, 3);
   assert.deepEqual(editor.rows.map((row) => row.modules.map((module) => module.label)), [
     ['Saturation 1 1/2'],
-    ['Saturation 1 2/2'],
-    ['Saturation 2 1/2'],
-    ['Saturation 2 2/2', 'Gain 1'],
+    ['Saturation 1 2/2', 'Saturation 2'],
   ]);
-  assert.ok(editor.rows.every((row) => row.knobCount <= 6));
-  assert.deepEqual(editor.rows[0].modules[0].controls.filter((control) => control.type === 'knob').map((control) => control.slot), [0, 1, 2, 3, 4, 5]);
+  assert.ok(editor.rows.every((row) => row.knobCount <= NATIVE_EDITOR_MAX_KNOBS_PER_ROW));
+  assert.deepEqual(editor.rows[0].modules[0].controls.filter((control) => control.type === 'knob').map((control) => control.slot), [0, 1, 2, 3, 4, 5, 6]);
+});
+
+test('the native editor prioritizes mapped parameters inside the fourteen-knob budget', async () => {
+  const commands = [
+    { type: 'add_module', moduleType: 'saturation', nodeId: 'saturation-1' },
+    { type: 'add_module', moduleType: 'saturation', nodeId: 'saturation-2' },
+    { type: 'add_module', moduleType: 'gain', nodeId: 'gain-1' },
+    { type: 'create_macro', macroId: 'macro-1', name: 'Output' },
+    { type: 'add_mapping', macroId: 'macro-1', nodeId: 'gain-1', paramId: 'level', min: -24, max: 24 },
+  ];
+  const project = applyProjectCommands(createInitialProject(), commands, 'human');
+  const signal = Float32Array.from({ length: 4096 }, (_, index) => Math.sin(index * 0.1) * 0.2);
+  const analysis = analyzeStereo([signal, signal], 48000);
+  const request = await createNativeBuildRequest(await freezeProjectRevision(project, validateProjectForBuild(project, analysis)));
+  const parameters = createAutomaticNativeParameters(request);
+  const editor = createNativeEditorModel(parameters);
+  const mapped = parameters.find((parameter) => parameter.nodeId === 'gain-1' && parameter.parameterId === 'level');
+  const visibleParameterIndexes = editor.rows.flatMap((row) => row.modules.flatMap((module) => module.controls.map((control) => control.parameterIndex)));
+
+  assert.equal(mapped.mapped, true);
+  assert.equal(editor.knobCount, NATIVE_EDITOR_MAX_KNOBS);
+  assert.ok(visibleParameterIndexes.includes(mapped.index));
+});
+
+test('discrete parameters remain independent dropdowns outside the knob budget', async () => {
+  const request = await nativeRequestForModules(Array.from({ length: 12 }, () => 'stutter'));
+  const parameters = createAutomaticNativeParameters(request);
+  const editor = createNativeEditorModel(parameters);
+  const expectedDropdowns = parameters.filter((parameter) => parameter.controlType === 'switch');
+  const renderedDropdowns = editor.rows.flatMap((row) => row.modules.flatMap((module) => module.controls.filter((control) => control.type === 'switch')));
+
+  assert.equal(editor.knobCount, NATIVE_EDITOR_MAX_KNOBS);
+  assert.equal(editor.switchCount, 24);
+  assert.equal(renderedDropdowns.length, expectedDropdowns.length);
+  assert.equal(new Set(renderedDropdowns.map((control) => control.parameterIndex)).size, expectedDropdowns.length);
+  assert.ok(renderedDropdowns.every((control) => control.choices.length > 0));
+  assert.equal('pages' in editor, false);
 });
 
 test('repeated modules have stable section and host parameter numbering', async () => {
@@ -448,7 +490,7 @@ test('repeated modules have stable section and host parameter numbering', async 
   ]);
 });
 
-test('native exports expose every active effect parameter in an editable VST3 editor', async () => {
+test('native exports preserve host parameters while rendering the compact VST3 editor', async () => {
   const project = applyProjectCommands(createInitialProject(), [
     { type: 'add_module', moduleType: 'gain', nodeId: 'gain-1' },
     { type: 'add_module', moduleType: 'saturation', nodeId: 'saturation-1' },
@@ -467,7 +509,7 @@ test('native exports expose every active effect parameter in an editable VST3 ed
 
   assert.match(config, /PLUG_HAS_UI 1/u);
   assert.match(config, /PLUG_WIDTH 960/u);
-  assert.match(config, /PLUG_HEIGHT 1160/u);
+  assert.match(config, /PLUG_HEIGHT 810/u);
   assert.match(config, /ROBOTO_FN "Roboto-Regular\.ttf"/u);
   assert.doesNotMatch(cmake, /UI NONE|NO_IGRAPHICS/u);
   assert.match(cmake, /RESOURCES \$\{IPLUG2_DIR\}\/Examples\/IPlugEffect\/resources\/fonts\/Roboto-Regular\.ttf/u);
@@ -477,15 +519,17 @@ test('native exports expose every active effect parameter in an editable VST3 ed
   assert.match(source, /LoadFont\("Roboto-Regular", "Helvetica", ETextStyle::Normal\)/u);
   assert.match(source, /WithShowLabel\(true\)[\s\S]*WithShowValue\(true\)/u);
   assert.match(source, /new IVKnobControl\([^;]*kParam0, "Level"/u);
-  assert.match(source, /new IVTabSwitchControl\([^;]*kParam1[^;]*\{"Soft Clip", "Cubic", "Fuzz", "Tape"\}[^;]*"Character"/u);
+  assert.match(source, /new IVMenuButtonControl\([^;]*kParam1[^;]*"Character"[^;]*EVShape::EndsRounded/u);
   assert.match(source, /new IVKnobControl\([^;]*kParam2, "Drive"/u);
   assert.match(source, /new IVKnobControl\([^;]*kParam9, "Wow"/u);
-  assert.match(source, /new IVTabSwitchControl\([^;]*kParam10[^;]*\{"High Pass", "Low Pass", "Band Pass", "Notch"\}[^;]*"Mode"/u);
+  assert.match(source, /new IVMenuButtonControl\([^;]*kParam10[^;]*"Mode"[^;]*EVShape::EndsRounded/u);
+  assert.doesNotMatch(source, /IVTabSwitchControl/u);
   assert.match(source, /InitDouble\("Gain 1 Level"[^;]*"dB"[^;]*"Gain 1"/u);
   assert.match(source, /InitEnum\("Filter 1 Mode"[^;]*\{"High Pass", "Low Pass", "Band Pass", "Notch"\}[^;]*"Filter 1"/u);
   assert.match(source, /new IVGroupControl\([^;]*"SATURATION 1 1\/2"/u);
   assert.match(source, /new IVGroupControl\([^;]*"FILTER 1"/u);
-  assert.match(source, /"3 MODULES  \/  11 KNOBS  \/  2 SWITCHES"/u);
+  assert.match(source, /"Beat\.Z"/u);
+  assert.doesNotMatch(source, /FROZEN EFFECT CHAIN|MODULES\s+\/\s+\d+ KNOBS/u);
   assert.match(source, /SubRectVertical\(3, 0\)/u);
   assert.doesNotMatch(source, /editor-page|PAGE 1 \/|"PREV"|"NEXT"/u);
   assert.match(source, /iplug::IParam::ShapeExp\(\)/u);
@@ -493,6 +537,8 @@ test('native exports expose every active effect parameter in an editable VST3 ed
   assert.doesNotMatch(chain, /void setMacro/u);
   assert.equal(manifest.editor.rowCount, 3);
   assert.equal(manifest.editor.knobCount, 11);
+  assert.equal(manifest.editor.totalKnobCount, 11);
+  assert.equal(manifest.editor.hiddenKnobCount, 0);
   assert.equal(manifest.editor.switchCount, 2);
 });
 
