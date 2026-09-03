@@ -91,6 +91,35 @@ export const NATIVE_MODULE_CATALOG = Object.freeze({
       output: Object.freeze({ name: 'Output', min: -24, max: 12, step: 0.1, unit: 'dB', faustPath: '/Audio_Effect_Builder_Phaser/Phaser_Output', scale: 'linear' }),
     }),
   }),
+  autowah: Object.freeze({
+    name: 'Auto Wah',
+    source: 'faust/autowah.dsp',
+    wasmSha256: '73320b19493169576de250765d2b76fa51160366b7cafc3f19bbdd9f28ba67a9',
+    parameters: Object.freeze({
+      mode: Object.freeze({ name: 'Mode', min: 0, max: 3, step: 1, unit: '', faustPath: '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Mode', scale: 'linear', choices: [0, 1, 2, 3], choiceLabels: ['Low Pass Up', 'Low Pass Down', 'High Pass Up', 'High Pass Down'] }),
+      sensitivity: Object.freeze({ name: 'Sensitivity', min: -24, max: 24, step: 0.1, unit: 'dB', faustPath: '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Sensitivity', scale: 'linear' }),
+      attack: Object.freeze({ name: 'Attack', min: 1, max: 100, step: 1, unit: 'ms', faustPath: '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Attack', scale: 'log' }),
+      release: Object.freeze({ name: 'Release', min: 20, max: 1000, step: 1, unit: 'ms', faustPath: '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Release', scale: 'log' }),
+      frequency: Object.freeze({ name: 'Frequency', min: 100, max: 2000, step: 1, unit: 'Hz', faustPath: '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Frequency', scale: 'log' }),
+      range: Object.freeze({ name: 'Range', min: 0, max: 100, step: 1, unit: '%', faustPath: '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Range', scale: 'linear' }),
+      resonance: Object.freeze({ name: 'Resonance', min: 0.5, max: 10, step: 0.1, unit: 'Q', faustPath: '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Resonance', scale: 'log' }),
+      mix: Object.freeze({ name: 'Mix', min: 0, max: 100, step: 1, unit: '%', faustPath: '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Mix', scale: 'linear' }),
+      output: Object.freeze({ name: 'Output', min: -24, max: 12, step: 0.1, unit: 'dB', faustPath: '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Output', scale: 'linear' }),
+    }),
+  }),
+  stutter: Object.freeze({
+    name: 'Stutter',
+    source: 'faust/stutter.dsp',
+    wasmSha256: '7aa1dcb42b72e95aa06cc3d67c7bf6d5ec9a557cf5a43d6162e1ae66ec3230eb',
+    parameters: Object.freeze({
+      mode: Object.freeze({ name: 'Mode', min: 0, max: 3, step: 1, unit: '', faustPath: '/Audio_Effect_Builder_Stutter/Stutter_Mode', scale: 'linear', choices: [0, 1, 2, 3], choiceLabels: ['Repeat', 'Gate', 'Reverse', 'Ping-Pong'] }),
+      rate: Object.freeze({ name: 'Rate', min: 1, max: 20, step: 0.1, unit: 'Hz', faustPath: '/Audio_Effect_Builder_Stutter/Stutter_Rate', scale: 'log' }),
+      repeats: Object.freeze({ name: 'Repeats', min: 1, max: 8, step: 1, unit: '', faustPath: '/Audio_Effect_Builder_Stutter/Stutter_Repeats', scale: 'linear', choices: [1, 2, 3, 4, 6, 8], choiceLabels: ['1x', '2x', '3x', '4x', '6x', '8x'] }),
+      gate: Object.freeze({ name: 'Gate', min: 25, max: 100, step: 1, unit: '%', faustPath: '/Audio_Effect_Builder_Stutter/Stutter_Gate', scale: 'linear' }),
+      mix: Object.freeze({ name: 'Mix', min: 0, max: 100, step: 1, unit: '%', faustPath: '/Audio_Effect_Builder_Stutter/Stutter_Mix', scale: 'linear' }),
+      output: Object.freeze({ name: 'Output', min: -24, max: 12, step: 0.1, unit: 'dB', faustPath: '/Audio_Effect_Builder_Stutter/Stutter_Output', scale: 'linear' }),
+    }),
+  }),
 });
 
 export const SOURCE_FINGERPRINTS = Object.freeze({
@@ -102,4 +131,6 @@ export const SOURCE_FINGERPRINTS = Object.freeze({
   chorus: '19432a2946b7711dc6f4d694e3fdc5c665df67dddbcadc59622c4052539aa419',
   compressor: '5c63fd9f14183aae0c1b3b1cd4a22cf674623bb39a6508218d1857599b8232d6',
   phaser: 'b812485b365ccf92ba7fb8680feced1b3ce27b86a568c8634ca6ce949c827c04',
+  autowah: '26001c6599cf9b72c57290b26498233f076d278ec1b7bdecbe40be04c3448443',
+  stutter: 'b5f10b05476725a477d1b2df078a932b2ccb68e079b2e5dd908dba5c89b790d9',
 });

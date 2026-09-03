@@ -1,0 +1,364 @@
+{
+  "name": "Audio Effect Builder Auto Wah",
+  "filename": "autowah.dsp",
+  "version": "2.85.9",
+  "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2",
+  "library_list": [
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/stdfaust.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/misceffects.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/signals.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/basics.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/maths.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/platform.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/analyzers.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/filters.lib"
+  ],
+  "include_pathnames": [
+    "/opt/homebrew/opt/faust/share/faust",
+    "/usr/local/share/faust",
+    "/usr/share/faust",
+    "/Users/baumolinari/Projects/Beat.Z/faust",
+    "/Users/baumolinari/Projects/Beat.Z/faust"
+  ],
+  "size": 156,
+  "code": "aW1wb3J0KCJzdGRmYXVzdC5saWIiKTsKCmRlY2xhcmUgbmFtZSAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIgQXV0byBXYWgiOwpkZWNsYXJlIHZlcnNpb24gIjAuMS4wIjsKZGVjbGFyZSBhdXRob3IgIkF1ZGlvIEVmZmVjdCBCdWlsZGVyIjsKZGVjbGFyZSBsaWNlbnNlICJNSVQiOwoKbW9kZSA9IGhzbGlkZXIoIkF1dG8gV2FoL01vZGVbc3R5bGU6bWVudXsnTG93IFBhc3MgVXAnOjA7J0xvdyBQYXNzIERvd24nOjE7J0hpZ2ggUGFzcyBVcCc6MjsnSGlnaCBQYXNzIERvd24nOjN9XSIsIDAuMCwgMC4wLCAzLjAsIDEuMCk7CnNlbnNpdGl2aXR5RGIgPSBoc2xpZGVyKCJBdXRvIFdhaC9TZW5zaXRpdml0eVt1bml0OmRCXVtzdHlsZTprbm9iXSIsIDEyLjAsIC0yNC4wLCAyNC4wLCAwLjEpIDogc2kuc21vbzsKYXR0YWNrTXMgPSBoc2xpZGVyKCJBdXRvIFdhaC9BdHRhY2tbdW5pdDptc11bc2NhbGU6bG9nXVtzdHlsZTprbm9iXSIsIDEwLjAsIDEuMCwgMTAwLjAsIDEuMCkgOiBzaS5zbW9vOwpyZWxlYXNlTXMgPSBoc2xpZGVyKCJBdXRvIFdhaC9SZWxlYXNlW3VuaXQ6bXNdW3NjYWxlOmxvZ11bc3R5bGU6a25vYl0iLCAxODAuMCwgMjAuMCwgMTAwMC4wLCAxLjApIDogc2kuc21vbzsKZnJlcXVlbmN5SHogPSBoc2xpZGVyKCJBdXRvIFdhaC9GcmVxdWVuY3lbdW5pdDpIel1bc2NhbGU6bG9nXVtzdHlsZTprbm9iXSIsIDMwMC4wLCAxMDAuMCwgMjAwMC4wLCAxLjApIDogc2kuc21vbzsKcmFuZ2UgPSBoc2xpZGVyKCJBdXRvIFdhaC9SYW5nZVt1bml0OiVdW3N0eWxlOmtub2JdIiwgNzAuMCwgMC4wLCAxMDAuMCwgMS4wKSAvIDEwMC4wIDogc2kuc21vbzsKcmVzb25hbmNlID0gaHNsaWRlcigiQXV0byBXYWgvUmVzb25hbmNlW3VuaXQ6UV1bc2NhbGU6bG9nXVtzdHlsZTprbm9iXSIsIDMuMCwgMC41LCAxMC4wLCAwLjEpIDogc2kuc21vbzsKbWl4ID0gaHNsaWRlcigiQXV0byBXYWgvTWl4W3VuaXQ6JV1bc3R5bGU6a25vYl0iLCAxMDAuMCwgMC4wLCAxMDAuMCwgMS4wKSAvIDEwMC4wOwpvdXRwdXREYiA9IGhzbGlkZXIoIkF1dG8gV2FoL091dHB1dFt1bml0OmRCXVtzdHlsZTprbm9iXSIsIDAuMCwgLTI0LjAsIDEyLjAsIDAuMSkgOiBzaS5zbW9vOwoKaXNIaWdoUGFzcyA9IG1vZGUgPj0gMS41Owppc0Rvd24gPSAoKG1vZGUgPj0gMC41KSAmIChtb2RlIDwgMS41KSkgfCAobW9kZSA+PSAyLjUpOwoKbGlua2VkRW52ZWxvcGUobGVmdCwgcmlnaHQpID0gbWF4KGFicyhsZWZ0KSwgYWJzKHJpZ2h0KSkgKiBiYS5kYjJsaW5lYXIoc2Vuc2l0aXZpdHlEYikKICA6IGFuLmFtcF9mb2xsb3dlcl9hcihhdHRhY2tNcyAvIDEwMDAuMCwgcmVsZWFzZU1zIC8gMTAwMC4wKQogIDogbWluKDEuMCkKICA6IG1heCgwLjApOwoKd2FoQ3V0b2ZmKGVudmVsb3BlKSA9IHNlbGVjdDIoaXNEb3duLCB1cHdhcmQsIGRvd253YXJkKSB3aXRoIHsKICBzYWZlQmFzZSA9IG1pbihmcmVxdWVuY3lIeiwgbWF4RnJlcXVlbmN5KTsKICBtYXhGcmVxdWVuY3kgPSBtaW4oODAwMC4wLCAwLjQ1ICogbWEuU1IpOwogIHJhdGlvID0gbWF4RnJlcXVlbmN5IC8gbWF4KDIwLjAsIHNhZmVCYXNlKTsKICBtb3ZlbWVudCA9IHJhbmdlICogZW52ZWxvcGU7CiAgdXB3YXJkID0gc2FmZUJhc2UgKiBwb3cocmF0aW8sIG1vdmVtZW50KTsKICBkb3dud2FyZCA9IHNhZmVCYXNlICogcG93KHJhdGlvLCByYW5nZSAqICgxLjAgLSBlbnZlbG9wZSkpOwp9OwoKd2FoQ2hhbm5lbChjdXRvZmYsIHNpZ25hbCkgPSBzZWxlY3QyKAogIGlzSGlnaFBhc3MsCiAgZmkucmVzb25scChjdXRvZmYsIHJlc29uYW5jZSwgMS4wLCBzaWduYWwpLAogIGZpLnJlc29uaHAoY3V0b2ZmLCByZXNvbmFuY2UsIDEuMCwgc2lnbmFsKQopOwoKYXV0b1dhaChsZWZ0LCByaWdodCkgPSB3YWhDaGFubmVsKGN1dG9mZiwgbGVmdCksIHdhaENoYW5uZWwoY3V0b2ZmLCByaWdodCkKd2l0aCB7CiAgY3V0b2ZmID0gd2FoQ3V0b2ZmKGxpbmtlZEVudmVsb3BlKGxlZnQsIHJpZ2h0KSk7Cn07Cgpwcm9jZXNzID0gZWYuZHJ5V2V0TWl4ZXIobWl4LCBhdXRvV2FoKSA6IHBhcihjaGFubmVsLCAyLCAqKGJhLmRiMmxpbmVhcihvdXRwdXREYikpKTsK",
+  "inputs": 2,
+  "outputs": 2,
+  "meta": [
+    {
+      "analyzers.lib/amp_follower_ar:author": "Jonatan Liljedahl, revised by Romain Michon"
+    },
+    {
+      "analyzers.lib/name": "Faust Analyzer Library"
+    },
+    {
+      "analyzers.lib/version": "1.3.0"
+    },
+    {
+      "author": "Audio Effect Builder"
+    },
+    {
+      "basics.lib/name": "Faust Basic Element Library"
+    },
+    {
+      "basics.lib/version": "1.22.0"
+    },
+    {
+      "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2"
+    },
+    {
+      "filename": "autowah.dsp"
+    },
+    {
+      "filters.lib/fir:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/fir:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/fir:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/iir:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/iir:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/iir:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/lowpass0_highpass1": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/name": "Faust Filters Library"
+    },
+    {
+      "filters.lib/resonhp:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/resonhp:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/resonhp:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/resonlp:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/resonlp:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/resonlp:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/tf2:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/tf2:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/tf2:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/tf2s:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/tf2s:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/tf2s:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/version": "1.7.1"
+    },
+    {
+      "license": "MIT"
+    },
+    {
+      "maths.lib/author": "GRAME"
+    },
+    {
+      "maths.lib/copyright": "GRAME"
+    },
+    {
+      "maths.lib/license": "LGPL with exception"
+    },
+    {
+      "maths.lib/name": "Faust Math Library"
+    },
+    {
+      "maths.lib/version": "2.9.0"
+    },
+    {
+      "misceffects.lib/dryWetMixer:author": "David Braun, revised by Stéphane Letz"
+    },
+    {
+      "misceffects.lib/name": "Misc Effects Library"
+    },
+    {
+      "misceffects.lib/version": "2.5.2"
+    },
+    {
+      "name": "Audio Effect Builder Auto Wah"
+    },
+    {
+      "platform.lib/name": "Generic Platform Library"
+    },
+    {
+      "platform.lib/version": "1.3.0"
+    },
+    {
+      "signals.lib/name": "Faust Routing Library"
+    },
+    {
+      "signals.lib/onePoleSwitching:author": "Jonatan Liljedahl, revised by Dario Sanfilippo"
+    },
+    {
+      "signals.lib/onePoleSwitching:licence": "STK-4.3"
+    },
+    {
+      "signals.lib/version": "1.6.0"
+    },
+    {
+      "version": "0.1.0"
+    }
+  ],
+  "ui": [
+    {
+      "type": "vgroup",
+      "label": "Audio Effect Builder Auto Wah",
+      "items": [
+        {
+          "type": "hslider",
+          "label": "Auto Wah/Attack",
+          "varname": "fHslider6",
+          "shortname": "Auto_Wah_Attack",
+          "address": "/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Attack",
+          "index": 88,
+          "meta": [
+            {
+              "scale": "log"
+            },
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "ms"
+            }
+          ],
+          "init": 10,
+          "min": 1,
+          "max": 100,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Auto Wah/Frequency",
+          "varname": "fHslider2",
+          "shortname": "Auto_Wah_Frequency",
+          "address": "/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Frequency",
+          "index": 24,
+          "meta": [
+            {
+              "scale": "log"
+            },
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "Hz"
+            }
+          ],
+          "init": 300,
+          "min": 100,
+          "max": 2000,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Auto Wah/Mix",
+          "varname": "fHslider0",
+          "shortname": "Auto_Wah_Mix",
+          "address": "/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Mix",
+          "index": 0,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "%"
+            }
+          ],
+          "init": 100,
+          "min": 0,
+          "max": 100,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Auto Wah/Mode",
+          "varname": "fHslider1",
+          "shortname": "Auto_Wah_Mode",
+          "address": "/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Mode",
+          "index": 4,
+          "meta": [
+            {
+              "style": "menu{-Low Pass Up-:0;-Low Pass Down-:1;-High Pass Up-:2;-High Pass Down-:3}"
+            }
+          ],
+          "init": 0,
+          "min": 0,
+          "max": 3,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Auto Wah/Output",
+          "varname": "fHslider8",
+          "shortname": "Auto_Wah_Output",
+          "address": "/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Output",
+          "index": 132,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "dB"
+            }
+          ],
+          "init": 0,
+          "min": -24,
+          "max": 12,
+          "step": 0.1
+        },
+        {
+          "type": "hslider",
+          "label": "Auto Wah/Range",
+          "varname": "fHslider3",
+          "shortname": "Auto_Wah_Range",
+          "address": "/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Range",
+          "index": 48,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "%"
+            }
+          ],
+          "init": 70,
+          "min": 0,
+          "max": 100,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Auto Wah/Release",
+          "varname": "fHslider5",
+          "shortname": "Auto_Wah_Release",
+          "address": "/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Release",
+          "index": 72,
+          "meta": [
+            {
+              "scale": "log"
+            },
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "ms"
+            }
+          ],
+          "init": 180,
+          "min": 20,
+          "max": 1000,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Auto Wah/Resonance",
+          "varname": "fHslider7",
+          "shortname": "Auto_Wah_Resonance",
+          "address": "/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Resonance",
+          "index": 108,
+          "meta": [
+            {
+              "scale": "log"
+            },
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "Q"
+            }
+          ],
+          "init": 3,
+          "min": 0.5,
+          "max": 10,
+          "step": 0.1
+        },
+        {
+          "type": "hslider",
+          "label": "Auto Wah/Sensitivity",
+          "varname": "fHslider4",
+          "shortname": "Auto_Wah_Sensitivity",
+          "address": "/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Sensitivity",
+          "index": 60,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "dB"
+            }
+          ],
+          "init": 12,
+          "min": -24,
+          "max": 24,
+          "step": 0.1
+        }
+      ]
+    }
+  ]
+}

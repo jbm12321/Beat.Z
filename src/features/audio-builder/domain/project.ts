@@ -1,4 +1,4 @@
-export type ModuleType = 'gain' | 'filter' | 'saturation' | 'delay' | 'reverb' | 'chorus' | 'compressor' | 'phaser';
+export type ModuleType = 'gain' | 'filter' | 'saturation' | 'delay' | 'reverb' | 'chorus' | 'compressor' | 'phaser' | 'autowah' | 'stutter';
 export type ParameterScale = 'linear' | 'log';
 export type ParameterKind = 'continuous' | 'choice';
 
@@ -80,6 +80,7 @@ export interface EngineProvenance {
     oscillators: '1.7.0';
     platform: '1.3.0';
     reverbs: '1.5.1';
+    routes: '1.3.0';
     compressors: '1.6.0';
     phaflangers: '1.1.0';
     signals: '1.6.0';
@@ -313,6 +314,43 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
       parameter('output', 'Output', -24, 12, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Phaser/Phaser_Output'),
     ],
   },
+  autowah: {
+    type: 'autowah', name: 'Auto Wah', shortName: 'WAH', description: 'Add touch-sensitive resonant filter movement.', definitionVersion: '0.1.0',
+    sourceSha256: '26001c6599cf9b72c57290b26498233f076d278ec1b7bdecbe40be04c3448443',
+    wasmSha256: '73320b19493169576de250765d2b76fa51160366b7cafc3f19bbdd9f28ba67a9',
+    wasmPath: '/faust/autowah/dsp-module.wasm', metadataPath: '/faust/autowah/dsp-meta.json',
+    parameters: [
+      parameter('mode', 'Mode', 0, 3, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Mode', {
+        kind: 'choice', choices: [{ value: 0, label: 'Low Pass Up' }, { value: 1, label: 'Low Pass Down' }, { value: 2, label: 'High Pass Up' }, { value: 3, label: 'High Pass Down' }], mappable: false,
+      }),
+      parameter('sensitivity', 'Sensitivity', -24, 24, 12, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Sensitivity'),
+      parameter('attack', 'Attack', 1, 100, 10, 1, 'ms', 'log', '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Attack'),
+      parameter('release', 'Release', 20, 1000, 180, 1, 'ms', 'log', '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Release'),
+      parameter('frequency', 'Frequency', 100, 2000, 300, 1, 'Hz', 'log', '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Frequency'),
+      parameter('range', 'Range', 0, 100, 70, 1, '%', 'linear', '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Range'),
+      parameter('resonance', 'Resonance', 0.5, 10, 3, 0.1, 'Q', 'log', '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Resonance'),
+      parameter('mix', 'Mix', 0, 100, 100, 1, '%', 'linear', '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Mix'),
+      parameter('output', 'Output', -24, 12, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Output'),
+    ],
+  },
+  stutter: {
+    type: 'stutter', name: 'Stutter', shortName: 'STUT', description: 'Capture, chop, reverse, and alternate rhythmic slices.', definitionVersion: '0.1.0',
+    sourceSha256: 'b5f10b05476725a477d1b2df078a932b2ccb68e079b2e5dd908dba5c89b790d9',
+    wasmSha256: '7aa1dcb42b72e95aa06cc3d67c7bf6d5ec9a557cf5a43d6162e1ae66ec3230eb',
+    wasmPath: '/faust/stutter/dsp-module.wasm', metadataPath: '/faust/stutter/dsp-meta.json',
+    parameters: [
+      parameter('mode', 'Mode', 0, 3, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Stutter/Stutter_Mode', {
+        kind: 'choice', choices: [{ value: 0, label: 'Repeat' }, { value: 1, label: 'Gate' }, { value: 2, label: 'Reverse' }, { value: 3, label: 'Ping-Pong' }], mappable: false,
+      }),
+      parameter('rate', 'Rate', 1, 20, 8, 0.1, 'Hz', 'log', '/Audio_Effect_Builder_Stutter/Stutter_Rate'),
+      parameter('repeats', 'Repeats', 1, 8, 3, 1, 'type', 'linear', '/Audio_Effect_Builder_Stutter/Stutter_Repeats', {
+        kind: 'choice', choices: [{ value: 1, label: '1x' }, { value: 2, label: '2x' }, { value: 3, label: '3x' }, { value: 4, label: '4x' }, { value: 6, label: '6x' }, { value: 8, label: '8x' }], mappable: false,
+      }),
+      parameter('gate', 'Gate', 25, 100, 85, 1, '%', 'linear', '/Audio_Effect_Builder_Stutter/Stutter_Gate'),
+      parameter('mix', 'Mix', 0, 100, 100, 1, '%', 'linear', '/Audio_Effect_Builder_Stutter/Stutter_Mix'),
+      parameter('output', 'Output', -24, 12, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Stutter/Stutter_Output'),
+    ],
+  },
 };
 
 export const MODULE_TYPES = Object.keys(MODULE_CATALOG) as ModuleType[];
@@ -374,9 +412,23 @@ export const PRE_PHASER_COMPRESSOR_MODES_ENGINE_PROVENANCE = Object.freeze({
     compressor: '8440fc44c50c362eb6287707d90a9e10033db2d9a5a0a662ef22a93d90db4ff9',
   },
 });
-export const ENGINE_PROVENANCE: EngineProvenance = {
+export const PRE_AUTOWAH_STUTTER_ENGINE_PROVENANCE = Object.freeze({
   effectDefinition: 'audio-effect-builder-faust', definitionVersion: '0.1.0', faustWasmVersion: '0.16.6', faustCompilerVersion: '2.85.9',
   libraries: { analyzers: '1.3.0', basics: '1.22.0', compressors: '1.6.0', delays: '1.2.0', filters: '1.7.1', maths: '2.9.0', misceffects: '2.5.2', oscillators: '1.7.0', phaflangers: '1.1.0', platform: '1.3.0', reverbs: '1.5.1', signals: '1.6.0' },
+  moduleSourceSha256: {
+    gain: 'caca77ad2ac86cf0ef26f62a22d1d0c62a7d4b7f86c6c4e3fef77e9d19fbd35d',
+    filter: '076d102ec4209b0a9e33d4199e302896a3951017e88a1e821ec106347c03ee7f',
+    saturation: '9074635f03744b4b4f280eac15839585716d4a23a732ac7c59e26eb1c3bab068',
+    delay: 'fb9a020e31f2b4f290a17ad2a18ec5d87c6f701195af2bc95e38f2d99cef1b92',
+    reverb: 'bec502b0ca2f0b01dd7c10051cd848417f24ca0eb45b73c2854a49da54abb5ff',
+    chorus: '19432a2946b7711dc6f4d694e3fdc5c665df67dddbcadc59622c4052539aa419',
+    compressor: '5c63fd9f14183aae0c1b3b1cd4a22cf674623bb39a6508218d1857599b8232d6',
+    phaser: 'b812485b365ccf92ba7fb8680feced1b3ce27b86a568c8634ca6ce949c827c04',
+  },
+});
+export const ENGINE_PROVENANCE: EngineProvenance = {
+  effectDefinition: 'audio-effect-builder-faust', definitionVersion: '0.1.0', faustWasmVersion: '0.16.6', faustCompilerVersion: '2.85.9',
+  libraries: { analyzers: '1.3.0', basics: '1.22.0', compressors: '1.6.0', delays: '1.2.0', filters: '1.7.1', maths: '2.9.0', misceffects: '2.5.2', oscillators: '1.7.0', phaflangers: '1.1.0', platform: '1.3.0', reverbs: '1.5.1', routes: '1.3.0', signals: '1.6.0' },
   moduleSourceSha256: Object.fromEntries(MODULE_TYPES.map((type) => [type, MODULE_CATALOG[type].sourceSha256])) as Record<ModuleType, string>,
 };
 
@@ -783,7 +835,8 @@ export function upgradeProjectEngine(value: unknown): ProjectV2 {
   const isPreAudibility = sameJson(project.engine, PRE_AUDIBILITY_ENGINE_PROVENANCE);
   const isPreChorusCompressor = sameJson(project.engine, PRE_CHORUS_COMPRESSOR_ENGINE_PROVENANCE);
   const isPrePhaserCompressorModes = sameJson(project.engine, PRE_PHASER_COMPRESSOR_MODES_ENGINE_PROVENANCE);
-  if (!isPrePair1 && !isPreCanonicalCompiler && !isPreSaturationV2 && !isPreAudibility && !isPreChorusCompressor && !isPrePhaserCompressorModes) return validateProject(project);
+  const isPreAutoWahStutter = sameJson(project.engine, PRE_AUTOWAH_STUTTER_ENGINE_PROVENANCE);
+  if (!isPrePair1 && !isPreCanonicalCompiler && !isPreSaturationV2 && !isPreAudibility && !isPreChorusCompressor && !isPrePhaserCompressorModes && !isPreAutoWahStutter) return validateProject(project);
   if (isPreSaturationV2) {
     for (const node of Object.values(project.nodes as Record<string, unknown>)) {
       if (!isRecord(node) || node.type !== 'saturation' || !isRecord(node.params)) continue;

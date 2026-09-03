@@ -120,8 +120,8 @@ test('exported project JSON validates as a portable round trip', () => {
   assert.deepEqual(restored, project);
 });
 
-test('the Faust primitive catalog exposes the eight exact shared contracts', () => {
-  assert.deepEqual(MODULE_TYPES, ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor', 'phaser']);
+test('the Faust primitive catalog exposes the ten exact shared contracts', () => {
+  assert.deepEqual(MODULE_TYPES, ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor', 'phaser', 'autowah', 'stutter']);
   assert.deepEqual(MODULE_CATALOG.filter.parameters.map((parameter) => parameter.id), ['mode', 'cutoff', 'resonance']);
   assert.equal(MODULE_CATALOG.filter.parameters[0].kind, 'choice');
   assert.deepEqual(MODULE_CATALOG.filter.parameters[0].choices, [
@@ -170,6 +170,19 @@ test('the Faust primitive catalog exposes the eight exact shared contracts', () 
     { value: 0, label: 'Classic' }, { value: 1, label: 'Wide' }, { value: 2, label: 'Deep' },
   ]);
   assert.equal(MODULE_CATALOG.phaser.parameters[0].mappable, false);
+  assert.deepEqual(MODULE_CATALOG.autowah.parameters.map((parameter) => parameter.id), ['mode', 'sensitivity', 'attack', 'release', 'frequency', 'range', 'resonance', 'mix', 'output']);
+  assert.deepEqual(MODULE_CATALOG.autowah.parameters[0].choices, [
+    { value: 0, label: 'Low Pass Up' }, { value: 1, label: 'Low Pass Down' },
+    { value: 2, label: 'High Pass Up' }, { value: 3, label: 'High Pass Down' },
+  ]);
+  assert.equal(MODULE_CATALOG.autowah.parameters[0].mappable, false);
+  assert.deepEqual(MODULE_CATALOG.stutter.parameters.map((parameter) => parameter.id), ['mode', 'rate', 'repeats', 'gate', 'mix', 'output']);
+  assert.deepEqual(MODULE_CATALOG.stutter.parameters[0].choices, [
+    { value: 0, label: 'Repeat' }, { value: 1, label: 'Gate' }, { value: 2, label: 'Reverse' }, { value: 3, label: 'Ping-Pong' },
+  ]);
+  assert.deepEqual(MODULE_CATALOG.stutter.parameters[2].choices?.map((choice) => choice.label), ['1x', '2x', '3x', '4x', '6x', '8x']);
+  assert.equal(MODULE_CATALOG.stutter.parameters[0].mappable, false);
+  assert.equal(MODULE_CATALOG.stutter.parameters[2].mappable, false);
   MODULE_TYPES.forEach((type) => {
     const definition = MODULE_CATALOG[type];
     assert.ok(definition.parameters.length > 0);
