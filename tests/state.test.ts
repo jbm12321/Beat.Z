@@ -6,6 +6,7 @@ import {
   PRE_AUDIBILITY_ENGINE_PROVENANCE,
   PRE_AUTOWAH_STUTTER_ENGINE_PROVENANCE,
   PRE_CHORUS_COMPRESSOR_ENGINE_PROVENANCE,
+  PRE_EQ_LIMITER_FLANGER_ENGINE_PROVENANCE,
   PRE_PHASER_COMPRESSOR_MODES_ENGINE_PROVENANCE,
   STORAGE_KEY,
   PRE_PAIR1_ENGINE_PROVENANCE,
@@ -216,6 +217,29 @@ test('persistence adds Auto Wah and Stutter provenance without changing an exact
   assert.equal(restored.engine.libraries.routes, '1.3.0');
   assert.equal(restored.engine.moduleSourceSha256.autowah.length, 64);
   assert.equal(restored.engine.moduleSourceSha256.stutter.length, 64);
+});
+
+test('persistence adds 3-Band EQ, Limiter, and Flanger provenance without changing an exact ten-effect project', () => {
+  const storage = new MemoryStorage();
+  const project = applyProjectCommands(createInitialProject(), [
+    { type: 'rename_project', name: 'Preserved ten-effect project' },
+    { type: 'add_module', moduleType: 'autowah', nodeId: 'autowah-1' },
+    { type: 'set_parameter', nodeId: 'autowah-1', paramId: 'mode', value: 3 },
+    { type: 'set_parameter', nodeId: 'autowah-1', paramId: 'mix', value: 72 },
+    { type: 'add_module', moduleType: 'stutter', nodeId: 'stutter-1' },
+    { type: 'set_parameter', nodeId: 'stutter-1', paramId: 'repeats', value: 6 },
+    { type: 'create_macro', name: 'Movement', macroId: 'macro-1' },
+    { type: 'add_mapping', macroId: 'macro-1', mappingId: 'mapping-1', nodeId: 'autowah-1', paramId: 'mix', min: 10, max: 90 },
+  ], 'human');
+  const previous = structuredClone(project);
+  previous.engine = structuredClone(PRE_EQ_LIMITER_FLANGER_ENGINE_PROVENANCE) as typeof previous.engine;
+  storage.setItem(STORAGE_KEY, JSON.stringify(previous));
+
+  const restored = restorePersistedProject(storage).project;
+  assert.deepEqual({ ...restored, engine: undefined }, { ...previous, engine: undefined });
+  assert.equal(restored.engine.moduleSourceSha256.equalizer.length, 64);
+  assert.equal(restored.engine.moduleSourceSha256.limiter.length, 64);
+  assert.equal(restored.engine.moduleSourceSha256.flanger.length, 64);
 });
 
 test('persistence rejects partially matching historical engine provenance', () => {

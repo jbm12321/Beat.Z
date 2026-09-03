@@ -125,6 +125,36 @@
       "metadata": "/faust/stutter/dsp-meta.json",
       "inputs": 2,
       "outputs": 2
+    },
+    "equalizer": {
+      "definitionVersion": "0.1.0",
+      "source": "faust/equalizer.dsp",
+      "sourceSha256": "0ee8adecb250e184c1c2f15d8630c13acb193945bc815d87110dfee1bb14c25a",
+      "wasmSha256": "12fb431e7ed255a30f9a979c44fd63b72729cf377914b091f04f91285bdeca7c",
+      "wasm": "/faust/equalizer/dsp-module.wasm",
+      "metadata": "/faust/equalizer/dsp-meta.json",
+      "inputs": 2,
+      "outputs": 2
+    },
+    "limiter": {
+      "definitionVersion": "0.1.0",
+      "source": "faust/limiter.dsp",
+      "sourceSha256": "5564b1c1f20994bf827916a3e877f125c15ca19c70879918fe64a3e1eeda1bf6",
+      "wasmSha256": "60aa6c10c035b0bffb823f3106d8d348c0fe59be57a065dd6e04bca4b04f7091",
+      "wasm": "/faust/limiter/dsp-module.wasm",
+      "metadata": "/faust/limiter/dsp-meta.json",
+      "inputs": 2,
+      "outputs": 2
+    },
+    "flanger": {
+      "definitionVersion": "0.1.0",
+      "source": "faust/flanger.dsp",
+      "sourceSha256": "b66905707f0238d73e8230793edfeac787136aa6fa1608fbe4dc6d48e5aea9b4",
+      "wasmSha256": "ebbf4306323211a06c267dafaefb4b238b56ce538c2f1292ea5d85820f973c0e",
+      "wasm": "/faust/flanger/dsp-module.wasm",
+      "metadata": "/faust/flanger/dsp-meta.json",
+      "inputs": 2,
+      "outputs": 2
     }
   }
 }

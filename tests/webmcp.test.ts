@@ -83,7 +83,7 @@ test('registered tools share revision-safe project state and cannot bypass human
 
   const primitives = await tools.get('list-audio-primitives')!.execute({});
   const primitiveCatalog = (primitives.structuredContent as { primitives: Record<string, { parameters: Array<{ id: string; choices?: Array<{ label: string }> }> }> }).primitives;
-  assert.deepEqual(Object.keys(primitiveCatalog), ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor', 'phaser', 'autowah', 'stutter']);
+  assert.deepEqual(Object.keys(primitiveCatalog), ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor', 'phaser', 'autowah', 'stutter', 'equalizer', 'limiter', 'flanger']);
   assert.deepEqual(primitiveCatalog.delay.parameters[0].choices?.map((choice) => choice.label), ['Digital', 'Ping-Pong', 'Tape']);
   assert.deepEqual(primitiveCatalog.reverb.parameters[0].choices?.map((choice) => choice.label), ['Room', 'Hall', 'Plate']);
   assert.deepEqual(primitiveCatalog.chorus.parameters[0].choices?.map((choice) => choice.label), ['Classic', 'Wide', 'Ensemble']);
@@ -93,6 +93,9 @@ test('registered tools share revision-safe project state and cannot bypass human
   assert.deepEqual(primitiveCatalog.autowah.parameters[0].choices?.map((choice) => choice.label), ['Low Pass Up', 'Low Pass Down', 'High Pass Up', 'High Pass Down']);
   assert.deepEqual(primitiveCatalog.stutter.parameters[0].choices?.map((choice) => choice.label), ['Repeat', 'Gate', 'Reverse', 'Ping-Pong']);
   assert.deepEqual(primitiveCatalog.stutter.parameters[2].choices?.map((choice) => choice.label), ['1x', '2x', '3x', '4x', '6x', '8x']);
+  assert.deepEqual(primitiveCatalog.equalizer.parameters.map((parameter) => parameter.id), ['lowGain', 'lowFrequency', 'midGain', 'midFrequency', 'midQ', 'highGain', 'highFrequency', 'output']);
+  assert.deepEqual(primitiveCatalog.limiter.parameters[0].choices?.map((choice) => choice.label), ['Transparent', 'Punch', 'Brickwall', 'Soft Clip']);
+  assert.deepEqual(primitiveCatalog.flanger.parameters[0].choices?.map((choice) => choice.label), ['Classic', 'Stereo', 'Jet', 'Through-Zero']);
 
   const propose = await tools.get('propose-audio-project-patch')!.execute({
     expectedRevision: 0,
@@ -147,6 +150,9 @@ test('registered tools share revision-safe project state and cannot bypass human
     [{ type: 'add_module', moduleType: 'compressor', nodeId: 'bad-compressor' }, { type: 'set_parameter', nodeId: 'bad-compressor', paramId: 'ratio', value: 40 }],
     [{ type: 'add_module', moduleType: 'autowah', nodeId: 'bad-autowah' }, { type: 'set_parameter', nodeId: 'bad-autowah', paramId: 'mode', value: 4 }],
     [{ type: 'add_module', moduleType: 'stutter', nodeId: 'bad-stutter' }, { type: 'set_parameter', nodeId: 'bad-stutter', paramId: 'repeats', value: 5 }],
+    [{ type: 'add_module', moduleType: 'limiter', nodeId: 'bad-limiter' }, { type: 'set_parameter', nodeId: 'bad-limiter', paramId: 'mode', value: 4 }],
+    [{ type: 'add_module', moduleType: 'flanger', nodeId: 'bad-flanger' }, { type: 'set_parameter', nodeId: 'bad-flanger', paramId: 'feedback', value: 96 }],
+    [{ type: 'add_module', moduleType: 'equalizer', nodeId: 'bad-equalizer' }, { type: 'set_parameter', nodeId: 'bad-equalizer', paramId: 'midQ', value: Number.NaN }],
   ]) {
     const invalid = await tools.get('propose-audio-project-patch')!.execute({
       expectedRevision: 1, summary: 'Invalid Pair 1 request', musicalPurpose: 'Must be rejected atomically.', commands,

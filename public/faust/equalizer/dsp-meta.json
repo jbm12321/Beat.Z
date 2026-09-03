@@ -1,0 +1,400 @@
+{
+  "name": "Audio Effect Builder 3-Band EQ",
+  "filename": "equalizer.dsp",
+  "version": "2.85.9",
+  "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2",
+  "library_list": [
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/stdfaust.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/basics.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/signals.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/maths.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/platform.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/filters.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/analyzers.lib"
+  ],
+  "include_pathnames": [
+    "/opt/homebrew/opt/faust/share/faust",
+    "/usr/local/share/faust",
+    "/usr/share/faust",
+    "/Users/builder/Projects/Beat.Z/faust",
+    "/Users/builder/Projects/Beat.Z/faust"
+  ],
+  "size": 340,
+  "code": "aW1wb3J0KCJzdGRmYXVzdC5saWIiKTsKCmRlY2xhcmUgbmFtZSAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIgMy1CYW5kIEVRIjsKZGVjbGFyZSB2ZXJzaW9uICIwLjEuMCI7CmRlY2xhcmUgYXV0aG9yICJBdWRpbyBFZmZlY3QgQnVpbGRlciI7CmRlY2xhcmUgbGljZW5zZSAiTUlUIjsKCmxvd0dhaW5EYiA9IGhzbGlkZXIoIjMtQmFuZCBFUS9Mb3cgR2Fpblt1bml0OmRCXVtzdHlsZTprbm9iXSIsIDAuMCwgLTE4LjAsIDE4LjAsIDAuMSkgOiBzaS5zbW9vOwpsb3dGcmVxdWVuY3lIeiA9IGhzbGlkZXIoIjMtQmFuZCBFUS9Mb3cgRnJlcXVlbmN5W3VuaXQ6SHpdW3NjYWxlOmxvZ11bc3R5bGU6a25vYl0iLCAxMjAuMCwgNDAuMCwgNTAwLjAsIDEuMCkgOiBzaS5zbW9vOwptaWRHYWluRGIgPSBoc2xpZGVyKCIzLUJhbmQgRVEvTWlkIEdhaW5bdW5pdDpkQl1bc3R5bGU6a25vYl0iLCAwLjAsIC0xOC4wLCAxOC4wLCAwLjEpIDogc2kuc21vbzsKbWlkRnJlcXVlbmN5SHogPSBoc2xpZGVyKCIzLUJhbmQgRVEvTWlkIEZyZXF1ZW5jeVt1bml0Okh6XVtzY2FsZTpsb2ddW3N0eWxlOmtub2JdIiwgMTAwMC4wLCAyMDAuMCwgODAwMC4wLCAxLjApIDogc2kuc21vbzsKbWlkUSA9IGhzbGlkZXIoIjMtQmFuZCBFUS9NaWQgUVt1bml0OlFdW3NjYWxlOmxvZ11bc3R5bGU6a25vYl0iLCAxLjAsIDAuMiwgMTAuMCwgMC4xKSA6IHNpLnNtb287CmhpZ2hHYWluRGIgPSBoc2xpZGVyKCIzLUJhbmQgRVEvSGlnaCBHYWluW3VuaXQ6ZEJdW3N0eWxlOmtub2JdIiwgMC4wLCAtMTguMCwgMTguMCwgMC4xKSA6IHNpLnNtb287CmhpZ2hGcmVxdWVuY3lIeiA9IGhzbGlkZXIoIjMtQmFuZCBFUS9IaWdoIEZyZXF1ZW5jeVt1bml0Okh6XVtzY2FsZTpsb2ddW3N0eWxlOmtub2JdIiwgODAwMC4wLCAyMDAwLjAsIDE2MDAwLjAsIDEuMCkgOiBzaS5zbW9vOwpvdXRwdXREYiA9IGhzbGlkZXIoIjMtQmFuZCBFUS9PdXRwdXRbdW5pdDpkQl1bc3R5bGU6a25vYl0iLCAwLjAsIC0yNC4wLCAxMi4wLCAwLjEpIDogc2kuc21vbzsKCm1heGltdW1GcmVxdWVuY3kgPSAwLjQ1ICogbWEuU1I7Cmxvd0ZyZXF1ZW5jeSA9IG1pbihtYXhpbXVtRnJlcXVlbmN5LCBsb3dGcmVxdWVuY3lIeik7Cm1pZEZyZXF1ZW5jeSA9IG1pbihtYXhpbXVtRnJlcXVlbmN5LCBtaWRGcmVxdWVuY3lIeik7CmhpZ2hGcmVxdWVuY3kgPSBtaW4obWF4aW11bUZyZXF1ZW5jeSwgaGlnaEZyZXF1ZW5jeUh6KTsKCi8vIEVhY2ggemVyby1nYWluIGJhbmQgdGFrZXMgYW4gZXhhY3QgYnlwYXNzIHBhdGguIFRoaXMgcHJlc2VydmVzIGEgYml0LWV4YWN0Ci8vIG5ldXRyYWwgc3RhdGUgaW5zdGVhZCBvZiByZWx5aW5nIG9uIGEgZmlsdGVyJ3MgbWF0aGVtYXRpY2FsIDAgZEIgcmVzcG9uc2UuCmxvd0JhbmQoc2lnbmFsKSA9IHNlbGVjdDIoYWJzKGxvd0dhaW5EYikgPiAwLjAwMDAxLCBzaWduYWwsIGZpLmxvd19zaGVsZihsb3dHYWluRGIsIGxvd0ZyZXF1ZW5jeSwgc2lnbmFsKSk7Cm1pZEJhbmQoc2lnbmFsKSA9IHNlbGVjdDIoYWJzKG1pZEdhaW5EYikgPiAwLjAwMDAxLCBzaWduYWwsIGZpLnBlYWtfZXFfY3EobWlkR2FpbkRiLCBtaWRGcmVxdWVuY3ksIG1pZFEsIHNpZ25hbCkpOwpoaWdoQmFuZChzaWduYWwpID0gc2VsZWN0MihhYnMoaGlnaEdhaW5EYikgPiAwLjAwMDAxLCBzaWduYWwsIGZpLmhpZ2hfc2hlbGYoaGlnaEdhaW5EYiwgaGlnaEZyZXF1ZW5jeSwgc2lnbmFsKSk7CmVxdWFsaXplKHNpZ25hbCkgPSBzaWduYWwgOiBsb3dCYW5kIDogbWlkQmFuZCA6IGhpZ2hCYW5kIDogKihiYS5kYjJsaW5lYXIob3V0cHV0RGIpKTsKCnByb2Nlc3MgPSBlcXVhbGl6ZSwgZXF1YWxpemU7Cg==",
+  "inputs": 2,
+  "outputs": 2,
+  "meta": [
+    {
+      "analyzers.lib/name": "Faust Analyzer Library"
+    },
+    {
+      "analyzers.lib/version": "1.3.0"
+    },
+    {
+      "author": "Audio Effect Builder"
+    },
+    {
+      "basics.lib/name": "Faust Basic Element Library"
+    },
+    {
+      "basics.lib/version": "1.22.0"
+    },
+    {
+      "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2"
+    },
+    {
+      "filename": "equalizer.dsp"
+    },
+    {
+      "filters.lib/filterbank:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/filterbank:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/filterbank:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/fir:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/fir:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/fir:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/highpass:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/highpass:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/highshelf:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/highshelf:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/highshelf:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/iir:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/iir:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/iir:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/low_shelf:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/low_shelf:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/low_shelf:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/lowpass0_highpass1": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/lowpass0_highpass1:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/lowpass:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/lowpass:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/lowpass:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/lowshelf:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/lowshelf:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/lowshelf:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/name": "Faust Filters Library"
+    },
+    {
+      "filters.lib/peak_eq:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/peak_eq:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/peak_eq:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/peak_eq_cq:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/peak_eq_cq:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/peak_eq_cq:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/tf1:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/tf1:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/tf1:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/tf1s:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/tf1s:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/tf1s:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/tf2:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/tf2:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/tf2:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/tf2s:author": "Julius O. Smith III"
+    },
+    {
+      "filters.lib/tf2s:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+    },
+    {
+      "filters.lib/tf2s:license": "MIT-style STK-4.3 license"
+    },
+    {
+      "filters.lib/version": "1.7.1"
+    },
+    {
+      "license": "MIT"
+    },
+    {
+      "maths.lib/author": "GRAME"
+    },
+    {
+      "maths.lib/copyright": "GRAME"
+    },
+    {
+      "maths.lib/license": "LGPL with exception"
+    },
+    {
+      "maths.lib/name": "Faust Math Library"
+    },
+    {
+      "maths.lib/version": "2.9.0"
+    },
+    {
+      "name": "Audio Effect Builder 3-Band EQ"
+    },
+    {
+      "platform.lib/name": "Generic Platform Library"
+    },
+    {
+      "platform.lib/version": "1.3.0"
+    },
+    {
+      "signals.lib/name": "Faust Routing Library"
+    },
+    {
+      "signals.lib/version": "1.6.0"
+    },
+    {
+      "version": "0.1.0"
+    }
+  ],
+  "ui": [
+    {
+      "type": "vgroup",
+      "label": "Audio Effect Builder 3-Band EQ",
+      "items": [
+        {
+          "type": "hslider",
+          "label": "3-Band EQ/High Frequency",
+          "varname": "fHslider6",
+          "shortname": "3_Band_EQ_High_Frequency",
+          "address": "/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_High_Frequency",
+          "index": 168,
+          "meta": [
+            {
+              "scale": "log"
+            },
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "Hz"
+            }
+          ],
+          "init": 8000,
+          "min": 2000,
+          "max": 16000,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "3-Band EQ/High Gain",
+          "varname": "fHslider0",
+          "shortname": "3_Band_EQ_High_Gain",
+          "address": "/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_High_Gain",
+          "index": 12,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "dB"
+            }
+          ],
+          "init": 0,
+          "min": -18,
+          "max": 18,
+          "step": 0.1
+        },
+        {
+          "type": "hslider",
+          "label": "3-Band EQ/Low Frequency",
+          "varname": "fHslider3",
+          "shortname": "3_Band_EQ_Low_Frequency",
+          "address": "/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Low_Frequency",
+          "index": 68,
+          "meta": [
+            {
+              "scale": "log"
+            },
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "Hz"
+            }
+          ],
+          "init": 120,
+          "min": 40,
+          "max": 500,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "3-Band EQ/Low Gain",
+          "varname": "fHslider2",
+          "shortname": "3_Band_EQ_Low_Gain",
+          "address": "/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Low_Gain",
+          "index": 40,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "dB"
+            }
+          ],
+          "init": 0,
+          "min": -18,
+          "max": 18,
+          "step": 0.1
+        },
+        {
+          "type": "hslider",
+          "label": "3-Band EQ/Mid Frequency",
+          "varname": "fHslider4",
+          "shortname": "3_Band_EQ_Mid_Frequency",
+          "address": "/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Mid_Frequency",
+          "index": 120,
+          "meta": [
+            {
+              "scale": "log"
+            },
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "Hz"
+            }
+          ],
+          "init": 1000,
+          "min": 200,
+          "max": 8000,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "3-Band EQ/Mid Gain",
+          "varname": "fHslider1",
+          "shortname": "3_Band_EQ_Mid_Gain",
+          "address": "/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Mid_Gain",
+          "index": 28,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "dB"
+            }
+          ],
+          "init": 0,
+          "min": -18,
+          "max": 18,
+          "step": 0.1
+        },
+        {
+          "type": "hslider",
+          "label": "3-Band EQ/Mid Q",
+          "varname": "fHslider5",
+          "shortname": "3_Band_EQ_Mid_Q",
+          "address": "/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Mid_Q",
+          "index": 132,
+          "meta": [
+            {
+              "scale": "log"
+            },
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "Q"
+            }
+          ],
+          "init": 1,
+          "min": 0.2,
+          "max": 10,
+          "step": 0.1
+        },
+        {
+          "type": "hslider",
+          "label": "3-Band EQ/Output",
+          "varname": "fHslider7",
+          "shortname": "3_Band_EQ_Output",
+          "address": "/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Output",
+          "index": 220,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "dB"
+            }
+          ],
+          "init": 0,
+          "min": -24,
+          "max": 12,
+          "step": 0.1
+        }
+      ]
+    }
+  ]
+}

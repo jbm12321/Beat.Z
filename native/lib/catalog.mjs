@@ -120,6 +120,49 @@ export const NATIVE_MODULE_CATALOG = Object.freeze({
       output: Object.freeze({ name: 'Output', min: -24, max: 12, step: 0.1, unit: 'dB', faustPath: '/Audio_Effect_Builder_Stutter/Stutter_Output', scale: 'linear' }),
     }),
   }),
+  equalizer: Object.freeze({
+    name: '3-Band EQ',
+    source: 'faust/equalizer.dsp',
+    wasmSha256: '12fb431e7ed255a30f9a979c44fd63b72729cf377914b091f04f91285bdeca7c',
+    parameters: Object.freeze({
+      lowGain: Object.freeze({ name: 'Low Gain', min: -18, max: 18, step: 0.1, unit: 'dB', faustPath: '/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Low_Gain', scale: 'linear' }),
+      lowFrequency: Object.freeze({ name: 'Low Frequency', min: 40, max: 500, step: 1, unit: 'Hz', faustPath: '/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Low_Frequency', scale: 'log' }),
+      midGain: Object.freeze({ name: 'Mid Gain', min: -18, max: 18, step: 0.1, unit: 'dB', faustPath: '/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Mid_Gain', scale: 'linear' }),
+      midFrequency: Object.freeze({ name: 'Mid Frequency', min: 200, max: 8000, step: 1, unit: 'Hz', faustPath: '/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Mid_Frequency', scale: 'log' }),
+      midQ: Object.freeze({ name: 'Mid Q', min: 0.2, max: 10, step: 0.1, unit: 'Q', faustPath: '/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Mid_Q', scale: 'log' }),
+      highGain: Object.freeze({ name: 'High Gain', min: -18, max: 18, step: 0.1, unit: 'dB', faustPath: '/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_High_Gain', scale: 'linear' }),
+      highFrequency: Object.freeze({ name: 'High Frequency', min: 2000, max: 16000, step: 1, unit: 'Hz', faustPath: '/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_High_Frequency', scale: 'log' }),
+      output: Object.freeze({ name: 'Output', min: -24, max: 12, step: 0.1, unit: 'dB', faustPath: '/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Output', scale: 'linear' }),
+    }),
+  }),
+  limiter: Object.freeze({
+    name: 'Limiter',
+    source: 'faust/limiter.dsp',
+    wasmSha256: '60aa6c10c035b0bffb823f3106d8d348c0fe59be57a065dd6e04bca4b04f7091',
+    parameters: Object.freeze({
+      mode: Object.freeze({ name: 'Mode', min: 0, max: 3, step: 1, unit: '', faustPath: '/Audio_Effect_Builder_Limiter/Limiter_Mode', scale: 'linear', choices: [0, 1, 2, 3], choiceLabels: ['Transparent', 'Punch', 'Brickwall', 'Soft Clip'] }),
+      input: Object.freeze({ name: 'Input', min: 0, max: 24, step: 0.1, unit: 'dB', faustPath: '/Audio_Effect_Builder_Limiter/Limiter_Input', scale: 'linear' }),
+      ceiling: Object.freeze({ name: 'Ceiling', min: -12, max: 0, step: 0.1, unit: 'dB', faustPath: '/Audio_Effect_Builder_Limiter/Limiter_Ceiling', scale: 'linear' }),
+      lookahead: Object.freeze({ name: 'Lookahead', min: 0, max: 10, step: 0.1, unit: 'ms', faustPath: '/Audio_Effect_Builder_Limiter/Limiter_Lookahead', scale: 'linear' }),
+      release: Object.freeze({ name: 'Release', min: 10, max: 500, step: 1, unit: 'ms', faustPath: '/Audio_Effect_Builder_Limiter/Limiter_Release', scale: 'log' }),
+      softness: Object.freeze({ name: 'Softness', min: 0, max: 100, step: 1, unit: '%', faustPath: '/Audio_Effect_Builder_Limiter/Limiter_Softness', scale: 'linear' }),
+    }),
+  }),
+  flanger: Object.freeze({
+    name: 'Flanger',
+    source: 'faust/flanger.dsp',
+    wasmSha256: 'ebbf4306323211a06c267dafaefb4b238b56ce538c2f1292ea5d85820f973c0e',
+    parameters: Object.freeze({
+      mode: Object.freeze({ name: 'Mode', min: 0, max: 3, step: 1, unit: '', faustPath: '/Audio_Effect_Builder_Flanger/Flanger_Mode', scale: 'linear', choices: [0, 1, 2, 3], choiceLabels: ['Classic', 'Stereo', 'Jet', 'Through-Zero'] }),
+      rate: Object.freeze({ name: 'Rate', min: 0.05, max: 10, step: 0.01, unit: 'Hz', faustPath: '/Audio_Effect_Builder_Flanger/Flanger_Rate', scale: 'log' }),
+      depth: Object.freeze({ name: 'Depth', min: 0, max: 100, step: 1, unit: '%', faustPath: '/Audio_Effect_Builder_Flanger/Flanger_Depth', scale: 'linear' }),
+      delay: Object.freeze({ name: 'Delay', min: 0.1, max: 10, step: 0.1, unit: 'ms', faustPath: '/Audio_Effect_Builder_Flanger/Flanger_Delay', scale: 'log' }),
+      feedback: Object.freeze({ name: 'Feedback', min: 0, max: 95, step: 1, unit: '%', faustPath: '/Audio_Effect_Builder_Flanger/Flanger_Feedback', scale: 'linear' }),
+      stereo: Object.freeze({ name: 'Stereo', min: 0, max: 180, step: 1, unit: 'degrees', faustPath: '/Audio_Effect_Builder_Flanger/Flanger_Stereo', scale: 'linear' }),
+      mix: Object.freeze({ name: 'Mix', min: 0, max: 100, step: 1, unit: '%', faustPath: '/Audio_Effect_Builder_Flanger/Flanger_Mix', scale: 'linear' }),
+      output: Object.freeze({ name: 'Output', min: -24, max: 12, step: 0.1, unit: 'dB', faustPath: '/Audio_Effect_Builder_Flanger/Flanger_Output', scale: 'linear' }),
+    }),
+  }),
 });
 
 export const SOURCE_FINGERPRINTS = Object.freeze({
@@ -133,4 +176,7 @@ export const SOURCE_FINGERPRINTS = Object.freeze({
   phaser: 'b812485b365ccf92ba7fb8680feced1b3ce27b86a568c8634ca6ce949c827c04',
   autowah: '26001c6599cf9b72c57290b26498233f076d278ec1b7bdecbe40be04c3448443',
   stutter: 'b5f10b05476725a477d1b2df078a932b2ccb68e079b2e5dd908dba5c89b790d9',
+  equalizer: '0ee8adecb250e184c1c2f15d8630c13acb193945bc815d87110dfee1bb14c25a',
+  limiter: '5564b1c1f20994bf827916a3e877f125c15ca19c70879918fe64a3e1eeda1bf6',
+  flanger: 'b66905707f0238d73e8230793edfeac787136aa6fa1608fbe4dc6d48e5aea9b4',
 });
