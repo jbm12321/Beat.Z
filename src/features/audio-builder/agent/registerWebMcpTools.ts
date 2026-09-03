@@ -20,6 +20,10 @@ export type WebMcpTool = {
 };
 type ModelContext = { registerTool: (tool: WebMcpTool, options?: { signal?: AbortSignal }) => Promise<void> | void };
 
+const MAX_CONTROLS = 8;
+const MAX_MAPPINGS_PER_CONTROL = 4;
+const MAX_CHAIN_LENGTH = 12;
+
 declare global {
   interface Document {
     modelContext?: ModelContext;
@@ -41,6 +45,7 @@ export interface WebMcpAdapter {
   getProject: () => ProjectV2;
   getValidation: () => ProjectValidationResult;
   getDownloadState: () => WebMcpDownloadState;
+  getProposal: () => AgentProposal | null;
   stageProposal: (input: AgentProposalInput) => AgentProposal;
   downloadPlugin: () => Promise<WebMcpDownloadState> | WebMcpDownloadState;
 }
@@ -73,14 +78,13 @@ const mappingSchema = objectSchema({
 const controlProperties = {
   controlId: { type: 'string', minLength: 1, maxLength: 120, description: 'Existing Control ID when replacing a Control.' },
   name: { type: 'string', minLength: 1, maxLength: 24, description: 'Visible Control label derived from the prompt.' },
-  promptBasis: { type: 'string', minLength: 1, maxLength: 160, description: 'Exact phrase from the prompt that justifies this Control.' },
+  reason: { type: 'string', minLength: 1, maxLength: 160, description: 'Optional short reason for this Control.' },
   value: { type: 'number', minimum: 0, maximum: 1, description: 'Optional initial Control position.' },
-  combined: { type: 'boolean', description: 'True only when the prompt explicitly requests combined movement.' },
-  mappings: { type: 'array', minItems: 1, maxItems: 8, items: mappingSchema },
+  mappings: { type: 'array', minItems: 1, maxItems: MAX_MAPPINGS_PER_CONTROL, items: mappingSchema },
 };
 
-const createControlSchema = objectSchema(controlProperties, ['name', 'promptBasis', 'mappings']);
-const editControlSchema = objectSchema({ action: { const: 'set-control' }, ...controlProperties }, ['action', 'name', 'promptBasis', 'mappings']);
+const createControlSchema = objectSchema(controlProperties, ['name', 'mappings']);
+const editControlSchema = objectSchema({ action: { const: 'set-control' }, ...controlProperties }, ['action', 'name', 'mappings']);
 const createPrimitiveSchema = objectSchema({
   ref: { type: 'string', minLength: 1, maxLength: 64, description: 'Short reference used by Control mappings.' },
   primitive: { type: 'string', enum: MODULE_TYPES },
@@ -130,6 +134,47 @@ function proposalResult(proposal: AgentProposal, controlNames: string[], verb: s
   );
 }
 
+function inspectPrimitives() {
+  return MODULE_TYPES.map((type) => {
+    const definition = MODULE_CATALOG[type];
+    return {
+      type: definition.type,
+      name: definition.name,
+      shortName: definition.shortName,
+      description: definition.description,
+      params: definition.parameters.map((parameter) => ({
+        id: parameter.id,
+        name: parameter.name,
+        min: parameter.min,
+        max: parameter.max,
+        default: parameter.default,
+        step: parameter.step,
+        unit: parameter.unit,
+        scale: parameter.scale,
+        mappable: parameter.mappable,
+        ...(parameter.choices ? { choices: parameter.choices.map((choice) => choice.label) } : {}),
+      })),
+    };
+  });
+}
+
+function inspectPlugin(project: ProjectV2) {
+  return {
+    name: project.name,
+    revision: project.revision,
+    chain: project.chain.map((id) => {
+      const node = project.nodes[id];
+      return { id: node.id, type: node.type, bypassed: node.bypassed, settings: node.params };
+    }),
+    controls: project.macros.map((control) => ({ id: control.id, name: control.name, value: control.value, mappings: control.mappings })),
+  };
+}
+
+function inspectValidation(adapter: WebMcpAdapter) {
+  const validation = adapter.getValidation();
+  return { status: validation.status, issues: validation.issues };
+}
+
 export async function registerWebMcpTools(adapter: WebMcpAdapter) {
   if (typeof document === 'undefined') return { supported: false, unregister: () => undefined, toolNames: [] as string[] };
   const modelContext = document.modelContext;
@@ -149,27 +194,28 @@ export async function registerWebMcpTools(adapter: WebMcpAdapter) {
     {
       name: 'inspect-builder',
       title: 'Inspect builder',
-      description: 'Inspect the current Beat.Z plugin, supported primitives, parameters, Controls, validation, and download state. Call before another Beat.Z tool. Does not change anything.',
+      description: 'Read the current Beat.Z builder and primitive parameters before creating, editing, clearing, or downloading. Does not change anything.',
       inputSchema: objectSchema({}),
       annotations: { readOnlyHint: true, untrustedContentHint: false },
       execute: () => {
         const project = adapter.getProject();
         const contextId = makeBuilderContextId(project);
-        return textResult(`Inspected Beat.Z revision ${project.revision}. Use the returned contextId for the next action.`, {
+        const proposal = adapter.getProposal();
+        return textResult(`Inspected Beat.Z revision ${project.revision}.\nUse contextId for the next action.`, {
           contextId,
-          revision: project.revision,
-          project,
-          primitives: MODULE_CATALOG,
+          plugin: inspectPlugin(project),
+          primitives: inspectPrimitives(),
           controlRules: {
-            maximum: 8,
+            maximum: MAX_CONTROLS,
             defaultMappingsPerControl: 1,
-            combinedMappings: 'Only when the prompt explicitly requests one-knob, combined, linked, or morph behavior.',
-            promptBasis: 'Every Control must quote the exact prompt phrase that justifies it.',
+            reason: 'Optional short explanation; no prompt phrase matching is required.',
             parameterOwnership: 'A DSP parameter can belong to only one Control.',
             discreteModesMappable: false,
           },
-          validation: adapter.getValidation(),
+          validation: inspectValidation(adapter),
           download: adapter.getDownloadState(),
+          proposal: proposal ? { id: proposal.id, status: proposal.status, baseRevision: proposal.baseRevision } : null,
+          limits: { controls: MAX_CONTROLS, mappingsPerControl: MAX_MAPPINGS_PER_CONTROL, chain: MAX_CHAIN_LENGTH },
         });
       },
     },
@@ -182,8 +228,8 @@ export async function registerWebMcpTools(adapter: WebMcpAdapter) {
         prompt: { type: 'string', minLength: 1, maxLength: 2_000, description: 'The user request being implemented.' },
         plugin: objectSchema({
           name: { type: 'string', minLength: 1, maxLength: 64 },
-          chain: { type: 'array', minItems: 1, maxItems: 64, items: createPrimitiveSchema },
-          controls: { type: 'array', minItems: 1, maxItems: 8, items: createControlSchema },
+          chain: { type: 'array', minItems: 1, maxItems: MAX_CHAIN_LENGTH, items: createPrimitiveSchema },
+          controls: { type: 'array', minItems: 1, maxItems: MAX_CONTROLS, items: createControlSchema },
         }, ['name', 'chain', 'controls']),
       }, ['contextId', 'prompt', 'plugin']),
       annotations: writeAnnotations,
@@ -201,7 +247,7 @@ export async function registerWebMcpTools(adapter: WebMcpAdapter) {
       inputSchema: objectSchema({
         contextId: contextProperty,
         prompt: { type: 'string', minLength: 1, maxLength: 2_000, description: 'The requested edit in the user’s words.' },
-        changes: { type: 'array', minItems: 1, maxItems: 50, items: editChangeSchema },
+        changes: { type: 'array', minItems: 1, maxItems: MAX_CHAIN_LENGTH, items: editChangeSchema },
       }, ['contextId', 'prompt', 'changes']),
       annotations: writeAnnotations,
       execute: safely((input) => {

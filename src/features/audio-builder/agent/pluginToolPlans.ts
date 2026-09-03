@@ -17,8 +17,8 @@ export interface PluginToolPlan {
 }
 
 const MAX_PROMPT_LENGTH = 2_000;
-const MAX_PROMPT_BASIS_LENGTH = 160;
-const COMBINED_CONTROL_LANGUAGE = /\b(one[- ]knob|single control|combined|linked|together|morph|simultaneous(?:ly)?|at once)\b/iu;
+const MAX_CONTROL_REASON_LENGTH = 160;
+const MAX_MAPPINGS_PER_CONTROL = 4;
 
 function compactHash(value: string) {
   let hash = 2_166_136_261;
@@ -98,16 +98,6 @@ function proposalPurpose(prompt: string) {
   return prompt.length <= 360 ? prompt : `${prompt.slice(0, 357)}…`;
 }
 
-function requirePromptBasis(prompt: string, value: unknown) {
-  const basis = asString(value, 'promptBasis', MAX_PROMPT_BASIS_LENGTH);
-  const normalizedPrompt = prompt.toLocaleLowerCase().replace(/\s+/gu, ' ');
-  const normalizedBasis = basis.toLocaleLowerCase().replace(/\s+/gu, ' ');
-  if (!normalizedPrompt.includes(normalizedBasis)) {
-    throw new Error(`Control promptBasis "${basis}" must quote an exact phrase from the user prompt.`);
-  }
-  return basis;
-}
-
 function getParameter(type: ModuleType, paramId: unknown) {
   const id = asString(paramId, 'parameter', 64);
   const definition = MODULE_CATALOG[type].parameters.find((candidate) => candidate.id === id);
@@ -143,19 +133,14 @@ type NodeReference = { nodeId: string; type: ModuleType };
 function appendControl(
   commands: ProjectCommand[],
   controls: string[],
-  prompt: string,
   rawControl: unknown,
   nodeReferences: Map<string, NodeReference>,
   project: ProjectV2,
 ) {
   const control = asRecord(rawControl, 'control');
   const name = asString(control.name, 'Control name', 24);
-  const promptBasis = requirePromptBasis(prompt, control.promptBasis);
-  const mappings = asArray(control.mappings, `${name} mappings`, 1, 8);
-  const combined = asOptionalBoolean(control.combined, `${name}.combined`) ?? false;
-  if (mappings.length > 1 && (!combined || !COMBINED_CONTROL_LANGUAGE.test(`${prompt} ${promptBasis}`))) {
-    throw new Error(`${name} maps several parameters. Multi-parameter Controls require combined=true and explicit combined-control language in the prompt.`);
-  }
+  if (control.reason !== undefined) asString(control.reason, 'Control reason', MAX_CONTROL_REASON_LENGTH);
+  const mappings = asArray(control.mappings, `${name} mappings`, 1, MAX_MAPPINGS_PER_CONTROL);
 
   const requestedControlId = control.controlId;
   const existingControl = requestedControlId === undefined
@@ -201,15 +186,12 @@ function currentNodeReferences(project: ProjectV2) {
 }
 
 export function createPluginPlan(project: ProjectV2, input: UnknownRecord): PluginToolPlan {
-  if (Object.keys(project.nodes).length > 0 || project.macros.length > 0) {
-    throw new Error('A plugin already exists. Use edit-plugin or clear-plugin first.');
-  }
   const prompt = asPrompt(input.prompt);
   const plugin = asRecord(input.plugin, 'plugin');
   const name = asString(plugin.name, 'Plugin name', 64);
-  const chain = asArray(plugin.chain, 'plugin.chain', 1, 64);
+  const chain = asArray(plugin.chain, 'plugin.chain', 1, 12);
   const rawControls = asArray(plugin.controls, 'plugin.controls', 1, 8);
-  const commands: ProjectCommand[] = [{ type: 'rename_project', name }];
+  const commands: ProjectCommand[] = [{ type: 'clear_project' }, { type: 'rename_project', name }];
   const nodeReferences = new Map<string, NodeReference>();
 
   chain.forEach((rawPrimitive, index) => {
@@ -224,7 +206,8 @@ export function createPluginPlan(project: ProjectV2, input: UnknownRecord): Plug
   });
 
   const controlNames: string[] = [];
-  rawControls.forEach((control) => appendControl(commands, controlNames, prompt, control, nodeReferences, project));
+  const emptyControlsProject = { ...project, macros: [] };
+  rawControls.forEach((control) => appendControl(commands, controlNames, control, nodeReferences, emptyControlsProject));
   return {
     proposal: { summary: `Create ${name}`, musicalPurpose: proposalPurpose(prompt), commands },
     controlNames,
@@ -240,12 +223,14 @@ export function editPluginPlan(project: ProjectV2, input: UnknownRecord): Plugin
   const commands: ProjectCommand[] = [];
   const controlNames: string[] = [];
   const nodeReferences = currentNodeReferences(project);
+  let renamed = false;
 
   changes.forEach((rawChange, index) => {
     const change = asRecord(rawChange, `changes[${index}]`);
     const action = asString(change.action, `changes[${index}].action`, 40);
     if (action === 'rename-plugin') {
       commands.push({ type: 'rename_project', name: asString(change.name, 'Plugin name', 64) });
+      renamed = true;
       return;
     }
     if (action === 'add-primitive') {
@@ -260,7 +245,7 @@ export function editPluginPlan(project: ProjectV2, input: UnknownRecord): Plugin
     }
 
     if (action === 'set-control') {
-      appendControl(commands, controlNames, prompt, change, nodeReferences, project);
+      appendControl(commands, controlNames, change, nodeReferences, project);
       return;
     }
     if (action === 'remove-control') {
@@ -292,6 +277,8 @@ export function editPluginPlan(project: ProjectV2, input: UnknownRecord): Plugin
     }
     throw new Error(`Unsupported edit action: ${action}.`);
   });
+
+  if (!renamed) throw new Error('Every edit-plugin call must include a rename-plugin change.');
 
   return {
     proposal: { summary: 'Edit the current plugin', musicalPurpose: proposalPurpose(prompt), commands },
