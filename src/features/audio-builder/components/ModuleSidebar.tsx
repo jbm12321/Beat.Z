@@ -9,7 +9,7 @@ export function ModuleSidebar({ mobileOpen, onAddModule, onOpenInsert, onHide }:
   onHide: () => void;
 }) {
   return (
-    <aside className={`module-sidebar ${mobileOpen ? 'is-mobile-open' : ''}`} aria-label="Module pool">
+    <aside className={`module-sidebar ${mobileOpen ? 'is-mobile-open' : ''}`} aria-label="Primitives">
       <header className="rail-header">
         <span>Primitives</span>
         <div className="rail-header-actions">

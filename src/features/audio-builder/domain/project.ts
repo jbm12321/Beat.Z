@@ -108,9 +108,6 @@ export interface ProjectV2 {
   migration?: LegacyMigrationRecord;
 }
 
-/** @deprecated Kept as a source-compatible alias for the original browser MVP. */
-export type ProjectV1 = ProjectV2;
-
 export interface LegacyDspNodeV1 {
   id: string;
   type: string;
@@ -421,7 +418,7 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
 };
 
 export const MODULE_TYPES = Object.keys(MODULE_CATALOG) as ModuleType[];
-export const PRE_PAIR1_ENGINE_PROVENANCE = Object.freeze({
+export const INITIAL_THREE_PRIMITIVE_ENGINE_PROVENANCE = Object.freeze({
   effectDefinition: 'audio-effect-builder-faust', definitionVersion: '0.1.0', faustWasmVersion: '0.16.6', faustCompilerVersion: '2.85.9',
   libraries: { basics: '1.22.0', filters: '1.7.1', maths: '2.9.0', platform: '1.3.0', signals: '1.6.0' },
   moduleSourceSha256: {
@@ -431,20 +428,20 @@ export const PRE_PAIR1_ENGINE_PROVENANCE = Object.freeze({
   },
 });
 const PRE_CANONICAL_COMPILER_ENGINE_PROVENANCE = Object.freeze({
-  ...PRE_PAIR1_ENGINE_PROVENANCE,
+  ...INITIAL_THREE_PRIMITIVE_ENGINE_PROVENANCE,
   faustCompilerVersion: '2.86.2',
-  libraries: { ...PRE_PAIR1_ENGINE_PROVENANCE.libraries, basics: '1.23.0' },
+  libraries: { ...INITIAL_THREE_PRIMITIVE_ENGINE_PROVENANCE.libraries, basics: '1.23.0' },
 });
 const PRE_SATURATION_V2_ENGINE_PROVENANCE = Object.freeze({
-  ...PRE_PAIR1_ENGINE_PROVENANCE,
+  ...INITIAL_THREE_PRIMITIVE_ENGINE_PROVENANCE,
   moduleSourceSha256: {
-    ...PRE_PAIR1_ENGINE_PROVENANCE.moduleSourceSha256,
+    ...INITIAL_THREE_PRIMITIVE_ENGINE_PROVENANCE.moduleSourceSha256,
     saturation: '238cd373e164ba480c6367ae7ef1c071205346361c7f597d6c1dc3878af0a75b',
   },
 });
-// The first Pair 1 release used these exact sources.  Its projects remain
-// valid inputs but are upgraded to the more audible, same-contract DSP set.
-export const PRE_AUDIBILITY_ENGINE_PROVENANCE = Object.freeze({
+// The initial Delay/Reverb release used these exact sources. Its projects remain
+// valid inputs but are upgraded to the refined, same-contract DSP set.
+export const INITIAL_DELAY_REVERB_ENGINE_PROVENANCE = Object.freeze({
   effectDefinition: 'audio-effect-builder-faust', definitionVersion: '0.1.0', faustWasmVersion: '0.16.6', faustCompilerVersion: '2.85.9',
   libraries: { analyzers: '1.3.0', basics: '1.22.0', delays: '1.2.0', filters: '1.7.1', maths: '2.9.0', misceffects: '2.5.2', oscillators: '1.7.0', platform: '1.3.0', reverbs: '1.5.1', signals: '1.6.0' },
   moduleSourceSha256: {
@@ -597,13 +594,13 @@ export function formatParameter(definition: ParameterDefinition, value: number) 
 
 function requireNode(project: ProjectV2, nodeId: string) {
   const node = project.nodes[nodeId];
-  if (!node) throw new Error(`Module ${nodeId} does not exist.`);
+  if (!node) throw new Error(`Primitive ${nodeId} does not exist.`);
   return node;
 }
 
 function requireMacro(project: ProjectV2, macroId: string) {
   const macro = project.macros.find((candidate) => candidate.id === macroId);
-  if (!macro) throw new Error(`Macro ${macroId} does not exist.`);
+  if (!macro) throw new Error(`Control ${macroId} does not exist.`);
   return macro;
 }
 
@@ -673,9 +670,9 @@ function applyOne(project: ProjectV2, command: ProjectCommand) {
       delete project.migration;
       return;
     case 'add_module': {
-      if (!MODULE_CATALOG[command.moduleType]) throw new Error(`Unknown module type: ${String(command.moduleType)}`);
+      if (!MODULE_CATALOG[command.moduleType]) throw new Error(`Unknown primitive type: ${String(command.moduleType)}`);
       const node = createNode(command.moduleType, command.nodeId);
-      if (project.nodes[node.id]) throw new Error(`Module ID ${node.id} already exists.`);
+      if (project.nodes[node.id]) throw new Error(`Primitive ID ${node.id} already exists.`);
       const index = command.index === undefined ? project.chain.length : validateIndex(command.index, project.chain.length, 'Insert');
       project.nodes[node.id] = node;
       project.chain.splice(index, 0, node.id);
@@ -685,13 +682,13 @@ function applyOne(project: ProjectV2, command: ProjectCommand) {
       const node = requireNode(project, command.nodeId);
       const definition = getParameterDefinition(node, command.paramId);
       if (!definition) throw new Error(`Unknown parameter: ${command.paramId}`);
-      if (getMappingForParameter(project, command.nodeId, command.paramId)) throw new Error('Mapped parameters must be adjusted through their macro.');
+      if (getMappingForParameter(project, command.nodeId, command.paramId)) throw new Error('Mapped parameters must be adjusted through their Control.');
       node.params[command.paramId] = validateNativeValue(definition, command.value);
       return;
     }
     case 'move_module': {
       requireNode(project, command.nodeId);
-      if (!project.chain.includes(command.nodeId)) throw new Error('Only connected modules can be reordered.');
+      if (!project.chain.includes(command.nodeId)) throw new Error('Only connected primitives can be reordered.');
       const remaining = project.chain.filter((id) => id !== command.nodeId);
       const index = validateIndex(command.index, remaining.length, 'Move');
       remaining.splice(index, 0, command.nodeId);
@@ -723,7 +720,7 @@ function applyOne(project: ProjectV2, command: ProjectCommand) {
       if (project.macros.length >= 8) throw new Error('A plugin can expose at most eight controls.');
       const name = validateMacroName(project, command.name ?? `Control ${project.macros.length + 1}`);
       const id = command.macroId ?? makeId('macro');
-      if (project.macros.some((macro) => macro.id === id)) throw new Error(`Macro ID ${id} already exists.`);
+      if (project.macros.some((macro) => macro.id === id)) throw new Error(`Control ID ${id} already exists.`);
       project.macros.push({ id, name, value: 0.5, mappings: [] });
       return;
     }
@@ -731,7 +728,7 @@ function applyOne(project: ProjectV2, command: ProjectCommand) {
       requireMacro(project, command.macroId).name = validateMacroName(project, command.name, command.macroId);
       return;
     case 'set_macro_value':
-      if (!Number.isFinite(command.value) || command.value < 0 || command.value > 1) throw new Error('Macro values must be between 0 and 1.');
+      if (!Number.isFinite(command.value) || command.value < 0 || command.value > 1) throw new Error('Control values must be between 0 and 1.');
       requireMacro(project, command.macroId).value = command.value;
       return;
     case 'add_mapping': {
@@ -802,41 +799,41 @@ function sameJson(left: unknown, right: unknown) {
 }
 
 export function validateProject(value: unknown): ProjectV2 {
-  if (!isRecord(value) || value.schemaVersion !== 2) throw new Error('This is not a supported Audio Effect Builder v0.1 project.');
+  if (!isRecord(value) || value.schemaVersion !== 2) throw new Error('This is not a supported Beat.Z project.');
   if (typeof value.id !== 'string' || typeof value.name !== 'string' || !value.name.trim() || value.name.length > 64) throw new Error('The project metadata is invalid.');
   if (!Number.isInteger(value.revision) || Number(value.revision) < 0 || !Array.isArray(value.chain) || !isRecord(value.nodes) || !Array.isArray(value.macros) || !Array.isArray(value.activity)) throw new Error('The project structure is invalid.');
   const project = structuredClone(value) as unknown as ProjectV2;
-  if (!sameJson(project.engine, ENGINE_PROVENANCE)) throw new Error('The project uses an unsupported Faust effect or library version.');
+  if (!sameJson(project.engine, ENGINE_PROVENANCE)) throw new Error('The project uses an unsupported Faust primitive or library version.');
 
   const nodeIds = Object.keys(project.nodes);
-  if (new Set(project.chain).size !== project.chain.length || project.chain.some((id) => typeof id !== 'string' || !project.nodes[id])) throw new Error('The signal chain contains an invalid module.');
+  if (new Set(project.chain).size !== project.chain.length || project.chain.some((id) => typeof id !== 'string' || !project.nodes[id])) throw new Error('The signal chain contains an invalid primitive.');
   nodeIds.forEach((id) => {
     const node = project.nodes[id];
-    if (!node || node.id !== id || !MODULE_CATALOG[node.type] || typeof node.bypassed !== 'boolean' || !isRecord(node.params)) throw new Error(`Module ${id} is invalid.`);
+    if (!node || node.id !== id || !MODULE_CATALOG[node.type] || typeof node.bypassed !== 'boolean' || !isRecord(node.params)) throw new Error(`Primitive ${id} is invalid.`);
     const definitions = MODULE_CATALOG[node.type].parameters;
-    if (Object.keys(node.params).length !== definitions.length || Object.keys(node.params).some((paramId) => !definitions.some((definition) => definition.id === paramId))) throw new Error(`Module ${id} has an unsupported parameter.`);
-    definitions.forEach((definition) => validateNativeValue(definition, node.params[definition.id], `Module ${id} ${definition.name}`));
+    if (Object.keys(node.params).length !== definitions.length || Object.keys(node.params).some((paramId) => !definitions.some((definition) => definition.id === paramId))) throw new Error(`Primitive ${id} has an unsupported parameter.`);
+    definitions.forEach((definition) => validateNativeValue(definition, node.params[definition.id], `Primitive ${id} ${definition.name}`));
   });
 
-  if (project.macros.length > 8) throw new Error('The project exposes more than eight macro controls.');
+  if (project.macros.length > 8) throw new Error('The project exposes more than eight Controls.');
   const macroIds = new Set<string>();
   const mappingIds = new Set<string>();
   const names = new Set<string>();
   const targets = new Set<string>();
   project.macros.forEach((macro) => {
-    if (!macro || typeof macro.id !== 'string' || typeof macro.name !== 'string' || !macro.name.trim() || macro.name.length > 24 || !Number.isFinite(macro.value) || macro.value < 0 || macro.value > 1 || !Array.isArray(macro.mappings)) throw new Error('A macro control is invalid.');
-    if (macroIds.has(macro.id)) throw new Error('Macro IDs must be unique.');
+    if (!macro || typeof macro.id !== 'string' || typeof macro.name !== 'string' || !macro.name.trim() || macro.name.length > 24 || !Number.isFinite(macro.value) || macro.value < 0 || macro.value > 1 || !Array.isArray(macro.mappings)) throw new Error('A Control is invalid.');
+    if (macroIds.has(macro.id)) throw new Error('Control IDs must be unique.');
     macroIds.add(macro.id);
     const lower = macro.name.toLowerCase();
-    if (names.has(lower)) throw new Error('Macro names must be unique.');
+    if (names.has(lower)) throw new Error('Control names must be unique.');
     names.add(lower);
     macro.mappings.forEach((mapping) => {
-      if (!mapping || typeof mapping.id !== 'string' || typeof mapping.nodeId !== 'string' || typeof mapping.paramId !== 'string' || typeof mapping.inverted !== 'boolean') throw new Error('A macro mapping is invalid.');
+      if (!mapping || typeof mapping.id !== 'string' || typeof mapping.nodeId !== 'string' || typeof mapping.paramId !== 'string' || typeof mapping.inverted !== 'boolean') throw new Error('A Control mapping is invalid.');
       if (mappingIds.has(mapping.id)) throw new Error('Mapping IDs must be unique.');
       mappingIds.add(mapping.id);
       const node = project.nodes[mapping.nodeId];
       const definition = node && getParameterDefinition(node, mapping.paramId);
-      if (!definition || !definition.mappable || !Number.isFinite(mapping.min) || !Number.isFinite(mapping.max) || mapping.min < definition.min || mapping.max > definition.max || mapping.min > mapping.max) throw new Error('A macro mapping range is invalid.');
+      if (!definition || !definition.mappable || !Number.isFinite(mapping.min) || !Number.isFinite(mapping.max) || mapping.min < definition.min || mapping.max > definition.max || mapping.min > mapping.max) throw new Error('A Control mapping range is invalid.');
       const target = `${mapping.nodeId}:${mapping.paramId}`;
       if (targets.has(target)) throw new Error('A parameter is mapped more than once.');
       targets.add(target);
@@ -855,7 +852,7 @@ function validateLegacyProject(value: unknown): LegacyProjectV1 {
   const legacy = structuredClone(value) as unknown as LegacyProjectV1;
   if (new Set(legacy.chain).size !== legacy.chain.length || legacy.chain.some((id) => typeof id !== 'string' || !legacy.nodes[id])) throw new Error('The legacy signal chain is invalid.');
   Object.entries(legacy.nodes).forEach(([id, node]) => {
-    if (!node || node.id !== id || typeof node.type !== 'string' || !isRecord(node.params) || Object.values(node.params).some((value) => !Number.isFinite(value)) || typeof node.bypassed !== 'boolean') throw new Error(`Legacy module ${id} is invalid.`);
+    if (!node || node.id !== id || typeof node.type !== 'string' || !isRecord(node.params) || Object.values(node.params).some((value) => !Number.isFinite(value)) || typeof node.bypassed !== 'boolean') throw new Error(`Legacy primitive ${id} is invalid.`);
   });
   return legacy;
 }
@@ -914,8 +911,8 @@ export function migrateLegacyProject(value: unknown): ProjectV2 {
     activity: [{
       id: makeId('activity'), actor: 'system' as const,
       summary: unsupportedModuleTypes.size
-        ? `Migrated to Faust v0.1; preserved ${unsupportedModuleTypes.size} unsupported module type${unsupportedModuleTypes.size === 1 ? '' : 's'} in the recovery record`
-        : 'Migrated project to the Faust v0.1 engine',
+        ? `Migrated to the current Faust engine; preserved ${unsupportedModuleTypes.size} unsupported primitive type${unsupportedModuleTypes.size === 1 ? '' : 's'} in the recovery record`
+        : 'Migrated project to the current Faust engine',
       timestamp: migratedAt,
     }, ...legacy.activity].slice(0, 24),
     migration: { sourceSchemaVersion: 1, migratedAt, unsupportedModuleTypes: [...unsupportedModuleTypes].sort(), legacyBackup: legacy },
@@ -928,20 +925,20 @@ export function parseProject(value: unknown): ProjectV2 {
   return validateProject(value);
 }
 
-/** Migrates only named, exact historical v0.1 engines into the current engine. */
+/** Migrates only named, exact historical engines into the current engine. */
 export function upgradeProjectEngine(value: unknown): ProjectV2 {
   if (!isRecord(value) || value.schemaVersion !== 2 || !isRecord(value.nodes)) return validateProject(value);
   const project = structuredClone(value) as Record<string, unknown>;
-  const isPrePair1 = sameJson(project.engine, PRE_PAIR1_ENGINE_PROVENANCE);
+  const isInitialThreePrimitive = sameJson(project.engine, INITIAL_THREE_PRIMITIVE_ENGINE_PROVENANCE);
   const isPreCanonicalCompiler = sameJson(project.engine, PRE_CANONICAL_COMPILER_ENGINE_PROVENANCE);
   const isPreSaturationV2 = sameJson(project.engine, PRE_SATURATION_V2_ENGINE_PROVENANCE);
-  const isPreAudibility = sameJson(project.engine, PRE_AUDIBILITY_ENGINE_PROVENANCE);
+  const isInitialDelayReverb = sameJson(project.engine, INITIAL_DELAY_REVERB_ENGINE_PROVENANCE);
   const isPreChorusCompressor = sameJson(project.engine, PRE_CHORUS_COMPRESSOR_ENGINE_PROVENANCE);
   const isPrePhaserCompressorModes = sameJson(project.engine, PRE_PHASER_COMPRESSOR_MODES_ENGINE_PROVENANCE);
   const isPreAutoWahStutter = sameJson(project.engine, PRE_AUTOWAH_STUTTER_ENGINE_PROVENANCE);
   const isPreEqLimiterFlanger = sameJson(project.engine, PRE_EQ_LIMITER_FLANGER_ENGINE_PROVENANCE);
   const isPreTremolo = sameJson(project.engine, PRE_TREMOLO_ENGINE_PROVENANCE);
-  if (!isPrePair1 && !isPreCanonicalCompiler && !isPreSaturationV2 && !isPreAudibility && !isPreChorusCompressor && !isPrePhaserCompressorModes && !isPreAutoWahStutter && !isPreEqLimiterFlanger && !isPreTremolo) return validateProject(project);
+  if (!isInitialThreePrimitive && !isPreCanonicalCompiler && !isPreSaturationV2 && !isInitialDelayReverb && !isPreChorusCompressor && !isPrePhaserCompressorModes && !isPreAutoWahStutter && !isPreEqLimiterFlanger && !isPreTremolo) return validateProject(project);
   if (isPreSaturationV2) {
     for (const node of Object.values(project.nodes as Record<string, unknown>)) {
       if (!isRecord(node) || node.type !== 'saturation' || !isRecord(node.params)) continue;

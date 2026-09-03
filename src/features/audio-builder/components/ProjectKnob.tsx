@@ -1,5 +1,4 @@
 import type { CSSProperties } from 'react';
-import { Trash2 } from 'lucide-react';
 import type { MacroControl } from '../domain/types';
 
 export function ProjectKnob({ macro, selected, onSelect, onChange, onRename, onDelete }: {
@@ -54,7 +53,17 @@ export function ProjectKnob({ macro, selected, onSelect, onChange, onRename, onD
         >{macro.name}</strong>
       ) : <strong>{macro.name}</strong>}
       <span>{Math.round(macro.value * 100)}</span>
-      {selected ? <button type="button" className="macro-delete-button" aria-label={`Delete ${macro.name}`} title="Delete control" onClick={(event) => { event.stopPropagation(); onDelete(); }}><Trash2 aria-hidden="true" size={14} strokeWidth={1.5} /></button> : null}
+      {selected ? (
+        <button type="button" className="macro-delete-button" aria-label={`Delete ${macro.name}`} title="Delete control" onClick={(event) => { event.stopPropagation(); onDelete(); }}>
+          <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10 11v6" />
+            <path d="M14 11v6" />
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+            <path d="M3 6h18" />
+            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          </svg>
+        </button>
+      ) : null}
     </div>
   );
 }

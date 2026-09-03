@@ -43,25 +43,25 @@ function validateDsp(dsp) {
     }
     nodes.set(node.id, node);
   }
-  if (!Array.isArray(dsp.macros) || dsp.macros.length > 8) fail('DSP macros must contain 0-8 controls.');
+  if (!Array.isArray(dsp.macros) || dsp.macros.length > 8) fail('DSP must contain 0-8 Controls.');
   const targets = new Set();
   for (const macro of dsp.macros) {
-    assertSafeId(macro.id, 'Macro id');
-    assertDisplayName(macro.name, 'Macro name', 24);
-    number(macro.value, `Macro ${macro.id} value`, 0, 1);
-    if (!Array.isArray(macro.mappings) || macro.mappings.length < 1 || macro.mappings.length > 64) fail(`Macro ${macro.id} has no effective mapping.`);
+    assertSafeId(macro.id, 'Control id');
+    assertDisplayName(macro.name, 'Control name', 24);
+    number(macro.value, `Control ${macro.id} value`, 0, 1);
+    if (!Array.isArray(macro.mappings) || macro.mappings.length < 1 || macro.mappings.length > 64) fail(`Control ${macro.id} has no effective mapping.`);
     for (const mapping of macro.mappings) {
       const node = nodes.get(mapping.nodeId);
-      if (!node) fail(`Macro ${macro.id} targets an inactive node.`);
+      if (!node) fail(`Control ${macro.id} targets an inactive node.`);
       const parameter = NATIVE_MODULE_CATALOG[node.type].parameters[mapping.paramId];
-      if (!parameter) fail(`Macro ${macro.id} targets an unknown parameter.`);
+      if (!parameter) fail(`Control ${macro.id} targets an unknown parameter.`);
       const target = `${mapping.nodeId}\0${mapping.paramId}`;
-      if (targets.has(target)) fail('A native parameter cannot be mapped by more than one macro.');
+      if (targets.has(target)) fail('A native parameter cannot be mapped by more than one Control.');
       targets.add(target);
       number(mapping.min, 'Mapping minimum', parameter.min, parameter.max);
       number(mapping.max, 'Mapping maximum', parameter.min, parameter.max);
-      if (mapping.min > mapping.max || typeof mapping.inverted !== 'boolean') fail('Macro mapping range is invalid.');
-      if (mapping.scale !== parameter.scale || mapping.faustPath !== parameter.faustPath) fail('Macro mapping metadata does not match the allowlist.');
+      if (mapping.min > mapping.max || typeof mapping.inverted !== 'boolean') fail('Control mapping range is invalid.');
+      if (mapping.scale !== parameter.scale || mapping.faustPath !== parameter.faustPath) fail('Control mapping metadata does not match the allowlist.');
     }
   }
   return dsp;

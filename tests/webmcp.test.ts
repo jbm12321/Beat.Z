@@ -158,7 +158,7 @@ test('registered tools share revision-safe project state and cannot bypass human
     [{ type: 'add_module', moduleType: 'equalizer', nodeId: 'bad-equalizer' }, { type: 'set_parameter', nodeId: 'bad-equalizer', paramId: 'midQ', value: Number.NaN }],
   ]) {
     const invalid = await tools.get('propose-audio-project-patch')!.execute({
-      expectedRevision: 1, summary: 'Invalid Pair 1 request', musicalPurpose: 'Must be rejected atomically.', commands,
+      expectedRevision: 1, summary: 'Invalid expansion request', musicalPurpose: 'Must be rejected atomically.', commands,
     });
     assert.equal(invalid.isError, true);
     assert.deepEqual(project.chain, ['filter-1']);

@@ -3,14 +3,14 @@ import test from 'node:test';
 import {
   LAST_VALID_STORAGE_KEY,
   LEGACY_STORAGE_KEY,
-  PRE_AUDIBILITY_ENGINE_PROVENANCE,
+  INITIAL_DELAY_REVERB_ENGINE_PROVENANCE,
   PRE_AUTOWAH_STUTTER_ENGINE_PROVENANCE,
   PRE_CHORUS_COMPRESSOR_ENGINE_PROVENANCE,
   PRE_EQ_LIMITER_FLANGER_ENGINE_PROVENANCE,
   PRE_TREMOLO_ENGINE_PROVENANCE,
   PRE_PHASER_COMPRESSOR_MODES_ENGINE_PROVENANCE,
   STORAGE_KEY,
-  PRE_PAIR1_ENGINE_PROVENANCE,
+  INITIAL_THREE_PRIMITIVE_ENGINE_PROVENANCE,
   applyProjectCommands,
   createInitialProject,
   type LegacyProjectV1,
@@ -70,9 +70,9 @@ test('persistence upgrades current Saturation saves to Soft Clip without alterin
   const old = structuredClone(project);
   old.nodes['sat-1'].params = { drive: 18, tone: 4000, mix: 65 };
   old.engine = {
-    ...structuredClone(PRE_PAIR1_ENGINE_PROVENANCE),
+    ...structuredClone(INITIAL_THREE_PRIMITIVE_ENGINE_PROVENANCE),
     moduleSourceSha256: {
-      ...PRE_PAIR1_ENGINE_PROVENANCE.moduleSourceSha256,
+      ...INITIAL_THREE_PRIMITIVE_ENGINE_PROVENANCE.moduleSourceSha256,
       saturation: '238cd373e164ba480c6367ae7ef1c071205346361c7f597d6c1dc3878af0a75b',
     },
   } as typeof old.engine;
@@ -89,9 +89,9 @@ test('persistence moves exact Faust 2.86.2 projects to the canonical 2.85.9 comp
   const project = applyProjectCommands(createInitialProject(), [{ type: 'add_module', moduleType: 'filter', nodeId: 'filter-1' }], 'human');
   const previous = structuredClone(project);
   previous.engine = {
-    ...structuredClone(PRE_PAIR1_ENGINE_PROVENANCE),
+    ...structuredClone(INITIAL_THREE_PRIMITIVE_ENGINE_PROVENANCE),
     faustCompilerVersion: '2.86.2',
-    libraries: { ...PRE_PAIR1_ENGINE_PROVENANCE.libraries, basics: '1.23.0' },
+    libraries: { ...INITIAL_THREE_PRIMITIVE_ENGINE_PROVENANCE.libraries, basics: '1.23.0' },
   } as unknown as typeof previous.engine;
   storage.setItem(STORAGE_KEY, JSON.stringify(previous));
 
@@ -105,17 +105,17 @@ test('persistence moves exact Faust 2.86.2 projects to the canonical 2.85.9 comp
   assert.equal(restored.project.revision, project.revision);
 });
 
-test('persistence migrates only the exact pre-Pair-1 engine without content loss', () => {
+test('persistence migrates only the exact initial three-primitive engine without content loss', () => {
   const storage = new MemoryStorage();
   const project = applyProjectCommands(createInitialProject(), [
-    { type: 'rename_project', name: 'Preserved Pair 1 migration' },
+    { type: 'rename_project', name: 'Preserved three-primitive migration' },
     { type: 'add_module', moduleType: 'filter', nodeId: 'filter-1' },
     { type: 'set_parameter', nodeId: 'filter-1', paramId: 'mode', value: 1 },
     { type: 'create_macro', name: 'Cut', macroId: 'macro-1' },
     { type: 'add_mapping', macroId: 'macro-1', mappingId: 'mapping-1', nodeId: 'filter-1', paramId: 'cutoff', min: 100, max: 8000 },
   ], 'human');
   const previous = structuredClone(project);
-  previous.engine = structuredClone(PRE_PAIR1_ENGINE_PROVENANCE) as typeof previous.engine;
+  previous.engine = structuredClone(INITIAL_THREE_PRIMITIVE_ENGINE_PROVENANCE) as typeof previous.engine;
   storage.setItem(STORAGE_KEY, JSON.stringify(previous));
 
   const restored = restorePersistedProject(storage).project;
@@ -123,10 +123,10 @@ test('persistence migrates only the exact pre-Pair-1 engine without content loss
   assert.equal(restored.nodes['filter-1'].params.mode, 1);
 });
 
-test('persistence upgrades the exact first Pair 1 DSP engine without changing project content', () => {
+test('persistence upgrades the exact initial Delay/Reverb engine without changing project content', () => {
   const storage = new MemoryStorage();
   const project = applyProjectCommands(createInitialProject(), [
-    { type: 'rename_project', name: 'Audibility upgrade' },
+    { type: 'rename_project', name: 'Delay/Reverb upgrade' },
     { type: 'add_module', moduleType: 'filter', nodeId: 'filter-1' },
     { type: 'set_parameter', nodeId: 'filter-1', paramId: 'mode', value: 3 },
     { type: 'add_module', moduleType: 'saturation', nodeId: 'saturation-1' },
@@ -137,7 +137,7 @@ test('persistence upgrades the exact first Pair 1 DSP engine without changing pr
     { type: 'set_parameter', nodeId: 'reverb-1', paramId: 'damping', value: 80 },
   ], 'human');
   const previous = structuredClone(project);
-  previous.engine = structuredClone(PRE_AUDIBILITY_ENGINE_PROVENANCE) as typeof previous.engine;
+  previous.engine = structuredClone(INITIAL_DELAY_REVERB_ENGINE_PROVENANCE) as typeof previous.engine;
   storage.setItem(STORAGE_KEY, JSON.stringify(previous));
 
   const restored = restorePersistedProject(storage).project;
@@ -269,7 +269,7 @@ test('persistence rejects partially matching historical engine provenance', () =
   const storage = new MemoryStorage();
   const project = createInitialProject();
   const partial = structuredClone(project);
-  partial.engine = structuredClone(PRE_PAIR1_ENGINE_PROVENANCE) as typeof partial.engine;
+  partial.engine = structuredClone(INITIAL_THREE_PRIMITIVE_ENGINE_PROVENANCE) as typeof partial.engine;
   partial.engine.moduleSourceSha256.filter = '0'.repeat(64);
   storage.setItem(STORAGE_KEY, JSON.stringify(partial));
   const restored = restorePersistedProject(storage);

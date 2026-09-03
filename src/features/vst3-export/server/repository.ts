@@ -3,7 +3,7 @@ import type { NativeBuildRequestV1 } from '../contract.ts';
 export type Vst3BuildStatus = 'queued' | 'building' | 'ready' | 'failed';
 
 export const STALE_BUILD_TIMEOUT_MS = 2 * 60 * 1_000;
-export const STALE_BUILD_ERROR = 'Failed.';
+export const STALE_BUILD_ERROR = 'The build timed out on the Mac worker.';
 
 export interface Vst3Artifact {
   filename: string;

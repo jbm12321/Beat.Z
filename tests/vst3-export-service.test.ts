@@ -63,7 +63,7 @@ test('an abandoned building job expires so the next queued job can be claimed', 
   assert.equal(claimed?.status, 'building');
   const recovered = await repository.get(abandoned.id);
   assert.equal(recovered?.status, 'failed');
-  assert.equal(recovered?.error, 'Failed.');
+  assert.equal(recovered?.error, 'The build timed out on the Mac worker.');
 });
 
 test('a job already building may report while the site remains available', async () => {

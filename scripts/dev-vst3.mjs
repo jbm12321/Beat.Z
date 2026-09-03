@@ -6,7 +6,7 @@ const token = process.env.VST3_WORKER_TOKEN ?? '';
 if (token.length < 24 || token.startsWith('REPLACE_')) {
   throw new Error('Set VST3_WORKER_TOKEN to a unique secret of at least 24 characters in .env before starting the VST3 worker.');
 }
-const liveEndpoint = 'https://audio-effect-builder-bm26.jbm111.chatgpt.site';
+const liveEndpoint = 'https://beat-z.jbm111.chatgpt.site';
 const environment = {
   ...process.env,
   VST3_WORKER_TOKEN: token,

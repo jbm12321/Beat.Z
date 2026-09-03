@@ -1,6 +1,6 @@
 'use client';
 
-/* eslint-disable react-hooks/refs, react-hooks/set-state-in-effect -- Preserves the coordinator's existing synchronous ref and hydration semantics during this structure-only refactor. */
+/* eslint-disable react-hooks/refs, react-hooks/set-state-in-effect -- The coordinator mirrors current project state in refs and restores persisted state after mount. */
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { BrowserAudioEngine } from '../audio/BrowserAudioEngine';
@@ -467,7 +467,7 @@ export function AudioEffectBuilder() {
         <header className="workspace-header">
           <div className="project-title-wrap">
             <button type="button" className={`restore-rail-button ${modulesHidden ? 'is-visible' : ''}`} onClick={() => setModulesHidden(false)}>Primitives</button>
-            <button type="button" className={`mobile-rail-button modules-toggle ${modulesHidden ? 'is-hidden' : ''}`} onClick={() => { setModulesHidden(false); setMobilePanel('modules'); }}>Modules</button>
+            <button type="button" className={`mobile-rail-button modules-toggle ${modulesHidden ? 'is-hidden' : ''}`} onClick={() => { setModulesHidden(false); setMobilePanel('modules'); }}>Primitives</button>
             <button type="button" className="icon-button text-icon-button" aria-label="Undo" title="Undo" disabled={!history.past.length} onClick={undo}>Undo</button>
             <button type="button" className="icon-button text-icon-button" aria-label="Redo" title="Redo" disabled={!history.future.length} onClick={redo}>Redo</button>
             <button type="button" className="icon-button text-icon-button" aria-label="Clear project" title="Clear primitives and controls" disabled={!Object.keys(project.nodes).length && !project.macros.length} onClick={clearProject}>Clear</button>
@@ -523,7 +523,7 @@ export function AudioEffectBuilder() {
                       role="button"
                       tabIndex={0}
                       draggable
-                      aria-label={`${definition.name} module${node.bypassed ? ', bypassed' : ''}`}
+                      aria-label={`${definition.name} primitive${node.bypassed ? ', bypassed' : ''}`}
                       onClick={() => setSelectedNodeId(node.id)}
                       onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedNodeId(node.id); } }}
                       onDragStart={(event) => {
@@ -544,7 +544,7 @@ export function AudioEffectBuilder() {
             </div>
           </div>
 
-          {project.chain.length === 0 && <p className="canvas-hint">Add Module</p>}
+          {project.chain.length === 0 && <p className="canvas-hint">Add Primitive</p>}
 
           {disconnectedNodes.length > 0 && (
             <div className="disconnected-shelf">
@@ -567,7 +567,7 @@ export function AudioEffectBuilder() {
           )}
 
           {insertIndex !== null && (
-            <div className="insert-menu" role="dialog" aria-label="Choose a module">
+            <div className="insert-menu" role="dialog" aria-label="Choose a primitive">
               <header><span>Primitives</span><button type="button" aria-label="Close" onClick={() => setInsertIndex(null)}>×</button></header>
               <div>
                 {MODULE_TYPES.map((moduleType) => (
@@ -607,12 +607,12 @@ export function AudioEffectBuilder() {
                 </div>
                 <div className="inspector-actions">
                   {project.chain.includes(selectedNode.id) && <>
-                    <button type="button" disabled={project.chain.indexOf(selectedNode.id) === 0} onClick={() => moveSelected(-1)} aria-label="Move module left">←</button>
-                    <button type="button" disabled={project.chain.indexOf(selectedNode.id) === project.chain.length - 1} onClick={() => moveSelected(1)} aria-label="Move module right">→</button>
+                    <button type="button" disabled={project.chain.indexOf(selectedNode.id) === 0} onClick={() => moveSelected(-1)} aria-label="Move primitive left">←</button>
+                    <button type="button" disabled={project.chain.indexOf(selectedNode.id) === project.chain.length - 1} onClick={() => moveSelected(1)} aria-label="Move primitive right">→</button>
                   </>}
                   <button type="button" className={selectedNode.bypassed ? 'is-active' : ''} onClick={() => commitCommands([{ type: 'set_bypass', nodeId: selectedNode.id, bypassed: !selectedNode.bypassed }])}>{selectedNode.bypassed ? 'Enable' : 'Bypass'}</button>
                   <button type="button" className="danger-action" onClick={() => {
-                    const confirmed = window.confirm(`Delete ${MODULE_CATALOG[selectedNode.type].name}? Its macro mappings will also be removed.`);
+                    const confirmed = window.confirm(`Delete ${MODULE_CATALOG[selectedNode.type].name}? Its Control mappings will also be removed.`);
                     if (confirmed) commitCommands([{ type: 'delete_module', nodeId: selectedNode.id }]);
                   }}>Delete</button>
                   <button type="button" aria-label="Close inspector" onClick={() => setSelectedNodeId(null)}>×</button>
@@ -706,6 +706,7 @@ export function AudioEffectBuilder() {
       {showNative ? (
         <NativeExportModal
           projectName={project.name}
+          analyzed={validation.status === 'valid' && validation.revision === project.revision}
           frozen={frozenRevision}
           job={vst3ExportJob}
           error={vst3ExportError}

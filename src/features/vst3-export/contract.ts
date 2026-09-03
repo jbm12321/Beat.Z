@@ -84,7 +84,7 @@ export function lowerEffectiveDsp(input: ProjectV2): EffectiveDspSpecV1 {
       .map((mapping) => {
         const node = project.nodes[mapping.nodeId];
         const parameter = MODULE_CATALOG[node.type].parameters.find((candidate) => candidate.id === mapping.paramId);
-        if (!parameter) throw new Error(`Macro ${macro.name} targets an unknown parameter.`);
+        if (!parameter) throw new Error(`Control ${macro.name} targets an unknown parameter.`);
         return {
           nodeId: mapping.nodeId,
           paramId: mapping.paramId,

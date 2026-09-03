@@ -2,7 +2,7 @@
 
 ## Canonical definitions
 
-The fourteen files under `faust/` are the canonical v0.1 DSP definitions. The build script uses the pinned native Faust 2.85.9 executable to generate the committed browser WASM with `-single -ftz 2`; the Mac worker uses that same compiler version and flags to generate VST3 C++. The native target also pins `-ffp-contract=off` so Clang preserves the same separate float-operation boundaries as WebAssembly. `@grame/faustwasm` 0.16.6 remains the browser runtime. The manifest records source SHA-256 fingerprints and library versions so browser and native builds share one explicit DSP provenance.
+The fourteen files under `faust/` are the canonical DSP definitions. The build script uses the pinned native Faust 2.85.9 executable to generate the committed browser WASM with `-single -ftz 2`; the Mac worker uses that same compiler version and flags to generate VST3 C++. The native target also pins `-ffp-contract=off` so Clang preserves the same separate float-operation boundaries as WebAssembly. `@grame/faustwasm` 0.16.6 remains the browser runtime. The manifest records source SHA-256 fingerprints and library versions so browser and native builds share one explicit DSP provenance.
 
 ## Live signal flow
 
@@ -13,7 +13,7 @@ loop/local buffer -> source bus -> input analyser
                                       -> processed gain -------┘
 ```
 
-The looping source node is not recreated for slider changes. Each module is a persistent Faust AudioWorklet instance, and parameter/macro movement calls `setParamValue` on that instance. Smoothing is inside the canonical Faust code. Order, connection, deletion, and module bypass are topology changes; a replacement path is built silently and crossfaded with the previous path before old processors are destroyed.
+The looping source node is not recreated for slider changes. Each primitive is a persistent Faust AudioWorklet instance, and parameter/Control movement calls `setParamValue` on that instance. Smoothing is inside the canonical Faust code. Order, connection, deletion, and primitive bypass are topology changes; a replacement path is built silently and crossfaded with the previous path before old processors are destroyed.
 
 Whole-chain dry/processed switching and loudness matching use short ramps. Local-file switching intentionally creates a new looping source because the source itself changed.
 
@@ -25,7 +25,7 @@ Native parity checks the frozen project, every discrete mode, and one safe conti
 
 The browser runtime fingerprint is deployment provenance, not DSP engine provenance. It does not change project identity, stored projects, Faust source fingerprints, browser WASM hashes, or the native C++ generation path.
 
-## Modules
+## Primitives
 
 - Gain: `−24…+24 dB`; level smoothing occurs in dB before conversion, so 0 dB initializes at unity rather than fading from silence.
 - Filter: one stable node preserves resonant High Pass and Low Pass modes and adds Band Pass plus a resonance-derived Notch width.

@@ -16,7 +16,7 @@ export function DropZone({ index, empty = false, active, onOpen, onDrop, onDragE
       onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) onDragEnter(-1); }}
       onDrop={(event) => onDrop(event, index)}
     >
-      <button type="button" aria-label={`Insert module at position ${index + 1}`} onClick={onOpen}>+</button>
+      <button type="button" aria-label={`Insert primitive at position ${index + 1}`} onClick={onOpen}>+</button>
     </div>
   );
 }

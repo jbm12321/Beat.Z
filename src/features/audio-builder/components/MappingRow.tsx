@@ -1,9 +1,9 @@
 import { MODULE_CATALOG } from '../domain/catalog';
 import { getMappingForParameter, getParameterDefinition } from '../domain/parameters';
-import type { MacroControl, MacroMapping, ProjectV1 } from '../domain/types';
+import type { MacroControl, MacroMapping, ProjectV2 } from '../domain/types';
 
 export function MappingRow({ project, macro, mapping, onTargetChange, onUpdate, onRemove }: {
-  project: ProjectV1;
+  project: ProjectV2;
   macro: MacroControl;
   mapping: MacroMapping;
   onTargetChange: (value: string) => void;
