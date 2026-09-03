@@ -353,8 +353,8 @@ test('the native editor preserves every Saturation v2 parameter in visible wrapp
   assert.equal('pages' in editor, false);
 });
 
-test('the native catalog and generic editor represent Delay, Reverb, Chorus, Compressor, and Phaser without template changes', async () => {
-  assert.deepEqual(Object.keys(NATIVE_MODULE_CATALOG), ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor', 'phaser']);
+test('the native catalog and generic editor represent every expanded effect without template changes', async () => {
+  assert.deepEqual(Object.keys(NATIVE_MODULE_CATALOG), ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor', 'phaser', 'autowah', 'stutter']);
   assert.deepEqual(NATIVE_MODULE_CATALOG.filter.parameters.mode.choices, [0, 1, 2, 3]);
   assert.deepEqual(NATIVE_MODULE_CATALOG.delay.parameters.mode.choiceLabels, ['Digital', 'Ping-Pong', 'Tape']);
   assert.deepEqual(NATIVE_MODULE_CATALOG.reverb.parameters.mode.choiceLabels, ['Room', 'Hall', 'Plate']);
@@ -362,6 +362,9 @@ test('the native catalog and generic editor represent Delay, Reverb, Chorus, Com
   assert.deepEqual(NATIVE_MODULE_CATALOG.compressor.parameters.mode.choiceLabels, ['Clean', 'Punch', 'Glue']);
   assert.deepEqual(Object.keys(NATIVE_MODULE_CATALOG.compressor.parameters), ['mode', 'threshold', 'ratio', 'attack', 'release', 'makeup', 'mix']);
   assert.deepEqual(NATIVE_MODULE_CATALOG.phaser.parameters.mode.choiceLabels, ['Classic', 'Wide', 'Deep']);
+  assert.deepEqual(NATIVE_MODULE_CATALOG.autowah.parameters.mode.choiceLabels, ['Low Pass Up', 'Low Pass Down', 'High Pass Up', 'High Pass Down']);
+  assert.deepEqual(NATIVE_MODULE_CATALOG.stutter.parameters.mode.choiceLabels, ['Repeat', 'Gate', 'Reverse', 'Ping-Pong']);
+  assert.deepEqual(NATIVE_MODULE_CATALOG.stutter.parameters.repeats.choices, [1, 2, 3, 4, 6, 8]);
   assert.equal(SOURCE_FINGERPRINTS.delay, 'fb9a020e31f2b4f290a17ad2a18ec5d87c6f701195af2bc95e38f2d99cef1b92');
   assert.equal(SOURCE_FINGERPRINTS.reverb, 'bec502b0ca2f0b01dd7c10051cd848417f24ca0eb45b73c2854a49da54abb5ff');
   assert.equal(NATIVE_MODULE_CATALOG.delay.wasmSha256, '6a5495bfa670ef8435cd8a2bf282f16e64e5a447ef3b5dbeabff3f4e77cba99c');
@@ -371,11 +374,15 @@ test('the native catalog and generic editor represent Delay, Reverb, Chorus, Com
   assert.equal(SOURCE_FINGERPRINTS.phaser, 'b812485b365ccf92ba7fb8680feced1b3ce27b86a568c8634ca6ce949c827c04');
   assert.equal(NATIVE_MODULE_CATALOG.compressor.wasmSha256, '5b8c083fea87784b1005ad39ca9b37be255d8852b6d96e4e6e2abb6447d14631');
   assert.equal(NATIVE_MODULE_CATALOG.phaser.wasmSha256, 'efb34fc50e334da4c1b2c3886a35906f359881ddba8aabd52f123cd4f525741c');
-  const request = await nativeRequestForModules(['delay', 'reverb', 'chorus', 'compressor', 'phaser']);
+  assert.equal(SOURCE_FINGERPRINTS.autowah, '26001c6599cf9b72c57290b26498233f076d278ec1b7bdecbe40be04c3448443');
+  assert.equal(SOURCE_FINGERPRINTS.stutter, 'b5f10b05476725a477d1b2df078a932b2ccb68e079b2e5dd908dba5c89b790d9');
+  assert.equal(NATIVE_MODULE_CATALOG.autowah.wasmSha256, '73320b19493169576de250765d2b76fa51160366b7cafc3f19bbdd9f28ba67a9');
+  assert.equal(NATIVE_MODULE_CATALOG.stutter.wasmSha256, '7aa1dcb42b72e95aa06cc3d67c7bf6d5ec9a557cf5a43d6162e1ae66ec3230eb');
+  const request = await nativeRequestForModules(['delay', 'reverb', 'chorus', 'compressor', 'phaser', 'autowah', 'stutter']);
   const editor = createNativeEditorModel(createAutomaticNativeParameters(request));
-  assert.equal(editor.knobCount, 28);
-  assert.equal(editor.switchCount, 5);
-  assert.deepEqual(editor.rows.flatMap((row) => row.modules.map((module) => module.label)), ['Delay 1', 'Reverb 1', 'Chorus 1', 'Compressor 1', 'Phaser 1']);
+  assert.equal(editor.knobCount, 40);
+  assert.equal(editor.switchCount, 8);
+  assert.deepEqual(editor.rows.flatMap((row) => row.modules.map((module) => module.label)), ['Delay 1', 'Reverb 1', 'Chorus 1', 'Compressor 1', 'Phaser 1', 'Auto Wah 1 1/2', 'Auto Wah 1 2/2', 'Stutter 1']);
 });
 
 test('the native editor wraps complete modules into visible rows without pagination', async () => {

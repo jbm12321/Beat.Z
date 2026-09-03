@@ -1,6 +1,6 @@
 # Audio Effect Builder
 
-A browser-first visual audio-effect builder with eight canonical Faust primitives: Gain, unified Filter, Saturation, Delay, Reverb, Chorus, Compressor, and Phaser. Live Web Audio auditioning and deterministic offline analysis use the same committed Faust processors. Human and WebMCP actions share one revisioned project model.
+A browser-first visual audio-effect builder with ten canonical Faust primitives: Gain, unified Filter, Saturation, Delay, Reverb, Chorus, Compressor, Phaser, Auto Wah, and Stutter. Live Web Audio auditioning and deterministic offline analysis use the same committed Faust processors. Human and WebMCP actions share one revisioned project model.
 
 ## Quick start
 

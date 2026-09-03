@@ -4,6 +4,7 @@ import {
   LAST_VALID_STORAGE_KEY,
   LEGACY_STORAGE_KEY,
   PRE_AUDIBILITY_ENGINE_PROVENANCE,
+  PRE_AUTOWAH_STUTTER_ENGINE_PROVENANCE,
   PRE_CHORUS_COMPRESSOR_ENGINE_PROVENANCE,
   PRE_PHASER_COMPRESSOR_MODES_ENGINE_PROVENANCE,
   STORAGE_KEY,
@@ -194,6 +195,27 @@ test('persistence adds Phaser and defaults exact historical Compressor nodes to 
     mode: 0, threshold: -26, ratio: 7, attack: 20, release: 250, makeup: 0, mix: 100,
   });
   assert.equal(restored.engine.moduleSourceSha256.phaser.length, 64);
+});
+
+test('persistence adds Auto Wah and Stutter provenance without changing an exact eight-effect project', () => {
+  const storage = new MemoryStorage();
+  const project = applyProjectCommands(createInitialProject(), [
+    { type: 'rename_project', name: 'Preserved eight-effect project' },
+    { type: 'add_module', moduleType: 'phaser', nodeId: 'phaser-1' },
+    { type: 'set_parameter', nodeId: 'phaser-1', paramId: 'mode', value: 2 },
+    { type: 'set_parameter', nodeId: 'phaser-1', paramId: 'depth', value: 72 },
+    { type: 'create_macro', name: 'Motion', macroId: 'macro-1' },
+    { type: 'add_mapping', macroId: 'macro-1', mappingId: 'mapping-1', nodeId: 'phaser-1', paramId: 'mix', min: 10, max: 80 },
+  ], 'human');
+  const previous = structuredClone(project);
+  previous.engine = structuredClone(PRE_AUTOWAH_STUTTER_ENGINE_PROVENANCE) as typeof previous.engine;
+  storage.setItem(STORAGE_KEY, JSON.stringify(previous));
+
+  const restored = restorePersistedProject(storage).project;
+  assert.deepEqual({ ...restored, engine: undefined }, { ...previous, engine: undefined });
+  assert.equal(restored.engine.libraries.routes, '1.3.0');
+  assert.equal(restored.engine.moduleSourceSha256.autowah.length, 64);
+  assert.equal(restored.engine.moduleSourceSha256.stutter.length, 64);
 });
 
 test('persistence rejects partially matching historical engine provenance', () => {

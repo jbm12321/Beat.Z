@@ -67,7 +67,7 @@ export function createAutomaticNativeParameters(request) {
   request.dsp.chain.forEach((node, nodeIndex) => {
     const moduleDisplayIndex = (moduleCounts.get(node.type) ?? 0) + 1;
     moduleCounts.set(node.type, moduleDisplayIndex);
-    const moduleName = `${node.type[0].toUpperCase()}${node.type.slice(1)}`;
+    const moduleName = NATIVE_MODULE_CATALOG[node.type].name ?? `${node.type[0].toUpperCase()}${node.type.slice(1)}`;
     const moduleLabel = `${moduleName} ${moduleDisplayIndex}`;
     Object.entries(NATIVE_MODULE_CATALOG[node.type].parameters).forEach(([parameterId, definition]) => {
       parameters.push({

@@ -535,3 +535,99 @@ test('Faust Compressor Clean, Punch, and Glue use measurably different linked de
   const peak = (samples: Float32Array) => Math.max(...samples.slice(transientStart, transientStart + 240).map(Math.abs));
   assert.ok(peak(modes[1][0]) > peak(modes[0][0]));
 });
+
+test('Faust Auto Wah has an exact dry endpoint and four finite non-Band-Pass modes', async () => {
+  for (const sampleRate of [44100, 48000, 96000]) {
+    const length = sampleRate;
+    const input = Float32Array.from({ length }, (_, index) => (
+      Math.sin(2 * Math.PI * 180 * index / sampleRate) * 0.24
+      + Math.sin(2 * Math.PI * 1400 * index / sampleRate) * 0.13
+      + Math.sin(2 * Math.PI * 5200 * index / sampleRate) * 0.06
+    ));
+    const node = createNode('autowah', 'autowah-modes');
+    const factory = await loadFactory('autowah');
+    node.params.mix = 0;
+    const dry = await renderFaustModuleOffline(node, [input, input], sampleRate, factory);
+    assert.deepEqual(dry[0], input);
+    assert.deepEqual(dry[1], input);
+
+    node.params.mix = 100;
+    const modes: Float32Array[][] = [];
+    for (const mode of [0, 1, 2, 3]) {
+      node.params.mode = mode;
+      const rendered = await renderFaustModuleOffline(node, [input, input], sampleRate, factory);
+      assert.ok(rendered.every((channel) => channel.every(Number.isFinite)));
+      assert.ok(rms(rendered[0], Math.floor(sampleRate * 0.25)) > 0.001);
+      modes.push(rendered);
+    }
+    for (let index = 0; index < modes.length; index += 1) {
+      for (let comparison = index + 1; comparison < modes.length; comparison += 1) {
+        let difference = 0;
+        for (let sample = Math.floor(sampleRate * 0.25); sample < length; sample += 1) difference += Math.abs(modes[index][0][sample] - modes[comparison][0][sample]);
+        assert.ok(difference / (length - Math.floor(sampleRate * 0.25)) > 0.0001);
+      }
+    }
+  }
+});
+
+test('Faust Auto Wah sensitivity and linked stereo envelope change the filter response', async () => {
+  const sampleRate = 48000;
+  const length = sampleRate * 2;
+  const loudLeft = Float32Array.from({ length }, (_, index) => Math.sin(2 * Math.PI * 190 * index / sampleRate) * (index < sampleRate ? 0.04 : 0.65));
+  const quietRight = sine(1800, sampleRate, length, 0.04);
+  const node = createNode('autowah', 'autowah-envelope');
+  Object.assign(node.params, { mode: 0, sensitivity: -12, attack: 10, release: 180, frequency: 300, range: 100, resonance: 3, mix: 100, output: 0 });
+  const factory = await loadFactory('autowah');
+  const lowSensitivity = await renderFaustModuleOffline(node, [loudLeft, quietRight], sampleRate, factory);
+  node.params.sensitivity = 24;
+  const highSensitivity = await renderFaustModuleOffline(node, [loudLeft, quietRight], sampleRate, factory);
+  let leftDifference = 0;
+  let rightDifference = 0;
+  for (let sample = sampleRate; sample < length; sample += 1) {
+    leftDifference += Math.abs(highSensitivity[0][sample] - lowSensitivity[0][sample]);
+    rightDifference += Math.abs(highSensitivity[1][sample] - lowSensitivity[1][sample]);
+  }
+  assert.ok(leftDifference / sampleRate > 0.001);
+  assert.ok(rightDifference / sampleRate > 0.001);
+});
+
+test('Faust Stutter repeats, gates, reverses, and ping-pongs captured stereo slices', async () => {
+  for (const sampleRate of [44100, 48000, 96000]) {
+    const rate = 8;
+    const sliceLength = Math.floor(sampleRate / rate);
+    const length = sliceLength * 5;
+    const left = Float32Array.from({ length }, (_, index) => (
+      Math.sin(index * 0.071) * 0.17 + Math.sin(index * 0.013) * 0.05
+    ));
+    const right = Float32Array.from({ length }, (_, index) => (
+      Math.cos(index * 0.043) * 0.13 + Math.sin(index * 0.019) * 0.04
+    ));
+    const node = createNode('stutter', 'stutter-modes');
+    Object.assign(node.params, { mode: 0, rate, repeats: 3, gate: 100, mix: 0, output: 0 });
+    const factory = await loadFactory('stutter');
+    const dry = await renderFaustModuleOffline(node, [left, right], sampleRate, factory);
+    assert.deepEqual(dry[0], left);
+    assert.deepEqual(dry[1], right);
+
+    node.params.mix = 100;
+    const renders: Float32Array[][] = [];
+    for (const mode of [0, 1, 2, 3]) {
+      node.params.mode = mode;
+      const rendered = await renderFaustModuleOffline(node, [left, right], sampleRate, factory);
+      assert.ok(rendered.every((channel) => channel.every(Number.isFinite)));
+      assert.ok(rms(rendered[0]) > 0.001);
+      renders.push(rendered);
+    }
+
+    const margin = Math.ceil(sampleRate * 0.003);
+    for (let sample = margin; sample < sliceLength - margin; sample += 1) {
+      assert.equal(renders[0][0][sample], renders[0][0][sliceLength + sample]);
+      assert.equal(renders[0][1][sample], renders[0][1][sliceLength + sample]);
+      assert.equal(renders[2][0][sliceLength + sample], renders[0][0][sliceLength + sliceLength - 1 - sample]);
+      assert.equal(renders[2][1][sliceLength + sample], renders[0][1][sliceLength + sliceLength - 1 - sample]);
+      assert.equal(renders[3][0][sliceLength + sample], renders[0][1][sliceLength + sample]);
+      assert.equal(renders[3][1][sliceLength + sample], renders[0][0][sliceLength + sample]);
+    }
+    assert.notDeepEqual(renders[1][0], renders[0][0]);
+  }
+});

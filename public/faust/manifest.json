@@ -105,6 +105,26 @@
       "metadata": "/faust/phaser/dsp-meta.json",
       "inputs": 2,
       "outputs": 2
+    },
+    "autowah": {
+      "definitionVersion": "0.1.0",
+      "source": "faust/autowah.dsp",
+      "sourceSha256": "26001c6599cf9b72c57290b26498233f076d278ec1b7bdecbe40be04c3448443",
+      "wasmSha256": "73320b19493169576de250765d2b76fa51160366b7cafc3f19bbdd9f28ba67a9",
+      "wasm": "/faust/autowah/dsp-module.wasm",
+      "metadata": "/faust/autowah/dsp-meta.json",
+      "inputs": 2,
+      "outputs": 2
+    },
+    "stutter": {
+      "definitionVersion": "0.1.0",
+      "source": "faust/stutter.dsp",
+      "sourceSha256": "b5f10b05476725a477d1b2df078a932b2ccb68e079b2e5dd908dba5c89b790d9",
+      "wasmSha256": "7aa1dcb42b72e95aa06cc3d67c7bf6d5ec9a557cf5a43d6162e1ae66ec3230eb",
+      "wasm": "/faust/stutter/dsp-module.wasm",
+      "metadata": "/faust/stutter/dsp-meta.json",
+      "inputs": 2,
+      "outputs": 2
     }
   }
 }

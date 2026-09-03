@@ -19,7 +19,7 @@ Audition source ─> persistent source bus ─> Faust AudioWorklet chain ─> me
 
 ```text
 app/                              route, metadata, and visual system
-faust/                            eight canonical versioned effect sources
+faust/                            ten canonical versioned effect sources
 public/faust/                     generated WASM, Faust metadata, manifest, runtime license
 scripts/compile-faust.mjs         deterministic build-time Faust compilation
 src/features/audio-builder/
@@ -44,7 +44,7 @@ Durable `ProjectV2` data includes IDs, name, monotonic revision, exact Faust pro
 ## Release gates represented here
 
 - Gate 1: revisioned, recoverable human/agent project edits.
-- Gate 2: real Gain, Filter, Saturation, Delay, Reverb, Chorus, Compressor, and Phaser Faust/WASM browser processors.
+- Gate 2: real Gain, Filter, Saturation, Delay, Reverb, Chorus, Compressor, Phaser, Auto Wah, and Stutter Faust/WASM browser processors.
 - Gate 3: dry/processed audition, loudness matching, offline analysis, and safety checks.
 - Gate 4: inspect/propose/approve/apply/analyze/build-request WebMCP boundary.
 - Gate 5: the Site queues frozen revisions; the controlled Mac worker performs compilation, signing, validation, state restoration, parity, packaging, and publication. DAW-specific discovery and audible host behavior remain separate proof.
