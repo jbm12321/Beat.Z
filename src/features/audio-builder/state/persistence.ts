@@ -43,8 +43,8 @@ export function restorePersistedProject(storage: ProjectStorage): PersistedProje
         project: migrateLegacyProject(legacy),
         source: 'legacy-migration',
         warning: currentFailed
-          ? 'The current save was invalid. A recoverable legacy project was migrated to Faust v0.1.'
-          : 'Your previous browser project was migrated to the Faust v0.1 engine. The original remains stored as a recovery copy.',
+          ? 'The current save was invalid. A recoverable legacy project was migrated to the current Faust engine.'
+          : 'Your previous browser project was migrated to the current Faust engine. The original remains stored as a recovery copy.',
       };
     }
   } catch {

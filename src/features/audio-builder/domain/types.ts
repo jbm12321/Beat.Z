@@ -12,6 +12,5 @@ export type {
   ParameterKind,
   ParameterScale,
   ProjectCommand,
-  ProjectV1,
   ProjectV2,
 } from './project.ts';

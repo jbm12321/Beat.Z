@@ -80,7 +80,7 @@ export async function registerWebMcpTools(adapter: WebMcpAdapter) {
       name: 'list-audio-primitives',
       description: 'List the supported Faust primitives, parameter ranges, scaling, choices, canonical source fingerprints, and control limits.',
       inputSchema: objectSchema({}),
-      execute: () => textResult('Supported Faust v0.1 primitives.', { primitives: MODULE_CATALOG, limits: { controls: 8, parameterOwnership: 'one-control-per-parameter' } }),
+      execute: () => textResult('Supported Faust primitives.', { primitives: MODULE_CATALOG, limits: { controls: 8, parameterOwnership: 'one-control-per-parameter' } }),
     },
     {
       name: 'propose-audio-project-patch',

@@ -13,17 +13,33 @@ The backend has four job states: `queued`, `building`, `ready`, and `failed`. On
 ## Backend controls
 
 - `VST3_WORKER_TOKEN` is a backend/worker secret and is never shown in the UI.
-- `VST3_ARTIFACT_PUBLIC_URL` is the non-secret public bucket base URL, for example `https://PROJECT.supabase.co/storage/v1/object/public/vst3-builds`. Set it in the Site runtime and worker environment.
-- `VST3_ARTIFACT_BUCKET=vst3-builds`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` are required **only by the Mac worker**. The service-role key must stay in its local environment and must never be placed in `.env` files that are committed, Cloudflare runtime variables, or browser code.
 - The site accepts build requests continuously. A queued request is built only when the authorized Mac worker claims it.
 
-The `vst3-builds` bucket must be created as **public** in Supabase Storage. Every completed archive is deliberately available at its returned URL; this is the requested distribution model. The worker uses a unique job-ID prefix so builds do not overwrite one another.
+### Supabase Storage setup
+
+Create a **public** Supabase Storage bucket named `vst3-builds`.
+
+Set the public bucket URL on both the Site runtime and Mac worker:
+
+```bash
+VST3_ARTIFACT_PUBLIC_URL=https://YOUR_PROJECT.supabase.co/storage/v1/object/public/vst3-builds
+```
+
+Set these only on the Mac worker:
+
+```bash
+VST3_ARTIFACT_BUCKET=vst3-builds
+SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
+```
+
+`SUPABASE_SERVICE_ROLE_KEY` is private. Keep it out of browser code, Site runtime variables, Git, and committed `.env` files. Every completed archive is deliberately available at its public URL. The worker uses a unique job-ID prefix so builds do not overwrite one another.
 
 ## What is frozen and built
 
-The approval hash covers the complete validated project snapshot. The DSP hash covers only effective audio topology, parameters, macros, project metadata, source fingerprints, and the pinned toolchain. Activity records, timestamps, disconnected nodes, and bypassed nodes do not churn the artifact hash.
+The approval hash covers the complete validated project snapshot. The DSP hash covers only effective audio topology, parameters, Controls (stored internally as `macros`), project metadata, source fingerprints, and the pinned toolchain. Activity records, timestamps, disconnected nodes, and bypassed nodes do not churn the artifact hash.
 
-Zero macros are valid. The builder never invents a fallback control.
+Zero Controls are valid. The builder never invents a fallback Control.
 
 The generated plugin identity stays stable for the exact effective DSP build. Different frozen builds receive different VST3 and bundle identities so they can coexist in a plugin host. The filename includes the first eight characters of the DSP hash so different sound revisions remain distinguishable.
 
@@ -38,7 +54,7 @@ A job becomes `ready` only after all of these pass:
 5. Steinberg VST3 validator with zero failures.
 6. Actual VST3 component-state save and restore.
 7. Actual VST3 versus committed browser WASM renders at 44.1, 48, and 96 kHz.
-8. Project defaults, every discrete mode, and one safe continuous-parameter probe for every repeated module instance. Singleton continuous parameters are not swept through artificial extremes. Peak error must remain within the `5e-4` absolute floor or `1e-3` of the browser reference peak, whichever is greater; RMS error must remain within `1.5e-4`, and every sample must be finite.
+8. Project defaults, every discrete mode, and one safe continuous-parameter probe for every repeated primitive instance. Singleton continuous parameters are not swept through artificial extremes. Peak error must remain within the `5e-4` absolute floor or `1e-3` of the browser reference peak, whichever is greater; RMS error must remain within `1.5e-4`, and every sample must be finite.
 9. Atomic copy of the raw `.vst3` bundle directly into `~/Downloads`.
 10. ZIP packaging and upload to the configured public Supabase bucket. A job does not become `ready` if publication fails.
 
@@ -52,7 +68,7 @@ npm run dev:vst3
 
 Then open the local URL printed by the command:
 
-1. Add at least one module.
+1. Add at least one primitive.
 2. Audition the project and resolve any blocking audio analysis issues.
 3. Open **Build**.
 4. Freeze the current analyzed revision.

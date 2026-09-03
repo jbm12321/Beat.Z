@@ -38,7 +38,7 @@ export function validateProjectForBuild(project: ProjectV2, analysis?: AudioAnal
     issues.push({
       code: 'unsupported_legacy_modules',
       severity: 'error',
-      message: `The recovery record contains unsupported legacy modules: ${project.migration.unsupportedModuleTypes.join(', ')}. Remove or rebuild them with Faust v0.1 primitives before freezing.`,
+      message: `The recovery record contains unsupported legacy primitives: ${project.migration.unsupportedModuleTypes.join(', ')}. Remove or rebuild them with the current Faust primitives before freezing.`,
     });
   }
   if (project.chain.length === 0) {

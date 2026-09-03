@@ -1,6 +1,8 @@
-# Audio Effect Builder
+# Beat.Z
 
 A browser-first visual audio-effect builder with fourteen canonical Faust primitives: Gain, unified Filter, Saturation, Delay, Reverb, Chorus, Compressor, Phaser, Auto Wah, Stutter, 3-Band EQ, Limiter, Flanger, and Tremolo. Live Web Audio auditioning and deterministic offline analysis use the same committed Faust processors. Human and WebMCP actions share one revisioned project model.
+
+Public Site: [beat-z.jbm111.chatgpt.site](https://beat-z.jbm111.chatgpt.site)
 
 ## Quick start
 

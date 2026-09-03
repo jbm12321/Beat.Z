@@ -6,7 +6,7 @@ import { publishVerifiedVst3Bundle } from '../native/lib/publish.mjs';
 import { runNativeBuild } from '../native/lib/runner.mjs';
 import { assertHttpsEndpoint } from '../native/lib/safety.mjs';
 
-const liveEndpoint = 'https://audio-effect-builder-bm26.jbm111.chatgpt.site';
+const liveEndpoint = 'https://beat-z.jbm111.chatgpt.site';
 const endpoint = assertHttpsEndpoint(process.env.VST3_EXPORT_ENDPOINT ?? liveEndpoint);
 if (endpoint.origin !== liveEndpoint) {
   throw new Error(`VST3_EXPORT_ENDPOINT must point to ${liveEndpoint}.`);
@@ -78,7 +78,7 @@ do {
   } catch (error) {
     if (once) throw error;
     const message = error instanceof Error ? error.message : String(error);
-    if (message !== lastPollError) console.error('Error.');
+    if (message !== lastPollError) console.error(`Mac worker connection error: ${message}`);
     connected = false;
     lastPollError = message;
   }

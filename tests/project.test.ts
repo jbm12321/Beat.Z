@@ -234,7 +234,7 @@ test('new discrete modes cannot be mapped while continuous expansion controls re
   assert.deepEqual(project.macros[0].mappings.map((mapping) => mapping.paramId), ['depth', 'rate']);
 });
 
-test('Pair 1 time units use the domain formatter without UI special cases', () => {
+test('Delay and Reverb time units use the domain formatter without UI special cases', () => {
   assert.equal(formatParameter(MODULE_CATALOG.delay.parameters[1], 340), '340 ms');
   assert.equal(formatParameter(MODULE_CATALOG.reverb.parameters[2], 3.8), '3.8 s');
 });

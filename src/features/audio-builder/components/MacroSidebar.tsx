@@ -1,9 +1,9 @@
-import type { MacroControl, MacroMapping, ProjectCommand, ProjectV1 } from '../domain/types';
+import type { MacroControl, MacroMapping, ProjectCommand, ProjectV2 } from '../domain/types';
 import { MappingRow } from './MappingRow';
 import { ProjectKnob } from './ProjectKnob';
 
 export function MacroSidebar({ project, mobileOpen, selectedMacroId, selectedMacro, hasAvailableTarget, onCreateMacro, onSelectMacro, onAddMapping, onChangeMappingTarget, onCommit, onHide }: {
-  project: ProjectV1;
+  project: ProjectV2;
   mobileOpen: boolean;
   selectedMacroId: string | null;
   selectedMacro: MacroControl | null;

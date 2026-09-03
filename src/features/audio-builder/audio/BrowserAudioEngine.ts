@@ -16,14 +16,6 @@ type ActivePath = {
   modules: Map<string, ModuleGraph>;
 };
 
-export function normalizedMixGains(mix: number) {
-  const value = Math.max(0, Math.min(1, mix));
-  const dry = Math.cos((Math.PI / 2) * value);
-  const wet = Math.sin((Math.PI / 2) * value);
-  const normalization = Math.max(1, dry + wet);
-  return { dry: dry / normalization, wet: wet / normalization };
-}
-
 export function projectTopologyKey(project: ProjectV2) {
   return project.chain
     .map((nodeId) => {
@@ -31,18 +23,6 @@ export function projectTopologyKey(project: ProjectV2) {
       return node ? `${node.id}:${node.type}:${node.bypassed ? 1 : 0}` : `${nodeId}:missing`;
     })
     .join('|');
-}
-
-/** Retained as a deterministic utility for imported v1 project diagnostics. Live Saturation is Faust-powered. */
-export function makeSaturationCurve(driveDb: number, points = 2048) {
-  const curve = new Float32Array(points);
-  const drive = 1 + Math.max(0, driveDb) * 0.32;
-  const normalizer = Math.tanh(drive);
-  for (let index = 0; index < points; index += 1) {
-    const x = (index / (points - 1)) * 2 - 1;
-    curve[index] = Math.tanh(x * drive) / normalizer;
-  }
-  return curve;
 }
 
 export function createDemoSamples(sampleRate: number, durationSeconds = 4) {
@@ -236,11 +216,6 @@ export class BrowserAudioEngine {
       for (let index = start; index < end; index += 1) peak = Math.max(peak, Math.abs(source[index]));
       return peak;
     });
-  }
-
-  async restart() {
-    this.stop();
-    await this.play();
   }
 
   setBypass(bypassed: boolean) {
