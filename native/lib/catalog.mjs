@@ -163,6 +163,20 @@ export const NATIVE_MODULE_CATALOG = Object.freeze({
       output: Object.freeze({ name: 'Output', min: -24, max: 12, step: 0.1, unit: 'dB', faustPath: '/Audio_Effect_Builder_Flanger/Flanger_Output', scale: 'linear' }),
     }),
   }),
+  tremolo: Object.freeze({
+    name: 'Tremolo',
+    source: 'faust/tremolo.dsp',
+    wasmSha256: 'fcd740fc6d557c1768dd197f62caf119eba0072c6ba723d43f1b2ba9e74cffdd',
+    parameters: Object.freeze({
+      mode: Object.freeze({ name: 'Mode', min: 0, max: 3, step: 1, unit: '', faustPath: '/Audio_Effect_Builder_Tremolo/Tremolo_Mode', scale: 'linear', choices: [0, 1, 2, 3], choiceLabels: ['Tremolo', 'Auto-Pan', 'Stereo Tremolo', 'Pulse/Chop'] }),
+      rate: Object.freeze({ name: 'Rate', min: 0.05, max: 20, step: 0.01, unit: 'Hz', faustPath: '/Audio_Effect_Builder_Tremolo/Tremolo_Rate', scale: 'log' }),
+      depth: Object.freeze({ name: 'Depth', min: 0, max: 100, step: 1, unit: '%', faustPath: '/Audio_Effect_Builder_Tremolo/Tremolo_Depth', scale: 'linear' }),
+      shape: Object.freeze({ name: 'Shape', min: 0, max: 100, step: 1, unit: '%', faustPath: '/Audio_Effect_Builder_Tremolo/Tremolo_Shape', scale: 'linear' }),
+      stereo: Object.freeze({ name: 'Stereo Phase', min: 0, max: 180, step: 1, unit: 'degrees', faustPath: '/Audio_Effect_Builder_Tremolo/Tremolo_Stereo_Phase', scale: 'linear' }),
+      mix: Object.freeze({ name: 'Mix', min: 0, max: 100, step: 1, unit: '%', faustPath: '/Audio_Effect_Builder_Tremolo/Tremolo_Mix', scale: 'linear' }),
+      output: Object.freeze({ name: 'Output', min: -24, max: 12, step: 0.1, unit: 'dB', faustPath: '/Audio_Effect_Builder_Tremolo/Tremolo_Output', scale: 'linear' }),
+    }),
+  }),
 });
 
 export const SOURCE_FINGERPRINTS = Object.freeze({
@@ -179,4 +193,5 @@ export const SOURCE_FINGERPRINTS = Object.freeze({
   equalizer: '0ee8adecb250e184c1c2f15d8630c13acb193945bc815d87110dfee1bb14c25a',
   limiter: '5564b1c1f20994bf827916a3e877f125c15ca19c70879918fe64a3e1eeda1bf6',
   flanger: 'b66905707f0238d73e8230793edfeac787136aa6fa1608fbe4dc6d48e5aea9b4',
+  tremolo: 'c32438699b15eeefaa04630fe662e529233ee8a58d2d227548e556b87e7a5b2f',
 });

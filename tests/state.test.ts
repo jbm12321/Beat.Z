@@ -7,6 +7,7 @@ import {
   PRE_AUTOWAH_STUTTER_ENGINE_PROVENANCE,
   PRE_CHORUS_COMPRESSOR_ENGINE_PROVENANCE,
   PRE_EQ_LIMITER_FLANGER_ENGINE_PROVENANCE,
+  PRE_TREMOLO_ENGINE_PROVENANCE,
   PRE_PHASER_COMPRESSOR_MODES_ENGINE_PROVENANCE,
   STORAGE_KEY,
   PRE_PAIR1_ENGINE_PROVENANCE,
@@ -240,6 +241,28 @@ test('persistence adds 3-Band EQ, Limiter, and Flanger provenance without changi
   assert.equal(restored.engine.moduleSourceSha256.equalizer.length, 64);
   assert.equal(restored.engine.moduleSourceSha256.limiter.length, 64);
   assert.equal(restored.engine.moduleSourceSha256.flanger.length, 64);
+});
+
+test('persistence adds Tremolo provenance without changing an exact thirteen-effect project', () => {
+  const storage = new MemoryStorage();
+  const project = applyProjectCommands(createInitialProject(), [
+    { type: 'rename_project', name: 'Preserved thirteen-effect project' },
+    { type: 'add_module', moduleType: 'equalizer', nodeId: 'equalizer-1' },
+    { type: 'set_parameter', nodeId: 'equalizer-1', paramId: 'midGain', value: 4.5 },
+    { type: 'add_module', moduleType: 'limiter', nodeId: 'limiter-1' },
+    { type: 'set_parameter', nodeId: 'limiter-1', paramId: 'mode', value: 2 },
+    { type: 'add_module', moduleType: 'flanger', nodeId: 'flanger-1' },
+    { type: 'set_parameter', nodeId: 'flanger-1', paramId: 'stereo', value: 135 },
+    { type: 'create_macro', name: 'Motion', macroId: 'macro-1' },
+    { type: 'add_mapping', macroId: 'macro-1', mappingId: 'mapping-1', nodeId: 'flanger-1', paramId: 'mix', min: 15, max: 75 },
+  ], 'human');
+  const previous = structuredClone(project);
+  previous.engine = structuredClone(PRE_TREMOLO_ENGINE_PROVENANCE) as typeof previous.engine;
+  storage.setItem(STORAGE_KEY, JSON.stringify(previous));
+
+  const restored = restorePersistedProject(storage).project;
+  assert.deepEqual({ ...restored, engine: undefined }, { ...previous, engine: undefined });
+  assert.equal(restored.engine.moduleSourceSha256.tremolo.length, 64);
 });
 
 test('persistence rejects partially matching historical engine provenance', () => {

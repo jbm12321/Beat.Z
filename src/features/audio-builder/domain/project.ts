@@ -1,4 +1,4 @@
-export type ModuleType = 'gain' | 'filter' | 'saturation' | 'delay' | 'reverb' | 'chorus' | 'compressor' | 'phaser' | 'autowah' | 'stutter' | 'equalizer' | 'limiter' | 'flanger';
+export type ModuleType = 'gain' | 'filter' | 'saturation' | 'delay' | 'reverb' | 'chorus' | 'compressor' | 'phaser' | 'autowah' | 'stutter' | 'equalizer' | 'limiter' | 'flanger' | 'tremolo';
 export type ParameterScale = 'linear' | 'log';
 export type ParameterKind = 'continuous' | 'choice';
 
@@ -401,6 +401,23 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
       parameter('output', 'Output', -24, 12, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Flanger/Flanger_Output'),
     ],
   },
+  tremolo: {
+    type: 'tremolo', name: 'Tremolo', shortName: 'TREM', description: 'Add linked, panned, stereo, or chopped amplitude movement.', definitionVersion: '0.1.0',
+    sourceSha256: 'c32438699b15eeefaa04630fe662e529233ee8a58d2d227548e556b87e7a5b2f',
+    wasmSha256: 'fcd740fc6d557c1768dd197f62caf119eba0072c6ba723d43f1b2ba9e74cffdd',
+    wasmPath: '/faust/tremolo/dsp-module.wasm', metadataPath: '/faust/tremolo/dsp-meta.json',
+    parameters: [
+      parameter('mode', 'Mode', 0, 3, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Tremolo/Tremolo_Mode', {
+        kind: 'choice', choices: [{ value: 0, label: 'Tremolo' }, { value: 1, label: 'Auto-Pan' }, { value: 2, label: 'Stereo Tremolo' }, { value: 3, label: 'Pulse/Chop' }], mappable: false,
+      }),
+      parameter('rate', 'Rate', 0.05, 20, 4, 0.01, 'Hz', 'log', '/Audio_Effect_Builder_Tremolo/Tremolo_Rate'),
+      parameter('depth', 'Depth', 0, 100, 50, 1, '%', 'linear', '/Audio_Effect_Builder_Tremolo/Tremolo_Depth'),
+      parameter('shape', 'Shape', 0, 100, 25, 1, '%', 'linear', '/Audio_Effect_Builder_Tremolo/Tremolo_Shape'),
+      parameter('stereo', 'Stereo Phase', 0, 180, 90, 1, 'degrees', 'linear', '/Audio_Effect_Builder_Tremolo/Tremolo_Stereo_Phase'),
+      parameter('mix', 'Mix', 0, 100, 100, 1, '%', 'linear', '/Audio_Effect_Builder_Tremolo/Tremolo_Mix'),
+      parameter('output', 'Output', -24, 12, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Tremolo/Tremolo_Output'),
+    ],
+  },
 };
 
 export const MODULE_TYPES = Object.keys(MODULE_CATALOG) as ModuleType[];
@@ -490,6 +507,25 @@ export const PRE_EQ_LIMITER_FLANGER_ENGINE_PROVENANCE = Object.freeze({
     phaser: 'b812485b365ccf92ba7fb8680feced1b3ce27b86a568c8634ca6ce949c827c04',
     autowah: '26001c6599cf9b72c57290b26498233f076d278ec1b7bdecbe40be04c3448443',
     stutter: 'b5f10b05476725a477d1b2df078a932b2ccb68e079b2e5dd908dba5c89b790d9',
+  },
+});
+export const PRE_TREMOLO_ENGINE_PROVENANCE = Object.freeze({
+  effectDefinition: 'audio-effect-builder-faust', definitionVersion: '0.1.0', faustWasmVersion: '0.16.6', faustCompilerVersion: '2.85.9',
+  libraries: { analyzers: '1.3.0', basics: '1.22.0', compressors: '1.6.0', delays: '1.2.0', filters: '1.7.1', maths: '2.9.0', misceffects: '2.5.2', oscillators: '1.7.0', phaflangers: '1.1.0', platform: '1.3.0', reverbs: '1.5.1', routes: '1.3.0', signals: '1.6.0' },
+  moduleSourceSha256: {
+    gain: 'caca77ad2ac86cf0ef26f62a22d1d0c62a7d4b7f86c6c4e3fef77e9d19fbd35d',
+    filter: '076d102ec4209b0a9e33d4199e302896a3951017e88a1e821ec106347c03ee7f',
+    saturation: '9074635f03744b4b4f280eac15839585716d4a23a732ac7c59e26eb1c3bab068',
+    delay: 'fb9a020e31f2b4f290a17ad2a18ec5d87c6f701195af2bc95e38f2d99cef1b92',
+    reverb: 'bec502b0ca2f0b01dd7c10051cd848417f24ca0eb45b73c2854a49da54abb5ff',
+    chorus: '19432a2946b7711dc6f4d694e3fdc5c665df67dddbcadc59622c4052539aa419',
+    compressor: '5c63fd9f14183aae0c1b3b1cd4a22cf674623bb39a6508218d1857599b8232d6',
+    phaser: 'b812485b365ccf92ba7fb8680feced1b3ce27b86a568c8634ca6ce949c827c04',
+    autowah: '26001c6599cf9b72c57290b26498233f076d278ec1b7bdecbe40be04c3448443',
+    stutter: 'b5f10b05476725a477d1b2df078a932b2ccb68e079b2e5dd908dba5c89b790d9',
+    equalizer: '0ee8adecb250e184c1c2f15d8630c13acb193945bc815d87110dfee1bb14c25a',
+    limiter: '5564b1c1f20994bf827916a3e877f125c15ca19c70879918fe64a3e1eeda1bf6',
+    flanger: 'b66905707f0238d73e8230793edfeac787136aa6fa1608fbe4dc6d48e5aea9b4',
   },
 });
 export const ENGINE_PROVENANCE: EngineProvenance = {
@@ -904,7 +940,8 @@ export function upgradeProjectEngine(value: unknown): ProjectV2 {
   const isPrePhaserCompressorModes = sameJson(project.engine, PRE_PHASER_COMPRESSOR_MODES_ENGINE_PROVENANCE);
   const isPreAutoWahStutter = sameJson(project.engine, PRE_AUTOWAH_STUTTER_ENGINE_PROVENANCE);
   const isPreEqLimiterFlanger = sameJson(project.engine, PRE_EQ_LIMITER_FLANGER_ENGINE_PROVENANCE);
-  if (!isPrePair1 && !isPreCanonicalCompiler && !isPreSaturationV2 && !isPreAudibility && !isPreChorusCompressor && !isPrePhaserCompressorModes && !isPreAutoWahStutter && !isPreEqLimiterFlanger) return validateProject(project);
+  const isPreTremolo = sameJson(project.engine, PRE_TREMOLO_ENGINE_PROVENANCE);
+  if (!isPrePair1 && !isPreCanonicalCompiler && !isPreSaturationV2 && !isPreAudibility && !isPreChorusCompressor && !isPrePhaserCompressorModes && !isPreAutoWahStutter && !isPreEqLimiterFlanger && !isPreTremolo) return validateProject(project);
   if (isPreSaturationV2) {
     for (const node of Object.values(project.nodes as Record<string, unknown>)) {
       if (!isRecord(node) || node.type !== 'saturation' || !isRecord(node.params)) continue;
