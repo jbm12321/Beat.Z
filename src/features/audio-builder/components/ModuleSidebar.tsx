@@ -1,6 +1,5 @@
 import { MODULE_CATALOG, MODULE_TYPES } from '../domain/catalog';
 import type { ModuleType } from '../domain/types';
-import { Settings as SettingsIcon } from 'lucide-react';
 import { moduleDragKey } from './dnd';
 
 export function ModuleSidebar({ mobileOpen, onAddModule, onOpenInsert, onHide }: {
@@ -45,7 +44,6 @@ export function ModuleSidebar({ mobileOpen, onAddModule, onOpenInsert, onHide }:
       </div>
       <div className="module-rail-footer">
         <p className="rail-note rail-logo" aria-label="Beat.Z">Beat.Z</p>
-        <button type="button" className="settings-button" disabled aria-label="Settings" title="Settings coming soon"><SettingsIcon aria-hidden="true" size={14} strokeWidth={1.5} /></button>
       </div>
     </aside>
   );
