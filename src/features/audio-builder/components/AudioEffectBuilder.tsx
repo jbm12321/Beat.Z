@@ -9,7 +9,10 @@ import {
   applyProjectCommands,
   createInitialProject,
   findAvailableMappingTarget,
+  LAST_VALID_STORAGE_KEY,
+  LEGACY_STORAGE_KEY,
   makeId,
+  STORAGE_KEY,
 } from '../domain/project';
 import { MODULE_CATALOG, MODULE_TYPES } from '../domain/catalog';
 import {
@@ -62,6 +65,8 @@ export function AudioEffectBuilder() {
   const [sourceName, setSourceName] = useState('Beat.Z demo loop');
   const [chainBypass, setChainBypass] = useState(false);
   const [meters, setMeters] = useState({ input: 0, output: 0, inputPeak: 0, outputPeak: 0 });
+  const [playbackProgress, setPlaybackProgress] = useState(0);
+  const [waveformPeaks, setWaveformPeaks] = useState<number[]>([]);
   const audioRef = useRef<BrowserAudioEngine | null>(null);
   const proposalRef = useRef<AgentProposal | null>(null);
   const validationRef = useRef(validation);
@@ -118,16 +123,12 @@ export function AudioEffectBuilder() {
 
   const clearProject = () => {
     const hasContent = Object.keys(projectRef.current.nodes).length > 0 || projectRef.current.macros.length > 0;
-    if (!hasContent || !window.confirm('Clear all primitives and controls? You can undo this action.')) return;
-    try {
-      commitCommands([{ type: 'clear_project' }]);
-      setSelectedNodeId(null);
-      setSelectedMacroId(null);
-      setInsertIndex(null);
-      setNotice({ kind: 'success', text: 'Cleared all primitives and controls.' });
-    } catch {
-      // The command layer reports any validation issue.
-    }
+    if (!hasContent || !window.confirm('Reset the builder to a fresh first-time session? This cannot be undone.')) return;
+    audioRef.current?.stop();
+    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(LAST_VALID_STORAGE_KEY);
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    window.location.reload();
   };
 
   useEffect(() => {
@@ -174,7 +175,11 @@ export function AudioEffectBuilder() {
     audioRef.current = engine;
     engine.setStatusListener((status) => setNotice({ kind: status.kind === 'error' ? 'error' : 'success', text: status.message }));
     engine.setProject(projectRef.current);
-    const timer = window.setInterval(() => setMeters(engine.getMeters()), 80);
+    setWaveformPeaks(engine.getWaveformPeaks());
+    const timer = window.setInterval(() => {
+      setMeters(engine.getMeters());
+      setPlaybackProgress(engine.getPlaybackProgress());
+    }, 80);
     return () => {
       window.clearInterval(timer);
       engine.setStatusListener(null);
@@ -313,6 +318,8 @@ export function AudioEffectBuilder() {
     try {
       await audioRef.current?.loadFile(file);
       setSourceName(file.name);
+      setPlaybackProgress(0);
+      setWaveformPeaks(audioRef.current?.getWaveformPeaks() ?? []);
       setNotice({ kind: 'success', text: 'Local audio loaded. It remains only in this browser tab.' });
     } catch {
       setNotice({ kind: 'error', text: 'That audio file could not be decoded by this browser.' });
@@ -322,9 +329,13 @@ export function AudioEffectBuilder() {
   const switchToDemoAudio = async () => {
     const engine = audioRef.current;
     if (!engine) return;
+    const wasPlaying = engine.isPlaying;
+    if (wasPlaying) engine.stop();
     engine.useDemo();
     setSourceName('Beat.Z demo loop');
-    if (engine.isPlaying) await engine.restart();
+    setPlaybackProgress(0);
+    setWaveformPeaks(engine.getWaveformPeaks());
+    if (wasPlaying) await engine.play();
     setNotice({ kind: 'success', text: 'Switched back to the built-in audition loop.' });
   };
 
@@ -573,34 +584,21 @@ export function AudioEffectBuilder() {
                 <div>
                   <span>{MODULE_CATALOG[selectedNode.type].shortName}</span>
                   <strong>{MODULE_CATALOG[selectedNode.type].name}</strong>
-                  {(['filter', 'delay', 'reverb', 'chorus'] as const).includes(selectedNode.type as 'filter' | 'delay' | 'reverb' | 'chorus') && (() => {
-                    const mode = MODULE_CATALOG[selectedNode.type].parameters.find((parameter) => parameter.id === 'mode')!;
-                    const effective = getEffectiveParameter(project, selectedNode.id, mode.id);
-                    return (
-                      <label className="inspector-character">
-                        <span>{mode.name}</span>
-                        <select
-                          className="parameter-select"
-                          value={effective}
-                          onChange={(event) => commitCommands([{ type: 'set_parameter', nodeId: selectedNode.id, paramId: mode.id, value: Number(event.target.value) }])}
-                        >
-                          {mode.choices?.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}
-                        </select>
-                      </label>
+                  {(() => {
+                    const mode = MODULE_CATALOG[selectedNode.type].parameters.find((parameter) =>
+                      parameter.id === 'mode' || (selectedNode.type === 'saturation' && parameter.id === 'character')
                     );
-                  })()}
-                  {selectedNode.type === 'saturation' && (() => {
-                    const character = MODULE_CATALOG.saturation.parameters.find((parameter) => parameter.id === 'character')!;
-                    const effective = getEffectiveParameter(project, selectedNode.id, character.id);
+                    if (!mode) return null;
+                    const effective = getEffectiveParameter(project, selectedNode.id, mode.id);
                     return (
                       <label className="inspector-character">
                         <span>Mode</span>
                         <select
                           className="parameter-select"
                           value={effective}
-                          onChange={(event) => commitCommands([{ type: 'set_parameter', nodeId: selectedNode.id, paramId: character.id, value: Number(event.target.value) }])}
+                          onChange={(event) => commitCommands([{ type: 'set_parameter', nodeId: selectedNode.id, paramId: mode.id, value: Number(event.target.value) }])}
                         >
-                          {character.choices?.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}
+                          {mode.choices?.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}
                         </select>
                       </label>
                     );
@@ -621,7 +619,7 @@ export function AudioEffectBuilder() {
               </header>
               <div className="parameter-grid">
                 {MODULE_CATALOG[selectedNode.type].parameters.filter((parameter) => {
-                  if (['filter', 'delay', 'reverb', 'chorus'].includes(selectedNode.type) && parameter.id === 'mode') return false;
+                  if (parameter.id === 'mode') return false;
                   if (selectedNode.type !== 'saturation') return true;
                   if (parameter.id === 'character') return false;
                   if (['drive', 'tone', 'mix', 'output'].includes(parameter.id)) return true;
@@ -678,9 +676,12 @@ export function AudioEffectBuilder() {
           playing={playing}
           sourceName={sourceName}
           isDemo={sourceName === 'Beat.Z demo loop'}
+          playbackProgress={playbackProgress}
+          waveformPeaks={waveformPeaks}
           meters={meters}
           chainBypass={chainBypass}
           onTogglePlayback={() => void togglePlayback()}
+          onSeek={(progress) => void audioRef.current?.seek(progress)}
           onChooseFile={() => fileInputRef.current?.click()}
           onUseDemo={() => void switchToDemoAudio()}
           onToggleBypass={toggleChainBypass}
