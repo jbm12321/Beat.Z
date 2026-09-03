@@ -36,6 +36,7 @@ test('WebMCP degrades cleanly when the experimental browser API is absent', asyn
     getProject: () => project,
     getValidation: () => validateProjectForBuild(project),
     getDownloadState: () => downloadState(project),
+    getProposal: () => null,
     stageProposal: () => { throw new Error('unused'); },
     downloadPlugin: () => downloadState(project),
   });
@@ -52,6 +53,7 @@ test('five task-level tools create, edit, clear, inspect, and download through s
     getProject: () => project,
     getValidation: () => validateProjectForBuild(project),
     getDownloadState: () => downloadState(project),
+    getProposal: () => proposal,
     stageProposal: (input) => {
       proposal = createAgentProposal(project, input);
       return proposal;
@@ -83,16 +85,15 @@ test('five task-level tools create, edit, clear, inspect, and download through s
   const inspection = await tools.get('inspect-builder')!.execute({});
   const inspected = inspection.structuredContent as {
     contextId: string;
-    project: ProjectV2;
-    primitives: Record<string, unknown>;
+    plugin: { revision: number; chain: unknown[] };
+    primitives: Array<{ type: string; params: unknown[] }>;
     controlRules: { defaultMappingsPerControl: number };
   };
   assert.equal(inspected.contextId, makeBuilderContextId(project));
-  assert.equal(inspected.project.revision, 0);
-  assert.deepEqual(Object.keys(inspected.primitives), [
-    'gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor',
-    'phaser', 'autowah', 'stutter', 'equalizer', 'limiter', 'flanger', 'tremolo',
-  ]);
+  assert.equal(inspected.plugin.revision, 0);
+  assert.equal(inspected.plugin.chain.length, 0);
+  assert.equal(inspected.primitives.length, 14);
+  assert.ok(inspected.primitives[0].params.length > 0);
   assert.equal(inspected.controlRules.defaultMappingsPerControl, 1);
 
   const missingContext = await tools.get('create-plugin')!.execute({
@@ -109,15 +110,16 @@ test('five task-level tools create, edit, clear, inspect, and download through s
       name: 'Warm Echo',
       chain: [{ ref: 'echo', primitive: 'delay', settings: { mode: 'Tape', time: 340, feedback: 45, mix: 30 } }],
       controls: [
-        { name: 'Echo Time', promptBasis: 'adjustable time', mappings: [{ primitiveRef: 'echo', parameter: 'time', min: 80, max: 650 }] },
-        { name: 'Feedback', promptBasis: 'feedback', mappings: [{ primitiveRef: 'echo', parameter: 'feedback', min: 10, max: 75 }] },
-        { name: 'Mix', promptBasis: 'mix', mappings: [{ primitiveRef: 'echo', parameter: 'mix', min: 0, max: 65 }] },
+        { name: 'Echo Time', reason: 'Main echo timing', mappings: [{ primitiveRef: 'echo', parameter: 'time', min: 80, max: 650 }] },
+        { name: 'Feedback', reason: 'Echo repeats', mappings: [{ primitiveRef: 'echo', parameter: 'feedback', min: 10, max: 75 }] },
+        { name: 'Mix', mappings: [{ primitiveRef: 'echo', parameter: 'mix', min: 0, max: 65 }] },
       ],
     },
   });
   assert.equal(created.isError, undefined);
   assert.equal(project.revision, 0);
   assert.deepEqual(project.chain, []);
+  assert.equal((proposal as unknown as AgentProposal).commands[0].type, 'clear_project');
   assert.deepEqual((created.structuredContent as { controls: string[] }).controls, ['Echo Time', 'Feedback', 'Mix']);
   assert.equal((created.structuredContent as { requiresHumanApproval: boolean }).requiresHumanApproval, true);
 
@@ -144,8 +146,9 @@ test('five task-level tools create, edit, clear, inspect, and download through s
     prompt: 'Make the echo darker and add a separate warmth control.',
     changes: [
       { action: 'set-parameter', primitiveId: project.chain[0], parameter: 'tone', value: 3500 },
+      { action: 'rename-plugin', name: 'Warm Echo Dark' },
       {
-        action: 'set-control', name: 'Warmth', promptBasis: 'separate warmth control',
+        action: 'set-control', name: 'Warmth', reason: 'Tone and mix together',
         mappings: [{ primitiveRef: project.chain[0], parameter: 'tone', min: 1200, max: 12000, inverted: true }],
       },
     ],
@@ -177,48 +180,28 @@ test('five task-level tools create, edit, clear, inspect, and download through s
   Reflect.deleteProperty(globalThis, 'document');
 });
 
-test('plugin plans require prompt-grounded Controls and reject accidental one-knob-for-all mappings', () => {
+test('plugin plans accept optional Control reasons and up to four mappings', () => {
   const project = createInitialProject();
   const basePlugin = {
     name: 'Focused Delay',
     chain: [{ ref: 'echo', primitive: 'delay' }],
   };
 
-  assert.throws(() => createPluginPlan(project, {
-    prompt: 'Create a warm delay.',
-    plugin: {
-      ...basePlugin,
-      controls: [{ name: 'Speed', promptBasis: 'speed', mappings: [{ primitiveRef: 'echo', parameter: 'time', min: 50, max: 500 }] }],
-    },
-  }), /exact phrase/u);
-
-  assert.throws(() => createPluginPlan(project, {
-    prompt: 'Create a delay with time and feedback controls.',
-    plugin: {
-      ...basePlugin,
-      controls: [{
-        name: 'Everything', promptBasis: 'time and feedback',
-        mappings: [
-          { primitiveRef: 'echo', parameter: 'time', min: 50, max: 500 },
-          { primitiveRef: 'echo', parameter: 'feedback', min: 10, max: 70 },
-        ],
-      }],
-    },
-  }), /Multi-parameter Controls/u);
-
   const combined = createPluginPlan(project, {
-    prompt: 'Create a delay with one-knob time and feedback movement.',
+    prompt: 'Create a delay with a warmth control.',
     plugin: {
       ...basePlugin,
       controls: [{
-        name: 'Echo Motion', promptBasis: 'one-knob time and feedback', combined: true,
+        name: 'Warmth', reason: 'Moves drive, mix, tone, and feedback together',
         mappings: [
           { primitiveRef: 'echo', parameter: 'time', min: 50, max: 500 },
           { primitiveRef: 'echo', parameter: 'feedback', min: 10, max: 70 },
+          { primitiveRef: 'echo', parameter: 'mix', min: 0, max: 100 },
+          { primitiveRef: 'echo', parameter: 'tone', min: 1000, max: 12000 },
         ],
       }],
     },
   });
-  assert.deepEqual(combined.controlNames, ['Echo Motion']);
-  assert.equal(combined.proposal.commands.filter((command) => command.type === 'add_mapping').length, 2);
+  assert.deepEqual(combined.controlNames, ['Warmth']);
+  assert.equal(combined.proposal.commands.filter((command) => command.type === 'add_mapping').length, 4);
 });

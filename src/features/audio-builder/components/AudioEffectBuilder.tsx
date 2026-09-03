@@ -402,16 +402,17 @@ export function AudioEffectBuilder() {
   const downloadPluginForAgent = useCallback(async (): Promise<WebMcpDownloadState> => {
     setShowNative(true);
     const existing = getDownloadStateForAgent();
-    if (existing.status === 'ready') {
-      if (!existing.downloadUrl) return existing;
-      const anchor = document.createElement('a');
-      anchor.href = existing.downloadUrl;
-      anchor.download = existing.filename ? `${existing.filename}.zip` : 'Beat.Z.vst3.zip';
-      anchor.hidden = true;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      return { ...existing, downloadStarted: true, message: `Download started for ${anchor.download}.` };
+    if (existing.status === 'ready') return existing;
+    if (existing.status === 'approval-required') {
+      const frozen = frozenRef.current;
+      if (!frozen) return { status: 'not-prepared', revision: projectRef.current.revision, message: 'The current revision must be analyzed and prepared for download.' };
+      buildApprovedRef.current = true;
+      const submitted = await submitVst3Export(frozen);
+      return {
+        status: 'queued', revision: frozen.revision, jobId: submitted.id,
+        filename: submitted.artifact?.filename, downloadUrl: submitted.artifact?.downloadUrl,
+        message: 'The VST3 build was queued on the Mac builder. The visible Download panel will show the ZIP link when ready.',
+      };
     }
     if (existing.status !== 'not-prepared') return existing;
 
@@ -443,6 +444,7 @@ export function AudioEffectBuilder() {
       getProject: () => projectRef.current,
       getValidation: () => validationRef.current,
       getDownloadState: getDownloadStateForAgent,
+      getProposal: () => proposalRef.current,
       stageProposal,
       downloadPlugin: downloadPluginForAgent,
     }).then((registration) => {
