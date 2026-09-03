@@ -109,6 +109,8 @@ export class BrowserAudioEngine {
   private project: ProjectV2 | null = null;
   private bypassed = false;
   private playing = false;
+  private playbackOffset = 0;
+  private playbackStartedAt = 0;
   private comparisonGain = 1;
   private rebuildGeneration = 0;
   private error: string | null = null;
@@ -161,14 +163,18 @@ export class BrowserAudioEngine {
 
   async loadFile(file: File) {
     const context = await this.ensureContext();
+    const wasPlaying = this.playing;
+    if (wasPlaying) this.stop();
     const data = await file.arrayBuffer();
     this.sourceBuffer = await context.decodeAudioData(data.slice(0));
-    if (this.playing) await this.restart();
+    this.playbackOffset = 0;
+    if (wasPlaying) await this.play();
   }
 
   useDemo() {
     if (!this.context) return;
     this.sourceBuffer = this.createDemoBuffer();
+    this.playbackOffset = 0;
   }
 
   async play() {
@@ -180,18 +186,56 @@ export class BrowserAudioEngine {
     source.buffer = this.sourceBuffer;
     source.loop = true;
     source.connect(this.sourceBus);
-    source.start();
+    const duration = this.sourceBuffer.duration;
+    const offset = duration > 0 ? this.playbackOffset % duration : 0;
+    source.start(0, offset);
     this.currentSource = source;
+    this.playbackStartedAt = context.currentTime - offset;
     this.playing = true;
   }
 
   stop() {
+    if (this.playing && this.context && this.sourceBuffer?.duration) {
+      this.playbackOffset = (this.context.currentTime - this.playbackStartedAt) % this.sourceBuffer.duration;
+    }
     if (this.currentSource) {
       try { this.currentSource.stop(); } catch { /* source may already be stopped */ }
       this.currentSource.disconnect();
     }
     this.currentSource = null;
     this.playing = false;
+  }
+
+  async seek(progress: number) {
+    if (!this.sourceBuffer) await this.ensureContext();
+    const duration = this.sourceBuffer?.duration ?? 0;
+    if (!duration) return;
+    const wasPlaying = this.playing;
+    if (wasPlaying) this.stop();
+    this.playbackOffset = Math.max(0, Math.min(0.999999, progress)) * duration;
+    if (wasPlaying) await this.play();
+  }
+
+  getPlaybackProgress() {
+    const duration = this.sourceBuffer?.duration ?? 0;
+    if (!duration) return 0;
+    const position = this.playing && this.context
+      ? (this.context.currentTime - this.playbackStartedAt) % duration
+      : this.playbackOffset;
+    return Math.max(0, Math.min(1, position / duration));
+  }
+
+  getWaveformPeaks(pointCount = 96) {
+    const source = this.sourceBuffer?.getChannelData(0) ?? createDemoSamples(12_000).left;
+    const points = Math.max(1, Math.floor(pointCount));
+    const blockSize = Math.max(1, Math.floor(source.length / points));
+    return Array.from({ length: points }, (_, point) => {
+      const start = point * blockSize;
+      const end = Math.min(source.length, start + blockSize);
+      let peak = 0;
+      for (let index = start; index < end; index += 1) peak = Math.max(peak, Math.abs(source[index]));
+      return peak;
+    });
   }
 
   async restart() {

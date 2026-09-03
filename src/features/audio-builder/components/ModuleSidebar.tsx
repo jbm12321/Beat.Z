@@ -19,7 +19,7 @@ export function ModuleSidebar({ mobileOpen, onAddModule, onOpenInsert, onHide }:
         </div>
       </header>
       <div className="module-list">
-        {MODULE_TYPES.map((moduleType, index) => {
+        {MODULE_TYPES.map((moduleType) => {
           const definition = MODULE_CATALOG[moduleType];
           return (
             <button
@@ -36,8 +36,8 @@ export function ModuleSidebar({ mobileOpen, onAddModule, onOpenInsert, onHide }:
               onClick={() => onAddModule(moduleType)}
               title={definition.description}
             >
-              <span className="module-index">{String(index + 1).padStart(2, '0')}</span>
-              <span>{definition.name}</span>
+              <span className="module-index">{definition.shortName}</span>
+              <span className="module-name">{definition.name}</span>
               <span className="module-add" aria-hidden="true">+</span>
             </button>
           );
