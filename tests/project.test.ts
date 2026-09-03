@@ -120,8 +120,8 @@ test('exported project JSON validates as a portable round trip', () => {
   assert.deepEqual(restored, project);
 });
 
-test('the Faust primitive catalog exposes the thirteen exact shared contracts', () => {
-  assert.deepEqual(MODULE_TYPES, ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor', 'phaser', 'autowah', 'stutter', 'equalizer', 'limiter', 'flanger']);
+test('the Faust primitive catalog exposes the fourteen exact shared contracts', () => {
+  assert.deepEqual(MODULE_TYPES, ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor', 'phaser', 'autowah', 'stutter', 'equalizer', 'limiter', 'flanger', 'tremolo']);
   assert.deepEqual(MODULE_CATALOG.filter.parameters.map((parameter) => parameter.id), ['mode', 'cutoff', 'resonance']);
   assert.equal(MODULE_CATALOG.filter.parameters[0].kind, 'choice');
   assert.deepEqual(MODULE_CATALOG.filter.parameters[0].choices, [
@@ -197,6 +197,14 @@ test('the Faust primitive catalog exposes the thirteen exact shared contracts', 
     { value: 0, label: 'Classic' }, { value: 1, label: 'Stereo' }, { value: 2, label: 'Jet' }, { value: 3, label: 'Through-Zero' },
   ]);
   assert.equal(MODULE_CATALOG.flanger.parameters[0].mappable, false);
+  assert.equal(MODULE_CATALOG.tremolo.name, 'Tremolo');
+  assert.equal(MODULE_CATALOG.tremolo.shortName, 'TREM');
+  assert.deepEqual(MODULE_CATALOG.tremolo.parameters.map((parameter) => parameter.id), ['mode', 'rate', 'depth', 'shape', 'stereo', 'mix', 'output']);
+  assert.deepEqual(MODULE_CATALOG.tremolo.parameters[0].choices, [
+    { value: 0, label: 'Tremolo' }, { value: 1, label: 'Auto-Pan' }, { value: 2, label: 'Stereo Tremolo' }, { value: 3, label: 'Pulse/Chop' },
+  ]);
+  assert.equal(MODULE_CATALOG.tremolo.parameters[0].mappable, false);
+  assert.ok(MODULE_CATALOG.tremolo.parameters.slice(1).every((parameter) => parameter.kind === 'continuous' && parameter.mappable));
   MODULE_TYPES.forEach((type) => {
     const definition = MODULE_CATALOG[type];
     assert.ok(definition.parameters.length > 0);
@@ -213,12 +221,17 @@ test('new discrete modes cannot be mapped while continuous expansion controls re
   let project = applyProjectCommands(createInitialProject(), [
     { type: 'add_module', moduleType: 'limiter', nodeId: 'limiter-1' },
     { type: 'add_module', moduleType: 'flanger', nodeId: 'flanger-1' },
+    { type: 'add_module', moduleType: 'tremolo', nodeId: 'tremolo-1' },
     { type: 'create_macro', name: 'Motion', macroId: 'macro-1' },
   ], 'human');
   assert.throws(() => applyProjectCommands(project, [{ type: 'add_mapping', macroId: 'macro-1', nodeId: 'limiter-1', paramId: 'mode', min: 0, max: 3 }], 'human'), /cannot be assigned/i);
   assert.throws(() => applyProjectCommands(project, [{ type: 'add_mapping', macroId: 'macro-1', nodeId: 'flanger-1', paramId: 'mode', min: 0, max: 3 }], 'human'), /cannot be assigned/i);
-  project = applyProjectCommands(project, [{ type: 'add_mapping', macroId: 'macro-1', nodeId: 'flanger-1', paramId: 'depth', min: 10, max: 90 }], 'human');
-  assert.equal(project.macros[0].mappings[0].paramId, 'depth');
+  assert.throws(() => applyProjectCommands(project, [{ type: 'add_mapping', macroId: 'macro-1', nodeId: 'tremolo-1', paramId: 'mode', min: 0, max: 3 }], 'human'), /cannot be assigned/i);
+  project = applyProjectCommands(project, [
+    { type: 'add_mapping', macroId: 'macro-1', nodeId: 'flanger-1', paramId: 'depth', min: 10, max: 90 },
+    { type: 'add_mapping', macroId: 'macro-1', nodeId: 'tremolo-1', paramId: 'rate', min: 0.1, max: 12 },
+  ], 'human');
+  assert.deepEqual(project.macros[0].mappings.map((mapping) => mapping.paramId), ['depth', 'rate']);
 });
 
 test('Pair 1 time units use the domain formatter without UI special cases', () => {

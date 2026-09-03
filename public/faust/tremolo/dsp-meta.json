@@ -1,0 +1,242 @@
+{
+  "name": "Audio Effect Builder Tremolo",
+  "filename": "tremolo.dsp",
+  "version": "2.85.9",
+  "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2",
+  "library_list": [
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/stdfaust.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/misceffects.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/signals.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/maths.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/platform.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/oscillators.lib",
+    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/basics.lib"
+  ],
+  "include_pathnames": [
+    "/opt/homebrew/opt/faust/share/faust",
+    "/usr/local/share/faust",
+    "/usr/share/faust",
+    "/Users/baumolinari/Projects/Beat.Z/faust",
+    "/Users/baumolinari/Projects/Beat.Z/faust"
+  ],
+  "size": 524452,
+  "code": "aW1wb3J0KCJzdGRmYXVzdC5saWIiKTsKCmRlY2xhcmUgbmFtZSAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIgVHJlbW9sbyI7CmRlY2xhcmUgdmVyc2lvbiAiMC4xLjAiOwpkZWNsYXJlIGF1dGhvciAiQmVhdC5aIjsKZGVjbGFyZSBsaWNlbnNlICJNSVQiOwoKbW9kZSA9IGhzbGlkZXIoIlRyZW1vbG8vTW9kZVtzdHlsZTptZW51eydUcmVtb2xvJzowOydBdXRvLVBhbic6MTsnU3RlcmVvIFRyZW1vbG8nOjI7J1B1bHNlL0Nob3AnOjN9XSIsIDAuMCwgMC4wLCAzLjAsIDEuMCk7CnJhdGVIeiA9IGhzbGlkZXIoIlRyZW1vbG8vUmF0ZVt1bml0Okh6XVtzY2FsZTpsb2ddW3N0eWxlOmtub2JdIiwgNC4wLCAwLjA1LCAyMC4wLCAwLjAxKSA6IHNpLnNtb287CmRlcHRoUGVyY2VudCA9IGhzbGlkZXIoIlRyZW1vbG8vRGVwdGhbdW5pdDolXVtzdHlsZTprbm9iXSIsIDUwLjAsIDAuMCwgMTAwLjAsIDEuMCk7CmRlcHRoVGFyZ2V0ID0gZGVwdGhQZXJjZW50IC8gMTAwLjA7CmRlcHRoID0gZGVwdGhUYXJnZXQgOiBzaS5zbW9vOwpzaGFwZSA9IGhzbGlkZXIoIlRyZW1vbG8vU2hhcGVbdW5pdDolXVtzdHlsZTprbm9iXSIsIDI1LjAsIDAuMCwgMTAwLjAsIDEuMCkgLyAxMDAuMCA6IHNpLnNtb287CnN0ZXJlb0RlZ3JlZXMgPSBoc2xpZGVyKCJUcmVtb2xvL1N0ZXJlbyBQaGFzZVt1bml0OmRlZ3JlZXNdW3N0eWxlOmtub2JdIiwgOTAuMCwgMC4wLCAxODAuMCwgMS4wKSA6IHNpLnNtb287Cm1peCA9IGhzbGlkZXIoIlRyZW1vbG8vTWl4W3VuaXQ6JV1bc3R5bGU6a25vYl0iLCAxMDAuMCwgMC4wLCAxMDAuMCwgMS4wKSAvIDEwMC4wOwpvdXRwdXREYiA9IGhzbGlkZXIoIlRyZW1vbG8vT3V0cHV0W3VuaXQ6ZEJdW3N0eWxlOmtub2JdIiwgMC4wLCAtMjQuMCwgMTIuMCwgMC4xKSA6IHNpLnNtb287Cgppc0F1dG9QYW4gPSAobW9kZSA+PSAwLjUpICYgKG1vZGUgPCAxLjUpOwppc1N0ZXJlb1RyZW1vbG8gPSAobW9kZSA+PSAxLjUpICYgKG1vZGUgPCAyLjUpOwppc1B1bHNlQ2hvcCA9IG1vZGUgPj0gMi41OwoKbW9kZVZhbHVlKHRyZW1vbG8sIGF1dG9QYW4sIHN0ZXJlb1RyZW1vbG8sIHB1bHNlQ2hvcCkgPSBzZWxlY3QyKAogIGlzQXV0b1BhbiwKICBzZWxlY3QyKGlzU3RlcmVvVHJlbW9sbywgc2VsZWN0Mihpc1B1bHNlQ2hvcCwgdHJlbW9sbywgcHVsc2VDaG9wKSwgc3RlcmVvVHJlbW9sbyksCiAgYXV0b1BhbgopOwoKY3VydmVEcml2ZSA9IDEuMCArIDcuMCAqIHNoYXBlOwpzaGFwZWRCaXBvbGFyKHBoYXNlKSA9IG1hLnRhbmgoY3VydmVEcml2ZSAqIG9zLm9zY3AocmF0ZUh6LCBwaGFzZSkpIC8gbWEudGFuaChjdXJ2ZURyaXZlKTsKc2hhcGVkVW5pcG9sYXIocGhhc2UpID0gMC41ICogKHNoYXBlZEJpcG9sYXIocGhhc2UpICsgMS4wKTsKCnRyZW1vbG9HYWluKHBoYXNlKSA9IDEuMCAtIGRlcHRoICsgZGVwdGggKiBzaGFwZWRVbmlwb2xhcihwaGFzZSk7CgphdXRvUG9zaXRpb24gPSBzaGFwZWRVbmlwb2xhcigwLjApOwphdXRvTGVmdEdhaW4gPSBzcXJ0KG1heCgwLjAsIDEuMCAtIGRlcHRoICogYXV0b1Bvc2l0aW9uKSk7CmF1dG9SaWdodEdhaW4gPSBzcXJ0KG1heCgwLjAsIDEuMCAtIGRlcHRoICogKDEuMCAtIGF1dG9Qb3NpdGlvbikpKTsKCnB1bHNlVGhyZXNob2xkID0gLTAuOCArIDEuNiAqIHNoYXBlOwpwdWxzZUdhdGUocGhhc2UpID0gKG9zLm9zY3AocmF0ZUh6LCBwaGFzZSkgPiBwdWxzZVRocmVzaG9sZCkgOiBzaS5zbW9vOwpwdWxzZUdhaW4ocGhhc2UpID0gMS4wIC0gZGVwdGggKyBkZXB0aCAqIHB1bHNlR2F0ZShwaGFzZSk7CgpzdGVyZW9QaGFzZSA9IHN0ZXJlb0RlZ3JlZXMgKiBtYS5QSSAvIDE4MC4wOwpsZWZ0R2FpbiA9IHNlbGVjdDIoCiAgZGVwdGhUYXJnZXQgPD0gMC4wLAogIG1vZGVWYWx1ZSh0cmVtb2xvR2FpbigwLjApLCBhdXRvTGVmdEdhaW4sIHRyZW1vbG9HYWluKDAuMCksIHB1bHNlR2FpbigwLjApKSA6IHNpLnNtb28sCiAgMS4wCik7CnJpZ2h0R2FpbiA9IHNlbGVjdDIoCiAgZGVwdGhUYXJnZXQgPD0gMC4wLAogIG1vZGVWYWx1ZSh0cmVtb2xvR2FpbigwLjApLCBhdXRvUmlnaHRHYWluLCB0cmVtb2xvR2FpbihzdGVyZW9QaGFzZSksIHB1bHNlR2FpbigwLjApKSA6IHNpLnNtb28sCiAgMS4wCik7Cgptb2R1bGF0ZShsZWZ0LCByaWdodCkgPSBsZWZ0ICogbGVmdEdhaW4sIHJpZ2h0ICogcmlnaHRHYWluOwoKcHJvY2VzcyA9IGVmLmRyeVdldE1peGVyKG1peCwgbW9kdWxhdGUpIDogcGFyKGNoYW5uZWwsIDIsICooYmEuZGIybGluZWFyKG91dHB1dERiKSkpOwo=",
+  "inputs": 2,
+  "outputs": 2,
+  "meta": [
+    {
+      "author": "Beat.Z"
+    },
+    {
+      "basics.lib/name": "Faust Basic Element Library"
+    },
+    {
+      "basics.lib/version": "1.22.0"
+    },
+    {
+      "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2"
+    },
+    {
+      "filename": "tremolo.dsp"
+    },
+    {
+      "license": "MIT"
+    },
+    {
+      "maths.lib/author": "GRAME"
+    },
+    {
+      "maths.lib/copyright": "GRAME"
+    },
+    {
+      "maths.lib/license": "LGPL with exception"
+    },
+    {
+      "maths.lib/name": "Faust Math Library"
+    },
+    {
+      "maths.lib/version": "2.9.0"
+    },
+    {
+      "misceffects.lib/dryWetMixer:author": "David Braun, revised by Stéphane Letz"
+    },
+    {
+      "misceffects.lib/name": "Misc Effects Library"
+    },
+    {
+      "misceffects.lib/version": "2.5.2"
+    },
+    {
+      "name": "Audio Effect Builder Tremolo"
+    },
+    {
+      "oscillators.lib/name": "Faust Oscillator Library"
+    },
+    {
+      "oscillators.lib/version": "1.7.0"
+    },
+    {
+      "platform.lib/name": "Generic Platform Library"
+    },
+    {
+      "platform.lib/version": "1.3.0"
+    },
+    {
+      "signals.lib/name": "Faust Routing Library"
+    },
+    {
+      "signals.lib/version": "1.6.0"
+    },
+    {
+      "version": "0.1.0"
+    }
+  ],
+  "ui": [
+    {
+      "type": "vgroup",
+      "label": "Audio Effect Builder Tremolo",
+      "items": [
+        {
+          "type": "hslider",
+          "label": "Tremolo/Depth",
+          "varname": "fHslider1",
+          "shortname": "Tremolo_Depth",
+          "address": "/Audio_Effect_Builder_Tremolo/Tremolo_Depth",
+          "index": 524292,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "%"
+            }
+          ],
+          "init": 50,
+          "min": 0,
+          "max": 100,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Tremolo/Mix",
+          "varname": "fHslider0",
+          "shortname": "Tremolo_Mix",
+          "address": "/Audio_Effect_Builder_Tremolo/Tremolo_Mix",
+          "index": 524288,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "%"
+            }
+          ],
+          "init": 100,
+          "min": 0,
+          "max": 100,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Tremolo/Mode",
+          "varname": "fHslider2",
+          "shortname": "Tremolo_Mode",
+          "address": "/Audio_Effect_Builder_Tremolo/Tremolo_Mode",
+          "index": 524308,
+          "meta": [
+            {
+              "style": "menu{-Tremolo-:0;-Auto-Pan-:1;-Stereo Tremolo-:2;-Pulse/Chop-:3}"
+            }
+          ],
+          "init": 0,
+          "min": 0,
+          "max": 3,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Tremolo/Output",
+          "varname": "fHslider5",
+          "shortname": "Tremolo_Output",
+          "address": "/Audio_Effect_Builder_Tremolo/Tremolo_Output",
+          "index": 524388,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "dB"
+            }
+          ],
+          "init": 0,
+          "min": -24,
+          "max": 12,
+          "step": 0.1
+        },
+        {
+          "type": "hslider",
+          "label": "Tremolo/Rate",
+          "varname": "fHslider4",
+          "shortname": "Tremolo_Rate",
+          "address": "/Audio_Effect_Builder_Tremolo/Tremolo_Rate",
+          "index": 524352,
+          "meta": [
+            {
+              "scale": "log"
+            },
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "Hz"
+            }
+          ],
+          "init": 4,
+          "min": 0.05,
+          "max": 20,
+          "step": 0.01
+        },
+        {
+          "type": "hslider",
+          "label": "Tremolo/Shape",
+          "varname": "fHslider3",
+          "shortname": "Tremolo_Shape",
+          "address": "/Audio_Effect_Builder_Tremolo/Tremolo_Shape",
+          "index": 524336,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "%"
+            }
+          ],
+          "init": 25,
+          "min": 0,
+          "max": 100,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "Tremolo/Stereo Phase",
+          "varname": "fHslider6",
+          "shortname": "Tremolo_Stereo_Phase",
+          "address": "/Audio_Effect_Builder_Tremolo/Tremolo_Stereo_Phase",
+          "index": 524400,
+          "meta": [
+            {
+              "style": "knob"
+            },
+            {
+              "unit": "degrees"
+            }
+          ],
+          "init": 90,
+          "min": 0,
+          "max": 180,
+          "step": 1
+        }
+      ]
+    }
+  ]
+}

@@ -155,6 +155,16 @@
       "metadata": "/faust/flanger/dsp-meta.json",
       "inputs": 2,
       "outputs": 2
+    },
+    "tremolo": {
+      "definitionVersion": "0.1.0",
+      "source": "faust/tremolo.dsp",
+      "sourceSha256": "c32438699b15eeefaa04630fe662e529233ee8a58d2d227548e556b87e7a5b2f",
+      "wasmSha256": "fcd740fc6d557c1768dd197f62caf119eba0072c6ba723d43f1b2ba9e74cffdd",
+      "wasm": "/faust/tremolo/dsp-module.wasm",
+      "metadata": "/faust/tremolo/dsp-meta.json",
+      "inputs": 2,
+      "outputs": 2
     }
   }
 }

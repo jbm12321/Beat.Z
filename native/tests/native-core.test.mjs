@@ -91,11 +91,13 @@ test('parity scenarios keep the project baseline and every mode without sweeping
   const expansionModes = createParityScenarios([
     { nodeId: 'limiter-1', moduleType: 'limiter', value: 0, definition: { min: 0, max: 3, choices: [0, 1, 2, 3] } },
     { nodeId: 'flanger-1', moduleType: 'flanger', value: 0, definition: { min: 0, max: 3, choices: [0, 1, 2, 3] } },
+    { nodeId: 'tremolo-1', moduleType: 'tremolo', value: 0, definition: { min: 0, max: 3, choices: [0, 1, 2, 3] } },
   ]);
   assert.deepEqual(expansionModes.map((scenario) => scenario.values), [
-    [0, 0],
-    [0, 0], [1, 0], [2, 0], [3, 0],
-    [0, 0], [0, 1], [0, 2], [0, 3],
+    [0, 0, 0],
+    [0, 0, 0], [1, 0, 0], [2, 0, 0], [3, 0, 0],
+    [0, 0, 0], [0, 1, 0], [0, 2, 0], [0, 3, 0],
+    [0, 0, 0], [0, 0, 1], [0, 0, 2], [0, 0, 3],
   ]);
 });
 
@@ -363,7 +365,7 @@ test('the native editor preserves every Saturation v2 parameter in visible wrapp
 });
 
 test('the native catalog and generic editor represent every expanded effect without template changes', async () => {
-  assert.deepEqual(Object.keys(NATIVE_MODULE_CATALOG), ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor', 'phaser', 'autowah', 'stutter', 'equalizer', 'limiter', 'flanger']);
+  assert.deepEqual(Object.keys(NATIVE_MODULE_CATALOG), ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor', 'phaser', 'autowah', 'stutter', 'equalizer', 'limiter', 'flanger', 'tremolo']);
   assert.deepEqual(NATIVE_MODULE_CATALOG.filter.parameters.mode.choices, [0, 1, 2, 3]);
   assert.deepEqual(NATIVE_MODULE_CATALOG.delay.parameters.mode.choiceLabels, ['Digital', 'Ping-Pong', 'Tape']);
   assert.deepEqual(NATIVE_MODULE_CATALOG.reverb.parameters.mode.choiceLabels, ['Room', 'Hall', 'Plate']);
@@ -396,18 +398,26 @@ test('the native catalog and generic editor represent every expanded effect with
   assert.equal(NATIVE_MODULE_CATALOG.equalizer.wasmSha256, '12fb431e7ed255a30f9a979c44fd63b72729cf377914b091f04f91285bdeca7c');
   assert.equal(NATIVE_MODULE_CATALOG.limiter.wasmSha256, '60aa6c10c035b0bffb823f3106d8d348c0fe59be57a065dd6e04bca4b04f7091');
   assert.equal(NATIVE_MODULE_CATALOG.flanger.wasmSha256, 'ebbf4306323211a06c267dafaefb4b238b56ce538c2f1292ea5d85820f973c0e');
+  assert.deepEqual(Object.keys(NATIVE_MODULE_CATALOG.tremolo.parameters), ['mode', 'rate', 'depth', 'shape', 'stereo', 'mix', 'output']);
+  assert.deepEqual(NATIVE_MODULE_CATALOG.tremolo.parameters.mode.choiceLabels, ['Tremolo', 'Auto-Pan', 'Stereo Tremolo', 'Pulse/Chop']);
+  assert.equal(SOURCE_FINGERPRINTS.tremolo, 'c32438699b15eeefaa04630fe662e529233ee8a58d2d227548e556b87e7a5b2f');
+  assert.equal(NATIVE_MODULE_CATALOG.tremolo.wasmSha256, 'fcd740fc6d557c1768dd197f62caf119eba0072c6ba723d43f1b2ba9e74cffdd');
   const request = await nativeRequestForModules(['delay', 'reverb', 'chorus', 'compressor', 'phaser', 'autowah', 'stutter']);
   const editor = createNativeEditorModel(createAutomaticNativeParameters(request));
   assert.equal(editor.knobCount, 40);
   assert.equal(editor.switchCount, 8);
   assert.deepEqual(editor.rows.flatMap((row) => row.modules.map((module) => module.label)), ['Delay 1', 'Reverb 1', 'Chorus 1', 'Compressor 1', 'Phaser 1', 'Auto Wah 1 1/2', 'Auto Wah 1 2/2', 'Stutter 1']);
-  const expansionRequest = await nativeRequestForModules(['equalizer', 'limiter', 'flanger']);
+  const expansionRequest = await nativeRequestForModules(['equalizer', 'limiter', 'flanger', 'tremolo']);
   const expansionEditor = createNativeEditorModel(createAutomaticNativeParameters(expansionRequest));
-  assert.equal(expansionEditor.knobCount, 20);
-  assert.equal(expansionEditor.switchCount, 2);
+  assert.equal(expansionEditor.knobCount, 26);
+  assert.equal(expansionEditor.switchCount, 3);
   assert.ok(expansionEditor.rows.flatMap((row) => row.modules.map((module) => module.label)).some((label) => label.startsWith('3-Band EQ 1')));
   assert.ok(expansionEditor.rows.flatMap((row) => row.modules.map((module) => module.label)).some((label) => label.startsWith('Limiter 1')));
   assert.ok(expansionEditor.rows.flatMap((row) => row.modules.map((module) => module.label)).some((label) => label.startsWith('Flanger 1')));
+  const tremoloModules = expansionEditor.rows.flatMap((row) => row.modules).filter((module) => module.label.startsWith('Tremolo 1'));
+  assert.equal(tremoloModules.length, 1);
+  assert.equal(tremoloModules[0].controls.filter((control) => control.type === 'knob').length, 6);
+  assert.equal(tremoloModules[0].controls.filter((control) => control.type === 'switch').length, 1);
 });
 
 test('the native editor wraps complete modules into visible rows without pagination', async () => {

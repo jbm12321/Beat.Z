@@ -111,13 +111,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, [role="button"]
 .text-button:hover { color: var(--ink); }
 .text-button.compact-add-button { font-size: 15px; }
 
-.module-list { min-height: 0; padding: 10px 0; overflow-y: auto; }
+.module-list { min-height: 0; padding: 6px 0; overflow-y: auto; }
 .module-row {
   display: grid;
   grid-template-columns: 28px 1fr 18px;
   align-items: center;
   width: 100%;
-  min-height: 45px;
+  min-height: 40px;
   padding: 0 18px;
   border: 0;
   border-top: 1px solid transparent;

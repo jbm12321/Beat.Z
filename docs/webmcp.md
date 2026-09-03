@@ -16,7 +16,7 @@ Inspection and proposal calls do not mutate the project. A proposal includes an 
 
 Agent-applied changes use `applyProjectCommands` with actor `agent`, create one revision/activity item, enter normal undo history, autosave, update the Faust engine, and highlight changed nodes.
 
-`list-audio-primitives` derives its thirteen-module response from the shared catalog, including 3-Band EQ, Limiter, and Flanger. Limiter and Flanger mode values are discrete and cannot be mapped to Controls; the 3-Band EQ's eight continuous parameters and the remaining continuous expansion parameters use the existing validated one-owner mapping rules.
+`list-audio-primitives` derives its fourteen-module response from the shared catalog, including 3-Band EQ, Limiter, Flanger, and Tremolo. Limiter, Flanger, and Tremolo mode values are discrete and cannot be mapped to Controls; the 3-Band EQ's eight continuous parameters and the remaining continuous expansion parameters use the existing validated one-owner mapping rules. Tremolo reports `0` Tremolo, `1` Auto-Pan, `2` Stereo Tremolo, and `3` Pulse/Chop with continuous Rate, Depth, Shape, Stereo Phase, Mix, and Output controls.
 
 Offline analysis uses the selected in-memory source. Build requests can only refer to an approved frozen revision. With no native service, the result is `native_build_unavailable` and contains no artifact or claim of VST3 validation.
 

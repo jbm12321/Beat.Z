@@ -83,7 +83,7 @@ test('registered tools share revision-safe project state and cannot bypass human
 
   const primitives = await tools.get('list-audio-primitives')!.execute({});
   const primitiveCatalog = (primitives.structuredContent as { primitives: Record<string, { parameters: Array<{ id: string; choices?: Array<{ label: string }> }> }> }).primitives;
-  assert.deepEqual(Object.keys(primitiveCatalog), ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor', 'phaser', 'autowah', 'stutter', 'equalizer', 'limiter', 'flanger']);
+  assert.deepEqual(Object.keys(primitiveCatalog), ['gain', 'filter', 'saturation', 'delay', 'reverb', 'chorus', 'compressor', 'phaser', 'autowah', 'stutter', 'equalizer', 'limiter', 'flanger', 'tremolo']);
   assert.deepEqual(primitiveCatalog.delay.parameters[0].choices?.map((choice) => choice.label), ['Digital', 'Ping-Pong', 'Tape']);
   assert.deepEqual(primitiveCatalog.reverb.parameters[0].choices?.map((choice) => choice.label), ['Room', 'Hall', 'Plate']);
   assert.deepEqual(primitiveCatalog.chorus.parameters[0].choices?.map((choice) => choice.label), ['Classic', 'Wide', 'Ensemble']);
@@ -96,6 +96,8 @@ test('registered tools share revision-safe project state and cannot bypass human
   assert.deepEqual(primitiveCatalog.equalizer.parameters.map((parameter) => parameter.id), ['lowGain', 'lowFrequency', 'midGain', 'midFrequency', 'midQ', 'highGain', 'highFrequency', 'output']);
   assert.deepEqual(primitiveCatalog.limiter.parameters[0].choices?.map((choice) => choice.label), ['Transparent', 'Punch', 'Brickwall', 'Soft Clip']);
   assert.deepEqual(primitiveCatalog.flanger.parameters[0].choices?.map((choice) => choice.label), ['Classic', 'Stereo', 'Jet', 'Through-Zero']);
+  assert.deepEqual(primitiveCatalog.tremolo.parameters.map((parameter) => parameter.id), ['mode', 'rate', 'depth', 'shape', 'stereo', 'mix', 'output']);
+  assert.deepEqual(primitiveCatalog.tremolo.parameters[0].choices?.map((choice) => choice.label), ['Tremolo', 'Auto-Pan', 'Stereo Tremolo', 'Pulse/Chop']);
 
   const propose = await tools.get('propose-audio-project-patch')!.execute({
     expectedRevision: 0,
@@ -152,6 +154,7 @@ test('registered tools share revision-safe project state and cannot bypass human
     [{ type: 'add_module', moduleType: 'stutter', nodeId: 'bad-stutter' }, { type: 'set_parameter', nodeId: 'bad-stutter', paramId: 'repeats', value: 5 }],
     [{ type: 'add_module', moduleType: 'limiter', nodeId: 'bad-limiter' }, { type: 'set_parameter', nodeId: 'bad-limiter', paramId: 'mode', value: 4 }],
     [{ type: 'add_module', moduleType: 'flanger', nodeId: 'bad-flanger' }, { type: 'set_parameter', nodeId: 'bad-flanger', paramId: 'feedback', value: 96 }],
+    [{ type: 'add_module', moduleType: 'tremolo', nodeId: 'bad-tremolo' }, { type: 'set_parameter', nodeId: 'bad-tremolo', paramId: 'mode', value: 4 }],
     [{ type: 'add_module', moduleType: 'equalizer', nodeId: 'bad-equalizer' }, { type: 'set_parameter', nodeId: 'bad-equalizer', paramId: 'midQ', value: Number.NaN }],
   ]) {
     const invalid = await tools.get('propose-audio-project-patch')!.execute({

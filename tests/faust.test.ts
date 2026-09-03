@@ -793,3 +793,78 @@ test('Faust Flanger remains distinct from Chorus, Phaser, and Delay fixtures', a
     assert.ok(meanAbsoluteDifference(flanged[0], comparison[0], Math.floor(sampleRate * 0.2)) > 1e-4);
   }
 });
+
+test('Faust Tremolo has exact dry and zero-depth endpoints with four finite distinct modes', async () => {
+  for (const sampleRate of [44100, 48000, 96000]) {
+    const length = Math.floor(sampleRate * 0.8);
+    const input = sine(431, sampleRate, length, 0.2);
+    const node = createNode('tremolo', 'tremolo-modes');
+    Object.assign(node.params, { rate: 4, depth: 85, shape: 60, stereo: 90, mix: 0, output: 0 });
+    const dry = await renderFaustModuleOffline(node, [input, input], sampleRate, await loadFactory('tremolo'));
+    assert.deepEqual(dry[0], input);
+    assert.deepEqual(dry[1], input);
+
+    node.params.mix = 100;
+    for (const mode of [0, 1, 2, 3]) {
+      node.params.mode = mode;
+      node.params.depth = 0;
+      const unity = await renderFaustModuleOffline(node, [input, input], sampleRate, await loadFactory('tremolo'));
+      assert.deepEqual(unity[0], input);
+      assert.deepEqual(unity[1], input);
+    }
+
+    node.params.depth = 85;
+    const modes = [];
+    for (const mode of [0, 1, 2, 3]) {
+      node.params.mode = mode;
+      const rendered = await renderFaustModuleOffline(node, [input, input], sampleRate, await loadFactory('tremolo'));
+      assert.ok(rendered.every((channel) => channel.every(Number.isFinite)));
+      modes.push(rendered);
+    }
+    const start = Math.floor(sampleRate * 0.2);
+    for (let first = 0; first < modes.length; first += 1) {
+      for (let second = first + 1; second < modes.length; second += 1) {
+        const stereoDifference = Math.max(
+          meanAbsoluteDifference(modes[first][0], modes[second][0], start),
+          meanAbsoluteDifference(modes[first][1], modes[second][1], start),
+        );
+        assert.ok(stereoDifference > 1e-4);
+      }
+    }
+    assert.ok(meanAbsoluteDifference(modes[0][0], modes[0][1], start) < 1e-8);
+    assert.ok(meanAbsoluteDifference(modes[3][0], modes[3][1], start) < 1e-8);
+    assert.ok(meanAbsoluteDifference(modes[1][0], modes[1][1], start) > 1e-4);
+    assert.ok(meanAbsoluteDifference(modes[2][0], modes[2][1], start) > 1e-4);
+  }
+});
+
+test('Faust Tremolo controls materially change movement, pulse width, stereo phase, mix, and output', async () => {
+  const sampleRate = 48000;
+  const length = sampleRate;
+  const input = sine(389, sampleRate, length, 0.2);
+  const node = createNode('tremolo', 'tremolo-controls');
+  Object.assign(node.params, { mode: 2, rate: 2, depth: 60, shape: 20, stereo: 90, mix: 100, output: 0 });
+  const baseline = await renderFaustModuleOffline(node, [input, input], sampleRate, await loadFactory('tremolo'));
+  const start = Math.floor(sampleRate * 0.2);
+
+  const alternatives: Array<[keyof typeof node.params, number]> = [
+    ['rate', 8], ['depth', 90], ['shape', 90], ['stereo', 180], ['mix', 40], ['output', -12],
+  ];
+  for (const [parameter, value] of alternatives) {
+    const changed = createNode('tremolo', `tremolo-${parameter}`);
+    Object.assign(changed.params, node.params, { [parameter]: value });
+    const rendered = await renderFaustModuleOffline(changed, [input, input], sampleRate, await loadFactory('tremolo'));
+    assert.ok(Math.max(
+      meanAbsoluteDifference(baseline[0], rendered[0], start),
+      meanAbsoluteDifference(baseline[1], rendered[1], start),
+    ) > 1e-4);
+  }
+
+  const broadPulse = createNode('tremolo', 'tremolo-broad-pulse');
+  Object.assign(broadPulse.params, { mode: 3, rate: 4, depth: 100, shape: 0, stereo: 90, mix: 100, output: 0 });
+  const narrowPulse = createNode('tremolo', 'tremolo-narrow-pulse');
+  Object.assign(narrowPulse.params, broadPulse.params, { shape: 100 });
+  const broad = await renderFaustModuleOffline(broadPulse, [input, input], sampleRate, await loadFactory('tremolo'));
+  const narrow = await renderFaustModuleOffline(narrowPulse, [input, input], sampleRate, await loadFactory('tremolo'));
+  assert.ok(rms(broad[0], start) > rms(narrow[0], start) * 1.4);
+});
