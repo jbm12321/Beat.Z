@@ -192,14 +192,14 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   gain: {
     type: 'gain', name: 'Gain', shortName: 'GAIN', description: 'Clean level adjustment.', definitionVersion: '0.1.0',
     sourceSha256: 'caca77ad2ac86cf0ef26f62a22d1d0c62a7d4b7f86c6c4e3fef77e9d19fbd35d',
-    wasmSha256: '54303a27ef533cc9f5b9983e6c0621174d42e92c0e8f645bde0bbdaa74e8fb87',
+    wasmSha256: 'ea244c54af73fa8532432e5463f7dd58c3d399e3be652cfe74461570e2983c2b',
     wasmPath: '/faust/gain/dsp-module.wasm', metadataPath: '/faust/gain/dsp-meta.json',
     parameters: [parameter('level', 'Level', -24, 24, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_Gain/Gain_Level')],
   },
   filter: {
     type: 'filter', name: 'Filter', shortName: 'FILT', description: 'Remove lows or highs with resonant shaping.', definitionVersion: '0.1.0',
     sourceSha256: '076d102ec4209b0a9e33d4199e302896a3951017e88a1e821ec106347c03ee7f',
-    wasmSha256: '39ac96e8aff15297cf241ee4033f160a725bfd6bae26254696a0c9fd99eed69a',
+    wasmSha256: 'a21bb9377776428d557053325d5b9fe40746de22e42d06a3bfde4b173a0487b7',
     wasmPath: '/faust/filter/dsp-module.wasm', metadataPath: '/faust/filter/dsp-meta.json',
     parameters: [
       parameter('mode', 'Mode', 0, 3, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Filter/Filter_Mode', {
@@ -212,7 +212,7 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   saturation: {
     type: 'saturation', name: 'Saturation', shortName: 'SAT', description: 'Add harmonic color and weight.', definitionVersion: '0.1.0',
     sourceSha256: '9074635f03744b4b4f280eac15839585716d4a23a732ac7c59e26eb1c3bab068',
-    wasmSha256: '05cea5472644ff2ad0d19234d05a3e411e73fd0a52800b192790d1bc04adcbf1',
+    wasmSha256: '2e105e8c1f71c9755810271d58aa2f996c8e73089e74d32c955f09530ab03c5c',
     wasmPath: '/faust/saturation/dsp-module.wasm', metadataPath: '/faust/saturation/dsp-meta.json',
     parameters: [
       parameter('character', 'Character', 0, 3, 0, 1, 'type', 'linear', '/Audio_Effect_Builder_Saturation/Saturation_Character', {
@@ -231,7 +231,7 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   delay: {
     type: 'delay', name: 'Delay', shortName: 'DLY', description: 'Add rhythmic stereo echoes.', definitionVersion: '0.1.0',
     sourceSha256: 'fb9a020e31f2b4f290a17ad2a18ec5d87c6f701195af2bc95e38f2d99cef1b92',
-    wasmSha256: '6a5495bfa670ef8435cd8a2bf282f16e64e5a447ef3b5dbeabff3f4e77cba99c',
+    wasmSha256: '4c1cda19acf21ab6686e126fb16e91914ac50e37a28c9912bd0652ff8fed2166',
     wasmPath: '/faust/delay/dsp-module.wasm', metadataPath: '/faust/delay/dsp-meta.json',
     parameters: [
       parameter('mode', 'Mode', 0, 2, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Delay/Delay_Mode', {
@@ -247,7 +247,7 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   reverb: {
     type: 'reverb', name: 'Reverb', shortName: 'VERB', description: 'Create depth with shared spatial voicings.', definitionVersion: '0.1.0',
     sourceSha256: 'bec502b0ca2f0b01dd7c10051cd848417f24ca0eb45b73c2854a49da54abb5ff',
-    wasmSha256: 'd03ff0e330e877212436fed13d983036605d29b5aac719775abc45be402ba12a',
+    wasmSha256: 'e1cc7de6b2fd1f8cd28fa17870f532d6b605f632b275d9f1df43b9938f89cb4d',
     wasmPath: '/faust/reverb/dsp-module.wasm', metadataPath: '/faust/reverb/dsp-meta.json',
     parameters: [
       parameter('mode', 'Mode', 0, 2, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Reverb/Reverb_Mode', {
@@ -264,7 +264,7 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   chorus: {
     type: 'chorus', name: 'Chorus', shortName: 'CHR', description: 'Add modulated width and ensemble movement.', definitionVersion: '0.1.0',
     sourceSha256: '19432a2946b7711dc6f4d694e3fdc5c665df67dddbcadc59622c4052539aa419',
-    wasmSha256: '76fe0d8e4c7245c12a21bb91e8f2bd8af5c3ca610ec48553f29939e2b9527759',
+    wasmSha256: 'cc1f588a4a27fc868de7d737027f92a110beb548e819b7f20368057bd2c70825',
     wasmPath: '/faust/chorus/dsp-module.wasm', metadataPath: '/faust/chorus/dsp-meta.json',
     parameters: [
       parameter('mode', 'Mode', 0, 2, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Chorus/Chorus_Mode', {
@@ -280,7 +280,7 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   compressor: {
     type: 'compressor', name: 'Compressor', shortName: 'COMP', description: 'Control dynamics with linked stereo compression.', definitionVersion: '0.1.0',
     sourceSha256: '5c63fd9f14183aae0c1b3b1cd4a22cf674623bb39a6508218d1857599b8232d6',
-    wasmSha256: '5b8c083fea87784b1005ad39ca9b37be255d8852b6d96e4e6e2abb6447d14631',
+    wasmSha256: '8259e5495afe92750da97fa1afafc496a1e180ba4ee7238540902c866d09aaea',
     wasmPath: '/faust/compressor/dsp-module.wasm', metadataPath: '/faust/compressor/dsp-meta.json',
     parameters: [
       parameter('mode', 'Mode', 0, 2, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Compressor/Compressor_Mode', {
@@ -297,7 +297,7 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   phaser: {
     type: 'phaser', name: 'Phaser', shortName: 'PHAS', description: 'Add sweeping all-pass movement and stereo depth.', definitionVersion: '0.1.0',
     sourceSha256: 'b812485b365ccf92ba7fb8680feced1b3ce27b86a568c8634ca6ce949c827c04',
-    wasmSha256: 'efb34fc50e334da4c1b2c3886a35906f359881ddba8aabd52f123cd4f525741c',
+    wasmSha256: 'ed442799c91898aceaa540b5562e439ead39ecddd527239bbaa264bcca77a5ab',
     wasmPath: '/faust/phaser/dsp-module.wasm', metadataPath: '/faust/phaser/dsp-meta.json',
     parameters: [
       parameter('mode', 'Mode', 0, 2, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Phaser/Phaser_Mode', {
@@ -314,7 +314,7 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   autowah: {
     type: 'autowah', name: 'Auto Wah', shortName: 'WAH', description: 'Add touch-sensitive resonant filter movement.', definitionVersion: '0.1.0',
     sourceSha256: '26001c6599cf9b72c57290b26498233f076d278ec1b7bdecbe40be04c3448443',
-    wasmSha256: '73320b19493169576de250765d2b76fa51160366b7cafc3f19bbdd9f28ba67a9',
+    wasmSha256: 'c9471c614616b3f947411ac13c29c3b366f8602ea27e3bc99e3fce957012f418',
     wasmPath: '/faust/autowah/dsp-module.wasm', metadataPath: '/faust/autowah/dsp-meta.json',
     parameters: [
       parameter('mode', 'Mode', 0, 3, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Auto_Wah/Auto_Wah_Mode', {
@@ -333,7 +333,7 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   stutter: {
     type: 'stutter', name: 'Stutter', shortName: 'STUT', description: 'Capture, chop, reverse, and alternate rhythmic slices.', definitionVersion: '0.1.0',
     sourceSha256: 'b5f10b05476725a477d1b2df078a932b2ccb68e079b2e5dd908dba5c89b790d9',
-    wasmSha256: '7aa1dcb42b72e95aa06cc3d67c7bf6d5ec9a557cf5a43d6162e1ae66ec3230eb',
+    wasmSha256: 'dd7d8e69be356739e38ef90a85d6903a86da942709b2177997faeaa45110c51e',
     wasmPath: '/faust/stutter/dsp-module.wasm', metadataPath: '/faust/stutter/dsp-meta.json',
     parameters: [
       parameter('mode', 'Mode', 0, 3, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Stutter/Stutter_Mode', {
@@ -351,7 +351,7 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   equalizer: {
     type: 'equalizer', name: '3-Band EQ', shortName: 'EQ3', description: 'Shape lows, mids, and highs with three independent bands.', definitionVersion: '0.1.0',
     sourceSha256: '0ee8adecb250e184c1c2f15d8630c13acb193945bc815d87110dfee1bb14c25a',
-    wasmSha256: '12fb431e7ed255a30f9a979c44fd63b72729cf377914b091f04f91285bdeca7c',
+    wasmSha256: '5b3bea316ff7fe7be868d8060af5650cef73790ff6c15115a36b99c71b03dfa3',
     wasmPath: '/faust/equalizer/dsp-module.wasm', metadataPath: '/faust/equalizer/dsp-meta.json',
     parameters: [
       parameter('lowGain', 'Low Gain', -18, 18, 0, 0.1, 'dB', 'linear', '/Audio_Effect_Builder_3-Band_EQ/3-Band_EQ_Low_Gain'),
@@ -367,7 +367,7 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   limiter: {
     type: 'limiter', name: 'Limiter', shortName: 'LIM', description: 'Control sample peaks with linked stereo limiting.', definitionVersion: '0.1.0',
     sourceSha256: '5564b1c1f20994bf827916a3e877f125c15ca19c70879918fe64a3e1eeda1bf6',
-    wasmSha256: '60aa6c10c035b0bffb823f3106d8d348c0fe59be57a065dd6e04bca4b04f7091',
+    wasmSha256: '3ba068ad61a1e8a5b5efccc658ab70f53b6301297f770e8ced7cbd286690064a',
     wasmPath: '/faust/limiter/dsp-module.wasm', metadataPath: '/faust/limiter/dsp-meta.json',
     parameters: [
       parameter('mode', 'Mode', 0, 3, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Limiter/Limiter_Mode', {
@@ -383,7 +383,7 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   flanger: {
     type: 'flanger', name: 'Flanger', shortName: 'FLNG', description: 'Create moving comb-filter sweeps with short modulated delays.', definitionVersion: '0.1.0',
     sourceSha256: 'b66905707f0238d73e8230793edfeac787136aa6fa1608fbe4dc6d48e5aea9b4',
-    wasmSha256: 'ebbf4306323211a06c267dafaefb4b238b56ce538c2f1292ea5d85820f973c0e',
+    wasmSha256: 'edf7208ecbcd22b6b918dd94395bbe3ec7247b76ea9155d332a9b45bfb82e35d',
     wasmPath: '/faust/flanger/dsp-module.wasm', metadataPath: '/faust/flanger/dsp-meta.json',
     parameters: [
       parameter('mode', 'Mode', 0, 3, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Flanger/Flanger_Mode', {
@@ -401,7 +401,7 @@ export const MODULE_CATALOG: Record<ModuleType, ModuleDefinition> = {
   tremolo: {
     type: 'tremolo', name: 'Tremolo', shortName: 'TREM', description: 'Add linked, panned, stereo, or chopped amplitude movement.', definitionVersion: '0.1.0',
     sourceSha256: 'c32438699b15eeefaa04630fe662e529233ee8a58d2d227548e556b87e7a5b2f',
-    wasmSha256: 'fcd740fc6d557c1768dd197f62caf119eba0072c6ba723d43f1b2ba9e74cffdd',
+    wasmSha256: 'f4e4ca020b99bce4983a24a05f39111a6a68fb1e9c968bd5a825c821fcc3084c',
     wasmPath: '/faust/tremolo/dsp-module.wasm', metadataPath: '/faust/tremolo/dsp-meta.json',
     parameters: [
       parameter('mode', 'Mode', 0, 3, 0, 1, 'mode', 'linear', '/Audio_Effect_Builder_Tremolo/Tremolo_Mode', {

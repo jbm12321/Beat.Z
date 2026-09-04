@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
@@ -39,18 +38,21 @@ for (const id of definitions) {
   const outputPath = join(outputRoot, id);
   const source = await readFile(sourcePath, 'utf8');
   await mkdir(outputPath, { recursive: true });
-  const compileRoot = await mkdtemp(join(tmpdir(), `beatz-faust-${id}-`));
+  const compileRoot = join('/tmp', 'beat-z-faust-build', id);
   let wasm;
   let metadataSource;
   try {
+    await rm(compileRoot, { recursive: true, force: true });
+    await mkdir(compileRoot, { recursive: true });
+    await writeFile(join(compileRoot, `${id}.dsp`), source);
     await execFileAsync(faustCommand, [
       '-lang', 'wasm-i',
       ...faustCodegenFlags,
       '-json',
       '-O', compileRoot,
       '-o', 'dsp-module.wasm',
-      sourcePath,
-    ], { encoding: 'utf8', timeout: 120_000, maxBuffer: 8 * 1024 * 1024 });
+      basename(sourcePath),
+    ], { cwd: compileRoot, encoding: 'utf8', timeout: 120_000, maxBuffer: 8 * 1024 * 1024 });
     [wasm, metadataSource] = await Promise.all([
       readFile(join(compileRoot, 'dsp-module.wasm')),
       readFile(join(compileRoot, 'dsp-module.json'), 'utf8'),
