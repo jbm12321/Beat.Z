@@ -44,11 +44,10 @@ test('WebMCP degrades cleanly when the experimental browser API is absent', asyn
   if (original) Object.defineProperty(globalThis, 'document', original);
 });
 
-test('five task-level tools create, edit, clear, inspect, and download through shared state', async () => {
+test('four task-level tools create, edit, clear, and inspect through shared state', async () => {
   const tools = installToolRegistry();
   let project = createInitialProject();
   let proposal: AgentProposal | null = null;
-  let downloadCalls = 0;
   const registration = await registerWebMcpTools({
     getProject: () => project,
     getValidation: () => validateProjectForBuild(project),
@@ -58,10 +57,7 @@ test('five task-level tools create, edit, clear, inspect, and download through s
       proposal = createAgentProposal(project, input);
       return proposal;
     },
-    downloadPlugin: () => {
-      downloadCalls += 1;
-      return { status: 'approval-required', revision: project.revision, message: 'Approve the visible build request.' };
-    },
+    downloadPlugin: () => downloadState(project),
   });
 
   assert.equal(registration.supported, true);
@@ -70,15 +66,14 @@ test('five task-level tools create, edit, clear, inspect, and download through s
     'create-plugin',
     'edit-plugin',
     'clear-plugin',
-    'download-plugin',
   ]);
-  assert.equal(tools.size, 5);
+  assert.equal(tools.size, 4);
   for (const tool of tools.values()) {
     assert.ok(tool.name.length <= 30, `${tool.name} exceeds the recommended tool-name budget`);
     assert.ok(tool.description.length <= 500, `${tool.name} exceeds the recommended description budget`);
   }
   assert.equal(tools.get('inspect-builder')?.annotations?.readOnlyHint, true);
-  for (const name of ['create-plugin', 'edit-plugin', 'clear-plugin', 'download-plugin']) {
+  for (const name of ['create-plugin', 'edit-plugin', 'clear-plugin']) {
     assert.equal(tools.get(name)?.annotations?.readOnlyHint, false);
   }
 
@@ -161,10 +156,6 @@ test('five task-level tools create, edit, clear, inspect, and download through s
   assert.deepEqual(project.macros.map((control) => control.name), ['Echo Time', 'Feedback', 'Mix', 'Warmth']);
 
   const currentContext = makeBuilderContextId(project);
-  const download = await tools.get('download-plugin')!.execute({ contextId: currentContext });
-  assert.equal(downloadCalls, 1);
-  assert.equal((download.structuredContent as WebMcpDownloadState).status, 'approval-required');
-
   const cleared = await tools.get('clear-plugin')!.execute({ contextId: currentContext });
   assert.equal(cleared.isError, undefined);
   assert.equal(project.chain.length, 1);

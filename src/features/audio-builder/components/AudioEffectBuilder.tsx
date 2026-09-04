@@ -387,18 +387,6 @@ export function AudioEffectBuilder() {
     }
   };
 
-  const requestNativeBuild = async () => {
-    const frozen = frozenRef.current;
-    if (!frozen) return;
-    buildApprovedRef.current = true;
-    try {
-      await submitVst3Export(frozen);
-      setNotice({ kind: 'success', text: 'The VST3 build was queued on your Mac.' });
-    } catch (error) {
-      setNotice({ kind: 'error', text: error instanceof Error ? error.message : 'The VST3 build could not be requested.' });
-    }
-  };
-
   const downloadPluginForAgent = useCallback(async (): Promise<WebMcpDownloadState> => {
     setShowNative(true);
     const existing = getDownloadStateForAgent();
@@ -436,7 +424,7 @@ export function AudioEffectBuilder() {
       status: 'approval-required', revision: frozen.revision,
       message: 'The exact revision is analyzed and prepared. Approve Build VST3 on Mac in the visible Download panel.',
     };
-  }, [getDownloadStateForAgent, performAnalysis]);
+  }, [getDownloadStateForAgent, performAnalysis, submitVst3Export]);
 
   useEffect(() => {
     let unregister: () => void = () => undefined;
@@ -779,7 +767,6 @@ export function AudioEffectBuilder() {
           busy={analyzing || vst3ExportBusy}
           onClose={() => setShowNative(false)}
           onFreezeBuild={() => void freezeBuild()}
-          onRequestBuild={() => void requestNativeBuild()}
         />
       ) : null}
 
