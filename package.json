@@ -7,14 +7,13 @@
   },
   "scripts": {
     "dev": "vinext dev",
-    "dev:vst3": "node --env-file=.env scripts/dev-vst3.mjs",
-    "build": "npm run faust:compile && vinext build",
+    "build": "npm run faust:compile && npm run build:web",
+    "build:web": "vinext build",
     "faust:compile": "node scripts/compile-faust.mjs",
     "start": "vinext start",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern native/vendor --ignore-pattern native/build",
     "test": "node --test tests/*.test.ts",
-    "test:native": "node --test native/tests/*.test.mjs",
-    "vst3:worker": "node --env-file=.env scripts/vst3-worker.mjs"
+    "test:native": "node --test native/tests/*.test.mjs"
   },
   "dependencies": {
     "@grame/faustwasm": "0.16.6",

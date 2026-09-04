@@ -2,7 +2,7 @@
 
 ## System boundary
 
-Beat.Z is a browser-first Sites application. React owns the editor state; a long-lived browser audio engine receives validated snapshots; optional WebMCP tools operate through the same proposal and command services as the visible editor. Native-export API routes store queued job state in D1, while a separately configured Mac worker performs native compilation and publishes verified ZIPs to Supabase Storage. The browser contains no native compiler or elevated worker credentials.
+Beat.Z is a browser-first Sites application. React owns the editor state; a long-lived browser audio engine receives validated snapshots; optional WebMCP tools operate through the same proposal and command services as the visible editor. The repository also contains a separate native-export system, but its public build and download controls are disabled during judging. The browser contains no native compiler or elevated worker credentials.
 
 ```text
 Human controls ───────┐
@@ -46,5 +46,5 @@ Durable `ProjectV2` data includes IDs, name, monotonic revision, exact Faust pro
 - Revisioned, recoverable human/agent project edits.
 - Gain, Filter, Saturation, Delay, Reverb, Chorus, Compressor, Phaser, Auto Wah, Stutter, 3-Band EQ, Limiter, Flanger, and Tremolo Faust/WASM browser primitives.
 - Dry/processed audition, loudness matching, offline analysis, and safety checks.
-- Inspect/propose/approve/apply/analyze/build-request WebMCP boundary.
-- The Site queues frozen revisions; the controlled Mac worker performs compilation, signing, validation, state restoration, parity, packaging, and publication. DAW-specific discovery and audible host behavior remain separate proof.
+- Inspect/create/edit/clear WebMCP boundary with visible proposal approval for every action.
+- When separately enabled, the Site queues frozen revisions and the controlled Mac worker performs compilation, signing, validation, state restoration, parity, packaging, and publication. DAW-specific discovery and audible host behavior remain separate proof.

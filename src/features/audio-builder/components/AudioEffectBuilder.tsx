@@ -22,7 +22,7 @@ import {
   getParameterDefinition,
 } from '../domain/parameters';
 import type { MacroControl, MacroMapping, ModuleType, ProjectCommand } from '../domain/types';
-import { registerWebMcpTools, type WebMcpDownloadState } from '../agent/registerWebMcpTools';
+import { registerWebMcpTools } from '../agent/registerWebMcpTools';
 import { applyApprovedAgentProposal, authorizeAgentProposal, createAgentProposal, type AgentProposal, type AgentProposalInput } from '../agent/proposals';
 import { freezeProjectRevision, type FrozenProjectRevision } from '../domain/build';
 import { validateProjectForBuild, type ProjectValidationResult } from '../domain/validation';
@@ -35,7 +35,6 @@ import { MacroSidebar } from './MacroSidebar';
 import { ModuleSidebar } from './ModuleSidebar';
 import { NativeExportModal } from './NativeExportModal';
 import { moduleDragKey, moveIndexFromDropZone, nodeDragKey } from './dnd';
-import { useVst3ExportSession } from '../../vst3-export/useVst3ExportSession';
 
 type Notice = { kind: 'error' | 'success'; text: string } | null;
 
@@ -71,60 +70,13 @@ export function AudioEffectBuilder() {
   const proposalRef = useRef<AgentProposal | null>(null);
   const validationRef = useRef(validation);
   const frozenRef = useRef<FrozenProjectRevision | null>(null);
-  const buildApprovedRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const {
-    job: vst3ExportJob,
-    busy: vst3ExportBusy,
-    error: vst3ExportError,
-    submit: submitVst3Export,
-    reset: resetVst3Export,
-  } = useVst3ExportSession();
-  const vst3ExportJobRef = useRef(vst3ExportJob);
-  const vst3ExportBusyRef = useRef(vst3ExportBusy);
-  const vst3ExportErrorRef = useRef(vst3ExportError);
 
   projectRef.current = project;
   historyRef.current = history;
   proposalRef.current = proposal;
   validationRef.current = validation;
   frozenRef.current = frozenRevision;
-  vst3ExportJobRef.current = vst3ExportJob;
-  vst3ExportBusyRef.current = vst3ExportBusy;
-  vst3ExportErrorRef.current = vst3ExportError;
-
-  const getDownloadStateForAgent = useCallback((): WebMcpDownloadState => {
-    const projectRevision = projectRef.current.revision;
-    const frozen = frozenRef.current;
-    const job = vst3ExportJobRef.current;
-    if (job?.status === 'ready') {
-      return {
-        status: 'ready', revision: frozen?.revision ?? projectRevision, jobId: job.id,
-        filename: job.artifact?.filename, downloadUrl: job.artifact?.downloadUrl,
-        message: job.artifact?.downloadUrl ? 'The verified VST3 ZIP is ready to download.' : 'The build is ready but has no download URL.',
-      };
-    }
-    if (job?.status === 'failed') {
-      return { status: 'failed', revision: frozen?.revision ?? projectRevision, jobId: job.id, error: job.error, message: job.error ?? 'The native build failed.' };
-    }
-    if (job?.status === 'queued' || job?.status === 'building') {
-      return {
-        status: job.status, revision: frozen?.revision ?? projectRevision, jobId: job.id,
-        message: job.status === 'queued' ? 'The VST3 build is waiting for the Mac builder.' : 'The VST3 is building and being verified on the Mac builder.',
-      };
-    }
-    if (vst3ExportErrorRef.current) {
-      return { status: 'failed', revision: frozen?.revision ?? projectRevision, error: vst3ExportErrorRef.current, message: vst3ExportErrorRef.current };
-    }
-    if (vst3ExportBusyRef.current || buildApprovedRef.current) {
-      return { status: 'starting', revision: frozen?.revision ?? projectRevision, message: 'The approved VST3 build request is starting.' };
-    }
-    if (frozen) {
-      return { status: 'approval-required', revision: frozen.revision, message: 'The exact revision is prepared. Approve Build VST3 on Mac in the visible Download panel.' };
-    }
-    return { status: 'not-prepared', revision: projectRevision, message: 'The current revision must be analyzed and prepared for download.' };
-  }, []);
-
   const commitCommands = useCallback((commands: ProjectCommand[], actor: 'human' | 'agent' = 'human', expectedRevision?: number) => {
     try {
       const next = applyProjectCommands(projectRef.current, commands, actor, expectedRevision);
@@ -197,10 +149,8 @@ export function AudioEffectBuilder() {
     setValidation(nextValidation);
     frozenRef.current = null;
     setFrozenRevision(null);
-    resetVst3Export();
-    buildApprovedRef.current = false;
     audioRef.current?.setLoudnessMatchGain(1);
-  }, [project, resetVst3Export]);
+  }, [project]);
 
   useEffect(() => {
     if (!notice) return;
@@ -361,7 +311,6 @@ export function AudioEffectBuilder() {
     if (projectRef.current.revision !== frozen.revision) throw new Error('The project changed while it was being prepared. Analyze the current revision again.');
     frozenRef.current = frozen;
     setFrozenRevision(frozen);
-    buildApprovedRef.current = false;
     setNotice({ kind: 'success', text: `Revision ${frozen.revision} is prepared with an exact content fingerprint.` });
   };
 
@@ -387,60 +336,19 @@ export function AudioEffectBuilder() {
     }
   };
 
-  const downloadPluginForAgent = useCallback(async (): Promise<WebMcpDownloadState> => {
-    setShowNative(true);
-    const existing = getDownloadStateForAgent();
-    if (existing.status === 'ready') return existing;
-    if (existing.status === 'approval-required') {
-      const frozen = frozenRef.current;
-      if (!frozen) return { status: 'not-prepared', revision: projectRef.current.revision, message: 'The current revision must be analyzed and prepared for download.' };
-      buildApprovedRef.current = true;
-      const submitted = await submitVst3Export(frozen);
-      return {
-        status: 'queued', revision: frozen.revision, jobId: submitted.id,
-        filename: submitted.artifact?.filename, downloadUrl: submitted.artifact?.downloadUrl,
-        message: 'The VST3 build was queued on the Mac builder. The visible Download panel will show the ZIP link when ready.',
-      };
-    }
-    if (existing.status !== 'not-prepared') return existing;
-
-    let currentValidation = validationRef.current;
-    if (currentValidation.status !== 'valid' || currentValidation.revision !== projectRef.current.revision) {
-      const comparison = await performAnalysis();
-      currentValidation = validateProjectForBuild(projectRef.current, comparison.processed);
-      validationRef.current = currentValidation;
-      setValidation(currentValidation);
-    }
-    if (currentValidation.status !== 'valid') {
-      const issue = currentValidation.issues.find((entry) => entry.severity === 'error');
-      throw new Error(issue?.message ?? 'The current project needs a successful audio analysis before it can be prepared for download.');
-    }
-    const frozen = await freezeProjectRevision(projectRef.current, currentValidation);
-    if (projectRef.current.revision !== frozen.revision) throw new Error('The project changed while it was being prepared. Inspect and try again.');
-    frozenRef.current = frozen;
-    setFrozenRevision(frozen);
-    buildApprovedRef.current = false;
-    return {
-      status: 'approval-required', revision: frozen.revision,
-      message: 'The exact revision is analyzed and prepared. Approve Build VST3 on Mac in the visible Download panel.',
-    };
-  }, [getDownloadStateForAgent, performAnalysis, submitVst3Export]);
-
   useEffect(() => {
     let unregister: () => void = () => undefined;
     registerWebMcpTools({
       getProject: () => projectRef.current,
       getValidation: () => validationRef.current,
-      getDownloadState: getDownloadStateForAgent,
       getProposal: () => proposalRef.current,
       stageProposal,
-      downloadPlugin: downloadPluginForAgent,
     }).then((registration) => {
       unregister = registration.unregister;
       setAgentStatus(registration.supported ? 'connected' : 'unavailable');
     }).catch(() => setAgentStatus('unavailable'));
     return () => unregister();
-  }, [downloadPluginForAgent, getDownloadStateForAgent, stageProposal]);
+  }, [stageProposal]);
 
   const approveCurrentProposal = () => {
     const staged = proposalRef.current;
@@ -762,9 +670,7 @@ export function AudioEffectBuilder() {
           projectName={project.name}
           analyzed={validation.status === 'valid' && validation.revision === project.revision}
           frozen={frozenRevision}
-          job={vst3ExportJob}
-          error={vst3ExportError}
-          busy={analyzing || vst3ExportBusy}
+          busy={analyzing}
           onClose={() => setShowNative(false)}
           onFreezeBuild={() => void freezeBuild()}
         />

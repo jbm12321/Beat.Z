@@ -4,19 +4,18 @@ WebMCP is optional browser capability detection through `document.modelContext.r
 
 ## Tools
 
-Beat.Z exposes exactly five task-level tools:
+Beat.Z exposes exactly four task-level tools in the judging build:
 
-- `inspect-builder` returns a compact projection of the current plugin, the fourteen primitives with parameters, Control rules, validation issues, download state, pending proposal, and limits. It returns a `contextId` bound to the project ID, revision, and catalog.
+- `inspect-builder` returns a compact projection of the current plugin, the fourteen primitives with parameters, Control rules, validation issues, pending proposal, and limits. It returns a `contextId` bound to the project ID, revision, and catalog.
 - `create-plugin` clears the current builder and turns a named plugin recipe into one atomic proposal. It always requires a plugin name and current inspection context.
 - `edit-plugin` stages a focused atomic edit using primitive and Control IDs from the current inspection. Every edit call must include a new plugin name; it preserves state not named by the edit.
 - `clear-plugin` stages removal of every primitive and Control.
-- `download-plugin` uses the visible Download flow to analyze and freeze the exact revision, report the queued/building/failed state, and start the verified ZIP download when ready.
 
 Inspection does not mutate the page and is registered with `readOnlyHint`. The other tools describe their state changes and never bypass visible approval.
 
 ## Context and approval
 
-Create, edit, clear, and download require the current `contextId` from `inspect-builder`. A project revision or catalog change invalidates the context, so an agent cannot overwrite a newer human change with stale assumptions.
+Create, edit, and clear require the current `contextId` from `inspect-builder`. A project revision or catalog change invalidates the context, so an agent cannot overwrite a newer human change with stale assumptions.
 
 Create, edit, and clear stage a proposal in the existing Page Activity drawer. The project changes only after the user chooses **Approve & apply**. Approved actions still use `applyProjectCommands` with actor `agent`, create one revision and activity item, enter normal undo history, autosave, update the Faust engine, and highlight changed primitives.
 
@@ -33,6 +32,4 @@ Because the visible Controls rail renders the project's stored Controls, an appr
 
 ## Download boundary
 
-The first `download-plugin` call opens the existing Download panel, performs the existing offline analysis when needed, and freezes the validated revision. The user must still approve **Build VST3 on Mac** in the page. Once approval is required and the context is current, the tool submits the VST3 job and returns its queued state. Later calls report the same D1 job observed by the UI. A ready job returns the public ZIP URL for the visible modal link; queued, building, and failed states return their real status.
-
-WebMCP operates the live page; it is not the native compiler, worker, installer, or DAW. The Mac worker remains responsible for compilation, signing, validation, parity checks, packaging, and publication.
+VST3 building and downloading are disabled during judging. No download tool or download state is registered through WebMCP, and WebMCP does not contact a compiler, worker, installer, or DAW.
