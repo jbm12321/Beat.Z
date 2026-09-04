@@ -30,24 +30,11 @@ declare global {
   }
 }
 
-export type WebMcpDownloadState = {
-  status: 'not-prepared' | 'approval-required' | 'starting' | 'queued' | 'building' | 'ready' | 'failed';
-  message: string;
-  revision: number;
-  jobId?: string;
-  filename?: string;
-  downloadUrl?: string;
-  downloadStarted?: boolean;
-  error?: string;
-};
-
 export interface WebMcpAdapter {
   getProject: () => ProjectV2;
   getValidation: () => ProjectValidationResult;
-  getDownloadState: () => WebMcpDownloadState;
   getProposal: () => AgentProposal | null;
   stageProposal: (input: AgentProposalInput) => AgentProposal;
-  downloadPlugin: () => Promise<WebMcpDownloadState> | WebMcpDownloadState;
 }
 
 const objectSchema = (properties: Record<string, unknown>, required: string[] = []): JsonSchema => ({
@@ -213,7 +200,6 @@ export async function registerWebMcpTools(adapter: WebMcpAdapter) {
             discreteModesMappable: false,
           },
           validation: inspectValidation(adapter),
-          download: adapter.getDownloadState(),
           proposal: proposal ? { id: proposal.id, status: proposal.status, baseRevision: proposal.baseRevision } : null,
           limits: { controls: MAX_CONTROLS, mappingsPerControl: MAX_MAPPINGS_PER_CONTROL, chain: MAX_CHAIN_LENGTH },
         });

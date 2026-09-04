@@ -20,7 +20,7 @@ async function approvedSnapshot() {
   return freezeProjectRevision(project, validateProjectForBuild(project, healthyAnalysis()));
 }
 
-test('the site always accepts build requests and leaves execution to the worker', async () => {
+test('the separate native service accepts build requests and leaves execution to the worker', async () => {
   const service = createService(new MemoryBuildRepository());
   const frozen = await approvedSnapshot();
   const submitted = await service.submit(frozen);

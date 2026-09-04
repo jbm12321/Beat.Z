@@ -9,10 +9,9 @@ import {
 import { createPluginPlan, makeBuilderContextId } from '../src/features/audio-builder/agent/pluginToolPlans.ts';
 import {
   registerWebMcpTools,
-  type WebMcpDownloadState,
   type WebMcpTool,
 } from '../src/features/audio-builder/agent/registerWebMcpTools.ts';
-import { createInitialProject, type ProjectV2 } from '../src/features/audio-builder/domain/project.ts';
+import { createInitialProject } from '../src/features/audio-builder/domain/project.ts';
 import { validateProjectForBuild } from '../src/features/audio-builder/domain/validation.ts';
 
 function installToolRegistry() {
@@ -24,10 +23,6 @@ function installToolRegistry() {
   return tools;
 }
 
-function downloadState(project: ProjectV2): WebMcpDownloadState {
-  return { status: 'not-prepared', revision: project.revision, message: 'The current revision must be prepared.' };
-}
-
 test('WebMCP degrades cleanly when the experimental browser API is absent', async () => {
   const original = Object.getOwnPropertyDescriptor(globalThis, 'document');
   Reflect.deleteProperty(globalThis, 'document');
@@ -35,10 +30,8 @@ test('WebMCP degrades cleanly when the experimental browser API is absent', asyn
   const registration = await registerWebMcpTools({
     getProject: () => project,
     getValidation: () => validateProjectForBuild(project),
-    getDownloadState: () => downloadState(project),
     getProposal: () => null,
     stageProposal: () => { throw new Error('unused'); },
-    downloadPlugin: () => downloadState(project),
   });
   assert.equal(registration.supported, false);
   if (original) Object.defineProperty(globalThis, 'document', original);
@@ -51,13 +44,11 @@ test('four task-level tools create, edit, clear, and inspect through shared stat
   const registration = await registerWebMcpTools({
     getProject: () => project,
     getValidation: () => validateProjectForBuild(project),
-    getDownloadState: () => downloadState(project),
     getProposal: () => proposal,
     stageProposal: (input) => {
       proposal = createAgentProposal(project, input);
       return proposal;
     },
-    downloadPlugin: () => downloadState(project),
   });
 
   assert.equal(registration.supported, true);
