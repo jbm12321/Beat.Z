@@ -12,7 +12,7 @@
     "faust:compile": "node scripts/compile-faust.mjs",
     "start": "vinext start",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern native/vendor --ignore-pattern native/build",
-    "test": "node --test tests/*.test.ts",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
     "test:native": "node --test native/tests/*.test.mjs"
   },
   "dependencies": {
