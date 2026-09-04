@@ -194,7 +194,7 @@ export async function registerWebMcpTools(adapter: WebMcpAdapter) {
     {
       name: 'inspect-builder',
       title: 'Inspect builder',
-      description: 'Read the current Beat.Z builder and primitive parameters before creating, editing, clearing, or downloading. Does not change anything.',
+      description: 'Read the current Beat.Z builder and primitive parameters before creating, editing, or clearing. Does not change anything.',
       inputSchema: objectSchema({}),
       annotations: { readOnlyHint: true, untrustedContentHint: false },
       execute: () => {
@@ -280,19 +280,6 @@ export async function registerWebMcpTools(adapter: WebMcpAdapter) {
           `Clear proposal staged for approval. ${primitiveCount} primitives and ${controlCount} Controls would be removed.`,
           { proposalId: proposal.id, baseRevision: proposal.baseRevision, primitiveCount, controlCount, requiresHumanApproval: true },
         );
-      }),
-    },
-    {
-      name: 'download-plugin',
-      title: 'Download plugin',
-      description: 'Prepare and download the inspected Beat.Z plugin through the visible VST3 flow. Analyzes and freezes the exact revision, never bypasses build approval, and returns progress or the ZIP.',
-      inputSchema: objectSchema({ contextId: contextProperty }, ['contextId']),
-      annotations: writeAnnotations,
-      execute: safely(async (input) => {
-        const project = adapter.getProject();
-        assertBuilderContext(project, input.contextId);
-        const result = await adapter.downloadPlugin();
-        return textResult(result.message, result);
       }),
     },
   ];
