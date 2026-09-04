@@ -4,22 +4,15 @@
   "version": "2.85.9",
   "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2",
   "library_list": [
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/stdfaust.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/misceffects.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/signals.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/phaflangers.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/maths.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/platform.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/oscillators.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/filters.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/basics.lib"
-  ],
-  "include_pathnames": [
-    "/opt/homebrew/opt/faust/share/faust",
-    "/usr/local/share/faust",
-    "/usr/share/faust",
-    "/Users/builder/Projects/Beat.Z/faust",
-    "/Users/builder/Projects/Beat.Z/faust"
+    "stdfaust.lib",
+    "misceffects.lib",
+    "signals.lib",
+    "phaflangers.lib",
+    "maths.lib",
+    "platform.lib",
+    "oscillators.lib",
+    "filters.lib",
+    "basics.lib"
   ],
   "size": 288,
   "code": "aW1wb3J0KCJzdGRmYXVzdC5saWIiKTsKCmRlY2xhcmUgbmFtZSAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIgUGhhc2VyIjsKZGVjbGFyZSB2ZXJzaW9uICIwLjEuMCI7CmRlY2xhcmUgYXV0aG9yICJBdWRpbyBFZmZlY3QgQnVpbGRlciI7CmRlY2xhcmUgbGljZW5zZSAiTUlUIjsKCm1vZGUgPSBoc2xpZGVyKCJQaGFzZXIvTW9kZVtzdHlsZTptZW51eydDbGFzc2ljJzowOydXaWRlJzoxOydEZWVwJzoyfV0iLCAwLjAsIDAuMCwgMi4wLCAxLjApOwpyYXRlSHogPSBoc2xpZGVyKCJQaGFzZXIvUmF0ZVt1bml0Okh6XVtzY2FsZTpsb2ddW3N0eWxlOmtub2JdIiwgMC41LCAwLjA1LCA1LjAsIDAuMDEpIDogc2kuc21vbzsKZGVwdGggPSBoc2xpZGVyKCJQaGFzZXIvRGVwdGhbdW5pdDolXVtzdHlsZTprbm9iXSIsIDYwLjAsIDAuMCwgMTAwLjAsIDEuMCkgLyAxMDAuMCA6IHNpLnNtb287CmNlbnRlckh6ID0gaHNsaWRlcigiUGhhc2VyL0NlbnRlclt1bml0Okh6XVtzY2FsZTpsb2ddW3N0eWxlOmtub2JdIiwgNzAwLjAsIDEwMC4wLCAyMDAwLjAsIDEuMCkgOiBzaS5zbW9vOwpmZWVkYmFjayA9IGhzbGlkZXIoIlBoYXNlci9GZWVkYmFja1t1bml0OiVdW3N0eWxlOmtub2JdIiwgMTUuMCwgLTg1LjAsIDg1LjAsIDEuMCkgLyAxMDAuMCA6IHNpLnNtb287Cm1peCA9IGhzbGlkZXIoIlBoYXNlci9NaXhbdW5pdDolXVtzdHlsZTprbm9iXSIsIDUwLjAsIDAuMCwgMTAwLjAsIDEuMCkgLyAxMDAuMDsKb3V0cHV0RGIgPSBoc2xpZGVyKCJQaGFzZXIvT3V0cHV0W3VuaXQ6ZEJdW3N0eWxlOmtub2JdIiwgMC4wLCAtMjQuMCwgMTIuMCwgMC4xKSA6IHNpLnNtb287Cgppc1dpZGUgPSAobW9kZSA+PSAwLjUpICYgKG1vZGUgPCAxLjUpOwppc0RlZXAgPSBtb2RlID49IDEuNTsKbW9kZVZhbHVlKGNsYXNzaWMsIHdpZGUsIGRlZXApID0gc2VsZWN0Mihpc1dpZGUsIHNlbGVjdDIoaXNEZWVwLCBjbGFzc2ljLCBkZWVwKSwgd2lkZSk7Cgpzd2VlcFNjYWxlID0gbW9kZVZhbHVlKDAuNjUsIDEuMCwgMS4yNSk7CnN3ZWVwUmF0aW8gPSBwb3coMi4wLCBkZXB0aCAqIDEuNSAqIHN3ZWVwU2NhbGUpOwpzd2VlcE1pbmltdW0gPSBtYXgoMjAuMCwgY2VudGVySHogLyBzd2VlcFJhdGlvKTsKbm90Y2hSYXRpbyA9IG1vZGVWYWx1ZSgxLjUwLCAxLjMyLCAxLjIyKTsKc3dlZXBNYXhpbXVtID0gbWluKGNlbnRlckh6ICogc3dlZXBSYXRpbywgKDAuNDUgKiBtYS5TUikgLyBwb3cobm90Y2hSYXRpbywgNikpOwpub3RjaFdpZHRoID0gNTAuMCArIG1vZGVWYWx1ZSgwLjY1LCAwLjg1LCAxLjApICogZGVwdGggKiAxNTAuMDsKYm91bmRlZEZlZWRiYWNrID0gbWluKDAuODUsIG1heCgtMC44NSwgZmVlZGJhY2sgKiBtb2RlVmFsdWUoMC43MCwgMS4wLCAxLjEwKSkpOwpyaWdodFBoYXNlID0gbW9kZVZhbHVlKDAuMCwgMS4wLCAxLjApOwppbnZlcnRXZXQgPSBtb2RlVmFsdWUoMCwgMCwgMSk7CgovLyBwaGFzZXIyIGRlcHRoIDEgaXMgaXRzIGNhbm9uaWNhbCBlcXVhbCBkaXJlY3QvYWxsLXBhc3MgcGhhc2VyIG91dHB1dC4gQmVhdC5aCi8vIGFwcGxpZXMgaXRzIHNpbmdsZSBkcnkvd2V0IG1peGVyIGFmdGVyIG9uZSBzaGFyZWQgc2l4LXN0YWdlIGNvcmUuIFRoZSBtb2RlcyByZW1haW4KLy8gZGlzdGluY3QgdGhyb3VnaCBzd2VlcCBnZW9tZXRyeSwgc3RlcmVvIHBoYXNlLCBmZWVkYmFjaywgYW5kIHdldCBwb2xhcml0eQovLyB3aXRob3V0IGNhbGN1bGF0aW5nIHRocmVlIGNvbXBsZXRlIHBoYXNlcnMgZm9yIGV2ZXJ5IHNhbXBsZS4KcGhhc2VyTGVmdChzaWduYWwpID0gc2lnbmFsIDogcGYucGhhc2VyMl9tb25vKDYsIDAsIG5vdGNoV2lkdGgsIHN3ZWVwTWluaW11bSwgbm90Y2hSYXRpbywgc3dlZXBNYXhpbXVtLCByYXRlSHosIDEuMCwgYm91bmRlZEZlZWRiYWNrLCBpbnZlcnRXZXQpOwpwaGFzZXJSaWdodChzaWduYWwpID0gc2lnbmFsIDogcGYucGhhc2VyMl9tb25vKDYsIHJpZ2h0UGhhc2UsIG5vdGNoV2lkdGgsIHN3ZWVwTWluaW11bSwgbm90Y2hSYXRpbywgc3dlZXBNYXhpbXVtLCByYXRlSHosIDEuMCwgYm91bmRlZEZlZWRiYWNrLCBpbnZlcnRXZXQpOwoKcGhhc2VyKGxlZnQsIHJpZ2h0KSA9IHBoYXNlckxlZnQobGVmdCksIHBoYXNlclJpZ2h0KHJpZ2h0KTsKCnByb2Nlc3MgPSBlZi5kcnlXZXRNaXhlcihtaXgsIHBoYXNlcikgOiBwYXIoY2hhbm5lbCwgMiwgKihiYS5kYjJsaW5lYXIob3V0cHV0RGIpKSk7Cg==",

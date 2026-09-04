@@ -74,6 +74,10 @@ test('committed Faust sources and metadata match the catalog fingerprints and st
     const source = await readFile(join(root, 'faust', `${type}.dsp`));
     const wasm = await readFile(join(root, 'public', 'faust', type, 'dsp-module.wasm'));
     const metadata = JSON.parse(await readFile(join(root, 'public', 'faust', type, 'dsp-meta.json'), 'utf8'));
+    const metadataSource = JSON.stringify(metadata);
+    assert.doesNotMatch(metadataSource, /(?:\/Users\/|\/home\/|[A-Za-z]:\\\\)/u);
+    assert.equal('include_pathnames' in metadata, false);
+    assert.ok((metadata.library_list ?? []).every((path: string) => !path.includes('/') && !path.includes('\\\\')));
     assert.equal(createHash('sha256').update(source).digest('hex'), MODULE_CATALOG[type].sourceSha256);
     assert.equal(createHash('sha256').update(wasm).digest('hex'), MODULE_CATALOG[type].wasmSha256);
     assert.equal(manifest.modules[type].wasmSha256, MODULE_CATALOG[type].wasmSha256);

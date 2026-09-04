@@ -4,18 +4,11 @@
   "version": "2.85.9",
   "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2",
   "library_list": [
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/stdfaust.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/signals.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/maths.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/platform.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/basics.lib"
-  ],
-  "include_pathnames": [
-    "/opt/homebrew/opt/faust/share/faust",
-    "/usr/local/share/faust",
-    "/usr/share/faust",
-    "/Users/builder/Projects/Beat.Z/faust",
-    "/Users/builder/Projects/Beat.Z/faust"
+    "stdfaust.lib",
+    "signals.lib",
+    "maths.lib",
+    "platform.lib",
+    "basics.lib"
   ],
   "size": 24,
   "code": "aW1wb3J0KCJzdGRmYXVzdC5saWIiKTsKCmRlY2xhcmUgbmFtZSAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIgR2FpbiI7CmRlY2xhcmUgdmVyc2lvbiAiMC4xLjAiOwpkZWNsYXJlIGF1dGhvciAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIiOwpkZWNsYXJlIGxpY2Vuc2UgIk1JVCI7CgpsZXZlbERiID0gaHNsaWRlcigiR2Fpbi9MZXZlbFt1bml0OmRCXVtzdHlsZTprbm9iXSIsIDAuMCwgLTI0LjAsIDI0LjAsIDAuMSk7CmxldmVsID0gKGxldmVsRGIgOiBzaS5zbW9vKSA6IGJhLmRiMmxpbmVhcjsKCnByb2Nlc3MgPSAqKGxldmVsKSwgKihsZXZlbCk7Cg==",

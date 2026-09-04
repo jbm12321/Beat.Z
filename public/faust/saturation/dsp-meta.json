@@ -4,22 +4,15 @@
   "version": "2.85.9",
   "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2",
   "library_list": [
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/stdfaust.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/basics.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/signals.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/maths.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/platform.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/filters.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/delays.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/oscillators.lib",
-    "/opt/homebrew/Cellar/faust/2.85.9_1/share/faust/misceffects.lib"
-  ],
-  "include_pathnames": [
-    "/opt/homebrew/opt/faust/share/faust",
-    "/usr/local/share/faust",
-    "/usr/share/faust",
-    "/Users/builder/Projects/Beat.Z/faust",
-    "/Users/builder/Projects/Beat.Z/faust"
+    "stdfaust.lib",
+    "basics.lib",
+    "signals.lib",
+    "maths.lib",
+    "platform.lib",
+    "filters.lib",
+    "delays.lib",
+    "oscillators.lib",
+    "misceffects.lib"
   ],
   "size": 278828,
   "code": "aW1wb3J0KCJzdGRmYXVzdC5saWIiKTsKCmRlY2xhcmUgbmFtZSAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIgU2F0dXJhdGlvbiI7CmRlY2xhcmUgdmVyc2lvbiAiMC4xLjAiOwpkZWNsYXJlIGF1dGhvciAiQXVkaW8gRWZmZWN0IEJ1aWxkZXIiOwpkZWNsYXJlIGxpY2Vuc2UgIk1JVCI7CgpjaGFyYWN0ZXIgPSBoc2xpZGVyKCJTYXR1cmF0aW9uL0NoYXJhY3RlcltzdHlsZTptZW51XSIsIDAuMCwgMC4wLCAzLjAsIDEuMCk7CmRyaXZlRGIgPSBoc2xpZGVyKCJTYXR1cmF0aW9uL0RyaXZlW3VuaXQ6ZEJdW3N0eWxlOmtub2JdIiwgNi4wLCAwLjAsIDI0LjAsIDAuMSkgOiBzaS5zbW9vOwp0b25lSHogPSBoc2xpZGVyKCJTYXR1cmF0aW9uL1RvbmVbdW5pdDpIel1bc2NhbGU6bG9nXVtzdHlsZTprbm9iXSIsIDgwMDAuMCwgMjAwLjAsIDE2MDAwLjAsIDEuMCkgOiBzaS5zbW9vOwptaXggPSBoc2xpZGVyKCJTYXR1cmF0aW9uL01peFt1bml0OiVdW3N0eWxlOmtub2JdIiwgNTAuMCwgMC4wLCAxMDAuMCwgMS4wKSAvIDEwMC4wIDogc2kuc21vbzsKb3V0cHV0RGIgPSBoc2xpZGVyKCJTYXR1cmF0aW9uL091dHB1dFt1bml0OmRCXVtzdHlsZTprbm9iXSIsIDAuMCwgLTI0LjAsIDI0LjAsIDAuMSkgOiBzaS5zbW9vOwpiaWFzID0gaHNsaWRlcigiU2F0dXJhdGlvbi9CaWFzW3VuaXQ6JV1bc3R5bGU6a25vYl0iLCAwLjAsIC0xLjAsIDEuMCwgMC4wMSkgOiBzaS5zbW9vOwpjbGlwTGV2ZWwgPSBoc2xpZGVyKCJTYXR1cmF0aW9uL0NsaXBbdW5pdDolXVtzdHlsZTprbm9iXSIsIDAuNSwgMC4xLCAxLjAsIDAuMDEpIDogc2kuc21vbzsKYWdlID0gaHNsaWRlcigiU2F0dXJhdGlvbi9BZ2VbdW5pdDolXVtzdHlsZTprbm9iXSIsIDAuMCwgMC4wLCAxMDAuMCwgMS4wKSAvIDEwMC4wIDogc2kuc21vbzsKd293ID0gaHNsaWRlcigiU2F0dXJhdGlvbi9Xb3dbdW5pdDolXVtzdHlsZTprbm9iXSIsIDAuMCwgMC4wLCAxMDAuMCwgMS4wKSAvIDEwMC4wIDogc2kuc21vbzsKZHJpdmUgPSBiYS5kYjJsaW5lYXIoZHJpdmVEYik7Cgpzb2Z0Q2xpcChzaWduYWwpID0gc2lnbmFsICogZHJpdmUgOiBtYS50YW5oIDogZmkubG93cGFzcygyLCB0b25lSHopOwovLyBCYXNlZCBvbiBlZi5jdWJpY25sX25vZGMgZnJvbSBGYXVzdCBtaXNjZWZmZWN0cy5saWIgYnkgSnVsaXVzIE8uIFNtaXRoIElJSSAoU1RLLTQuMykuCmN1YmljKHNpZ25hbCkgPSBzaWduYWwgOiBlZi5jdWJpY25sX25vZGMoZHJpdmVEYiAvIDI0LjAsIGJpYXMpIDogZmkubG93cGFzcygyLCB0b25lSHopOwpjbGlwKGFtb3VudCwgc2lnbmFsKSA9IG1pbihhbW91bnQsIG1heCgtYW1vdW50LCBzaWduYWwpKTsKZnV6eihzaWduYWwpID0gc2lnbmFsICogZHJpdmUgOiBjbGlwKGNsaXBMZXZlbCkgOiBmaS5sb3dwYXNzKDIsIHRvbmVIeik7CnRhcGVUb25lID0gbWF4KDcwMC4wLCB0b25lSHogKiAoMS4wIC0gMC43MiAqIGFnZSkpOwovLyBXb3cgaXMgcGl0Y2ggbW92ZW1lbnQsIG5vdCBhbiBhbG1vc3QgaW5hdWRpYmxlIGxldmVsIHdvYmJsZS4gIFRoZSBmaXhlZAovLyBkZWxheSBrZWVwcyB0aGUgbW9kdWxhdGVkIGRlbGF5IHBvc2l0aXZlOyBpdHMgbWF4aW11bSBtb3ZlbWVudCBpcyA0IG1zLgp0YXBlV293RGVsYXkgPSAwLjAwMiAqIG1hLlNSICsgd293ICogMC4wMDQgKiBtYS5TUiAqICgwLjUgKyAwLjUgKiBvcy5vc2MoMC41NSkpOwp0YXBlKHNpZ25hbCkgPSBzaWduYWwgKiBkcml2ZSA6IG1hLnRhbmggOiBmaS5sb3dwYXNzKDIsIHRhcGVUb25lKSA6IGRlLmZkZWxheSgwLjAwOCAqIG1hLlNSLCB0YXBlV293RGVsYXkpOwpjb2xvcmVkKHNpZ25hbCkgPSBzZWxlY3QyKGNoYXJhY3RlciA+PSAxLjAsIHNvZnRDbGlwKHNpZ25hbCksIHNlbGVjdDIoY2hhcmFjdGVyID49IDIuMCwgY3ViaWMoc2lnbmFsKSwgc2VsZWN0MihjaGFyYWN0ZXIgPj0gMy4wLCBmdXp6KHNpZ25hbCksIHRhcGUoc2lnbmFsKSkpKTsKc2F0dXJhdGVDaGFubmVsKHNpZ25hbCkgPSBzaWduYWwsIGNvbG9yZWQoc2lnbmFsKSA6IHNpLmludGVycG9sYXRlKG1peCkgOiAqKGJhLmRiMmxpbmVhcihvdXRwdXREYikpOwoKcHJvY2VzcyA9IHNhdHVyYXRlQ2hhbm5lbCwgc2F0dXJhdGVDaGFubmVsOwo=",
